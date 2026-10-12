@@ -1,4 +1,4 @@
-name: Build Topclick IPA
+name: Build PersonalKeyboard IPA
 
 on:
   push:
@@ -16,24 +16,75 @@ jobs:
 
       - name: Extract source
         run: |
+          test -f personalkeyboard-source.zip || { echo "❌ personalkeyboard-source.zip missing in repo root"; exit 1; }
           mkdir -p src
           unzip -q personalkeyboard-source.zip -d src
+          test -d src/personalkeyboard-source || { echo "❌ expected src/personalkeyboard-source"; ls -la src; exit 1; }
+          test -f src/personalkeyboard-source/project.yml || { echo "❌ project.yml missing"; exit 1; }
+          ls -la src/personalkeyboard-source
 
-      - name: Patch source (share TapSoundEngine with ContainerApp)
+      - name: Place AppIcon automatically
         run: |
-          cp src/personalkeyboard-source/Sources/KeyboardExtension/TapSoundEngine.swift \
-             src/personalkeyboard-source/Sources/ContainerApp/TapSoundEngine.swift
+          ICON_SRC="src/personalkeyboard-source/AppIcon.png"
+          ICON_DIR="src/personalkeyboard-source/Sources/ContainerApp/Assets.xcassets/AppIcon.appiconset"
+          mkdir -p "$ICON_DIR"
+          if [ -f "$ICON_SRC" ]; then
+            cp "$ICON_SRC" "$ICON_DIR/AppIcon.png"
+            echo "✅ AppIcon placed"
+          else
+            echo "❌ AppIcon.png not found"
+            exit 1
+          fi
+          cat > "$ICON_DIR/Contents.json" << 'EOF'
+          {
+            "images" : [
+              {
+                "filename" : "AppIcon.png",
+                "idiom" : "universal",
+                "platform" : "ios",
+                "size" : "1024x1024"
+              }
+            ],
+            "info" : {
+              "author" : "xcode",
+              "version" : 1
+            }
+          }
+          EOF
+          # تنظيف مسافات الـ heredoc إن وُجدت
+          python3 - << 'PY'
+          from pathlib import Path
+          p = Path("src/personalkeyboard-source/Sources/ContainerApp/Assets.xcassets/AppIcon.appiconset/Contents.json")
+          p.write_text("""{
+            "images" : [
+              {
+                "filename" : "AppIcon.png",
+                "idiom" : "universal",
+                "platform" : "ios",
+                "size" : "1024x1024"
+              }
+            ],
+            "info" : {
+              "author" : "xcode",
+              "version" : 1
+            }
+          }
+          """)
+          print("Contents.json OK")
+          PY
+          ls -la "$ICON_DIR"
 
       - name: Generate Xcode project
         run: |
           cd src/personalkeyboard-source
           xcodegen generate
+          ls -la PersonalKeyboard.xcodeproj
 
       - name: Build app
         run: |
           cd src/personalkeyboard-source
           xcodebuild \
-            -project Topclick.xcodeproj \
+            -project PersonalKeyboard.xcodeproj \
             -scheme PersonalKeyboard \
             -configuration Release \
             -sdk iphoneos \
@@ -42,21 +93,26 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
             build
 
       - name: Package IPA
         run: |
           cd src/personalkeyboard-source
           APP_PATH="$PWD/build/DerivedData/Build/Products/Release-iphoneos/PersonalKeyboard.app"
+          test -d "$APP_PATH" || { echo "❌ .app not found"; find build -name "*.app" 2>/dev/null; exit 1; }
+          rm -rf "$PWD/build/Payload"
           mkdir -p "$PWD/build/Payload"
           cp -R "$APP_PATH" "$PWD/build/Payload/PersonalKeyboard.app"
           cd "$PWD/build"
-          zip -qry Topclick-unsigned.ipa Payload
+          rm -f PersonalKeyboard-unsigned.ipa
+          zip -qry PersonalKeyboard-unsigned.ipa Payload
+          ls -lh PersonalKeyboard-unsigned.ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: Topclick-unsigned-ipa
-          path: src/personalkeyboard-source/build/Topclick-unsigned.ipa
+          name: PersonalKeyboard-unsigned-ipa
+          path: src/personalkeyboard-source/build/PersonalKeyboard-unsigned.ipa
           if-no-files-found: error
           retention-days: 30
