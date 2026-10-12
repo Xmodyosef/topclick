@@ -1,0 +1,62 @@
+name: PersonalKeyboard
+options:
+  bundleIdPrefix: app.personal
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    CODE_SIGNING_ALLOWED: NO
+    CODE_SIGNING_REQUIRED: NO
+    CODE_SIGN_IDENTITY: ""
+    DEVELOPMENT_TEAM: ""
+    TARGETED_DEVICE_FAMILY: "1,2"
+targets:
+  PersonalKeyboard:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/ContainerApp
+        excludes:
+          - "Info.plist"
+    settings:
+      base:
+        PRODUCT_NAME: PersonalKeyboard
+        PRODUCT_BUNDLE_IDENTIFIER: app.personal.PersonalKeyboard
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: 15
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Sources/ContainerApp/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1,2"
+    entitlements:
+      path: Sources/ContainerApp/PersonalKeyboard.entitlements
+    dependencies:
+      - target: KeyboardExtension
+        embed: true
+      - sdk: Translation.framework
+        weak: true
+  KeyboardExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/KeyboardExtension
+        excludes:
+          - "Info.plist"
+    settings:
+      base:
+        PRODUCT_NAME: KeyboardExtension
+        PRODUCT_BUNDLE_IDENTIFIER: app.personal.PersonalKeyboard.KeyboardExtension
+        APPLICATION_EXTENSION_API_ONLY: YES
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: 15
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Sources/KeyboardExtension/Info.plist
+        TARGETED_DEVICE_FAMILY: "1,2"
+    entitlements:
+      path: Sources/KeyboardExtension/KeyboardExtension.entitlements
+    dependencies:
+      - sdk: Translation.framework
+        weak: true

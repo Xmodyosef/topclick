@@ -1,8 +1,24 @@
-# App-only isolation test
+# نقرة — PersonalKeyboard
 
-1. Push this repo (or replace personalkeyboard-source.zip)
-2. Actions → Build PersonalKeyboard IPA → Run
-3. Download artifact PersonalKeyboard-unsigned-ipa
-4. Sign with Feather and install
+لوحة مفاتيح iOS عربية/إنجليزية.
 
-NO keyboard extension in this build.
+## الميزات
+- تبديل العربية/الإنجليزية (مسافتان)
+- ثيمات متعددة + ثيم مخصص
+- أصوات نقرة واهتزاز
+- ترجمة (iOS 18+)
+- إيموجي + Clipboard + Undo
+- أيقونة صباح/مساء تلقائية (6ص–6م)
+
+## الهوية (لا تُغيَّر)
+- PRODUCT_NAME: PersonalKeyboard
+- Bundle: app.personal.PersonalKeyboard
+- Extension: app.personal.PersonalKeyboard.KeyboardExtension
+- App Group: group.app.personal.PersonalKeyboard
+- Notification: app.personal.PersonalKeyboard.prefs
+- DisplayName: نقرة
+
+## البناء
+GitHub Actions → IPA غير موقّع → ESign
+
+لا ترفع شهادات أو ملفات p12.

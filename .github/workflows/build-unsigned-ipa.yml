@@ -14,19 +14,11 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Extract source
-        run: |
-          mkdir -p src
-          unzip -q personalkeyboard-source.zip -d src
-
       - name: Generate Xcode project
-        run: |
-          cd src/personalkeyboard-source
-          xcodegen generate
+        run: xcodegen generate
 
       - name: Build app
         run: |
-          cd src/personalkeyboard-source
           xcodebuild \
             -project PersonalKeyboard.xcodeproj \
             -scheme PersonalKeyboard \
@@ -41,7 +33,6 @@ jobs:
 
       - name: Package IPA
         run: |
-          cd src/personalkeyboard-source
           APP_PATH="$PWD/build/DerivedData/Build/Products/Release-iphoneos/PersonalKeyboard.app"
           mkdir -p "$PWD/build/Payload"
           cp -R "$APP_PATH" "$PWD/build/Payload/PersonalKeyboard.app"
@@ -52,6 +43,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: PersonalKeyboard-unsigned-ipa
-          path: src/personalkeyboard-source/build/PersonalKeyboard-unsigned.ipa
+          path: build/PersonalKeyboard-unsigned.ipa
           if-no-files-found: error
           retention-days: 30
