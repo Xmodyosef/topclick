@@ -19,27 +19,16 @@ jobs:
           mkdir -p src
           unzip -q personalkeyboard-source.zip -d src
 
-      - name: Place AppIcon automatically
-        run: |
-          ICON_SRC="src/personalkeyboard-source/AppIcon.png"
-          ICON_DIR="src/personalkeyboard-source/Sources/ContainerApp/Assets.xcassets/AppIcon.appiconset"
-          if [ -f "$ICON_SRC" ]; then
-            mkdir -p "$ICON_DIR"
-            cp "$ICON_SRC" "$ICON_DIR/AppIcon.png"
-            echo "✅ AppIcon placed"
-          else
-            echo "⚠️ AppIcon.png not found — skipping"
-          fi
-
       - name: Generate Xcode project
         run: |
           cd src/personalkeyboard-source
           xcodegen generate
 
-      - name: Verify project name
+      - name: List project files
         run: |
           cd src/personalkeyboard-source
-          ls -la *.xcodeproj
+          ls -la
+          ls -la *.xcodeproj 2>/dev/null || true
 
       - name: Build app
         run: |
