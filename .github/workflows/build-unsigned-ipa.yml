@@ -19,6 +19,11 @@ jobs:
           mkdir -p src
           unzip -q personalkeyboard-source.zip -d src
 
+      - name: Patch source (share TapSoundEngine with ContainerApp)
+        run: |
+          cp src/personalkeyboard-source/Sources/KeyboardExtension/TapSoundEngine.swift \
+             src/personalkeyboard-source/Sources/ContainerApp/TapSoundEngine.swift
+
       - name: Generate Xcode project
         run: |
           cd src/personalkeyboard-source
