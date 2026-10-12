@@ -5,10 +5,10 @@ import UIKit
 // MARK: - Design Tokens
 enum NaqraColors {
     static let accent = Color(red: 0.79, green: 0.66, blue: 0.38)
-    static let surface = NaqraColors.surface
+    static let surface = Color.white.opacity(0.06)
     static let textPrimary = Color.white
     static let textSecondary = Color.white.opacity(0.6)
-    static let border = NaqraColors.border
+    static let border = Color.white.opacity(0.08)
 }
 
 enum Spacing {
