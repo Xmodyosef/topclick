@@ -1,0 +1,57 @@
+name: Build Topclick IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Extract source
+        run: |
+          mkdir -p src
+          unzip -q personalkeyboard-source.zip -d src
+
+      - name: Generate Xcode project
+        run: |
+          cd src/personalkeyboard-source
+          xcodegen generate
+
+      - name: Build app
+        run: |
+          cd src/personalkeyboard-source
+          xcodebuild \
+            -project PersonalKeyboard.xcodeproj \
+            -scheme PersonalKeyboard \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$PWD/build/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package IPA
+        run: |
+          cd src/personalkeyboard-source
+          APP_PATH="$PWD/build/DerivedData/Build/Products/Release-iphoneos/PersonalKeyboard.app"
+          mkdir -p "$PWD/build/Payload"
+          cp -R "$APP_PATH" "$PWD/build/Payload/PersonalKeyboard.app"
+          cd "$PWD/build"
+          zip -qry Topclick-unsigned.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Topclick-unsigned-ipa
+          path: src/personalkeyboard-source/build/Topclick-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30
