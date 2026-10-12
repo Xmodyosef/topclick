@@ -24,12 +24,6 @@ jobs:
           cd src/personalkeyboard-source
           xcodegen generate
 
-      - name: List project files
-        run: |
-          cd src/personalkeyboard-source
-          ls -la
-          ls -la *.xcodeproj 2>/dev/null || true
-
       - name: Build app
         run: |
           cd src/personalkeyboard-source
@@ -52,7 +46,7 @@ jobs:
           mkdir -p "$PWD/build/Payload"
           cp -R "$APP_PATH" "$PWD/build/Payload/PersonalKeyboard.app"
           cd "$PWD/build"
-          zip -qry PersonalKeyboard-unsigned.ipa Payload
+          zip -qry -X PersonalKeyboard-unsigned.ipa Payload
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
