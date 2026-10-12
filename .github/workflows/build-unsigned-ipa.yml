@@ -28,7 +28,7 @@ jobs:
         run: |
           cd src/personalkeyboard-source
           xcodebuild \
-            -project PersonalKeyboard.xcodeproj \
+            -project Topclick.xcodeproj \
             -scheme PersonalKeyboard \
             -configuration Release \
             -sdk iphoneos \
