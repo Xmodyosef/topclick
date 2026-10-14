@@ -316,9 +316,6 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     private var suggestionButtons: [UIButton] = []
     private var appliedThemeId = ""
 
-    private var lastCorrection: (wrong: String, right: String)?
-    private var undoButton: UIButton?
-    private var undoTimer: Timer?
 
     private let letterFont = UIFont.systemFont(ofSize: 26, weight: .medium)
     private let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
@@ -349,12 +346,14 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     private let arabicSymbolPages = [[
         ["1","2","3","4","5","6","7","8","9","0"],
         ["-","/",":","؛","(",")","؟","﷼","&","@"],
-        [".","،","؟","!","'","«","»","٪","…","•"]
+        [".","،","؟","!","'","«","»","٪","…","•"],
+        ["#","*","+","=","<","[","]","{","}","\"]
     ]]
     private let englishSymbolPages = [[
         ["1","2","3","4","5","6","7","8","9","0"],
         ["-","/",":",";","(",")","$","&","@","\""],
-        [".",",","?","!","'","\"","+","=","/","•"]
+        [".",",","?","!","'","\"","+","=","/","•"],
+        ["#","*","+","=","<","[","]","{","}","\\"]
     ]]
     private let emojiPack: [(icon: String, items: [String])] = KeyboardViewController.catalog()
 
@@ -381,7 +380,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         // Height setup only here — prevents layout jumps (MSIME pattern)
         if heightConstraint == nil {
             let c = view.heightAnchor.constraint(equalToConstant: boardHeight)
-            c.priority = .required
+            c.priority = UILayoutPriority(999)
             c.isActive = true
             heightConstraint = c
         } else {
@@ -522,6 +521,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         heightConstraint?.constant = boardHeight
         switch page {
         case .letters:
+            rootStack.addArrangedSubview(makeToolbar())
             rootStack.addArrangedSubview(makeSuggestionsRow())
             rootStack.addArrangedSubview(makeRow(numberRow, rowIdx: 0))
             let rows = language == .arabic ? (isShifted ? arabicShiftRows : arabicRows) : (isShifted ? englishUpper : englishLower)
@@ -542,6 +542,28 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
             rootStack.addArrangedSubview(makeEmojiPager())
             rootStack.addArrangedSubview(makeBottom(emojiOn: true))
         }
+    }
+
+    private func makeToolbar() -> UIView {
+        let s = UIStackView()
+        s.axis = .horizontal
+        s.spacing = 6
+        s.distribution = .fill
+        s.semanticContentAttribute = .forceLeftToRight
+        let clip = iconKey("doc.on.clipboard", #selector(copyPasteTapped))
+        clip.addTarget(self, action: #selector(copyPasteHold), for: .touchDown)
+        clip.widthAnchor.constraint(equalToConstant: 36).isActive = true
+        s.addArrangedSubview(clip)
+        let spacer = UIView()
+        s.addArrangedSubview(spacer)
+        let tr = iconKey("translate", #selector(translateTapped))
+        tr.widthAnchor.constraint(equalToConstant: 36).isActive = true
+        s.addArrangedSubview(tr)
+        let hide = iconKey("keyboard.chevron.compact.down", #selector(dismissKeyboardAction))
+        hide.widthAnchor.constraint(equalToConstant: 36).isActive = true
+        s.addArrangedSubview(hide)
+        s.heightAnchor.constraint(equalToConstant: 32).isActive = true
+        return s
     }
 
     private func makeSuggestionsRow() -> UIView {
@@ -691,6 +713,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         let s = UIStackView()
         s.axis = .horizontal
         s.spacing = 6
+        s.distribution = .fill
         s.semanticContentAttribute = .forceLeftToRight
         let symbolsTitle: String
         if page == .symbols { symbolsTitle = "ABC" }
@@ -1091,48 +1114,13 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         guard let fix = suggestions().first, !fix.isEmpty, fix != token else { return }
         for _ in 0..<token.count { textDocumentProxy.deleteBackward() }
         textDocumentProxy.insertText(fix)
-        lastCorrection = (wrong: token, right: fix)
-        showUndoButton()
     }
 
-    private func showUndoButton() {
-        undoButton?.removeFromSuperview()
-        let btn = UIButton(type: .system)
-        btn.setTitle("تراجع", for: .normal)
-        btn.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
-        btn.setTitleColor(.white, for: .normal)
-        btn.backgroundColor = UIColor.black.withAlphaComponent(0.78)
-        btn.layer.cornerRadius = 10
-        btn.translatesAutoresizingMaskIntoConstraints = false
-        btn.addTarget(self, action: #selector(undoTapped), for: .touchUpInside)
-        view.addSubview(btn)
-        NSLayoutConstraint.activate([
-            btn.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
-            btn.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -12),
-            btn.heightAnchor.constraint(equalToConstant: 28),
-            btn.widthAnchor.constraint(equalToConstant: 70)
-        ])
-        undoButton = btn
-        undoTimer?.invalidate()
-        undoTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
-            self?.hideUndo()
-        }
-    }
 
-    private func hideUndo() {
-        undoButton?.removeFromSuperview()
-        undoButton = nil
-        undoTimer?.invalidate()
-        undoTimer = nil
-        lastCorrection = nil
-    }
 
-    @objc private func undoTapped() {
-        guard let fix = lastCorrection else { hideUndo(); return }
-        for _ in 0..<fix.right.count { textDocumentProxy.deleteBackward() }
-        textDocumentProxy.insertText(fix.wrong)
-        hideUndo()
-    }
+
+
+
 
     @objc private func spaceTouchUp() {
         if spaceIsTrackpad { spaceIsTrackpad = false; return }
@@ -1283,8 +1271,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     private static func catalog() -> [(icon: String, items: [String])] {
         func s(_ t: String) -> [String] { t.split(separator: " ").map(String.init) }
         return [
-            ("🕒", loadFrequent()),
-            ("😊", s("😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😝 😜 🤪 🤨 🧐 🤓 😎 🤩 🥳 😏 😒 😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🤭 🤫 🤥 😶 😐 😑 🫠 🫡 🫢 🫣 🫤 🥹 🥲 😵‍💫 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 🤐 🥴 🤢 🤮 🤧 😷 🤒 🤕 🤑 🤠 😈 👿 🤡 👻 💀 👽 🤖 🎃 😺 😸 😹 😻 😼 😽 🙀 😿 😾")),
+            ("😊", loadFrequent() + s("😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😝 😜 🤪 🤨 🧐 🤓 😎 🤩 🥳 😏 😒 😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🤭 🤫 🤥 😶 😐 😑 🫠 🫡 🫢 🫣 🫤 🥹 🥲 😵‍💫 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 🤐 🥴 🤢 🤮 🤧 😷 🤒 🤕 🤑 🤠 😈 👿 🤡 👻 💀 👽 🤖 🎃 😺 😸 😹 😻 😼 😽 🙀 😿 😾")),
             ("👋", s("👋 🤚 🖐️ ✋ 🖖 🫱 🫲 🫳 🫴 👌 🤌 🤏 ✌️ 🤞 🫰 🤟 🤘 🤙 👈 👉 👆 🖕 👇 ☝️ 🫵 👍 👎 ✊ 👊 🤛 🤜 👏 🙌 🫶 👐 🤲 🤝 🙏 ✍️ 💅 🤳 💪 🦾 🦿 🦵 🦶 👂 🦻 👃 🧠 🫀 🫁 🦷 🦴 👀 👁️ 👅 👄 🫦 👶 🧒 👦 👧 🧑 👱 👨 🧔 👩 🧓 👴 👵 🙍 🙎 🙅 🙆 💁 🙋 🧏 🙇 🤦 🤷 👮 🕵️ 💂 🥷 👷 🫅 🤴 👸 👳 👲 🧕 🤵 👰 🤰 🤱 👼 🎅 🤶 🧑‍🎄 🦸 🦹 🧙 🧚 🧛 🧜 🧝 🧞 🧟 💆 💇 🚶 🧍 🧎 🏃 💃 🕺 🕴️ 👯 🧖 🧗 🤺 🏇 ⛷️ 🏂 🏌️ 🏄 🏊 🤽 🚣 🧘 🛀 🛌 👭 👫 👬 💏 💑 👪")),
             ("❤️", s("❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❤️‍🩹 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 🩷 🩵 🩶 ♥️ ♦️ ♣️ ♠️ 🃏 🎴 💯 💢 💥 💫 💦 💨 💬 💭 🗯️ 💤 ⭐ 🌟 ✨ ⚡ ☄️ 🔥 🌪️ 🌈 ☀️ 🌤️ ⛅ 🌥️ ☁️ 🌦️ 🌧️ ⛈️ 🌩️ 🌨️ ❄️ ☃️ ⛄ 🌬️ 💧 💦 ☔ ☂️ 🌊 🌫️")),
             ("🐾", s("🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐻‍❄️ 🐨 🐯 🦁 🐮 🐷 🐽 🐸 🐵 🙈 🙉 🙊 🐒 🐔 🐧 🐦 🐤 🐣 🐥 🦆 🦅 🦉 🦇 🐺 🐗 🐴 🦄 🐝 🪱 🐛 🦋 🐌 🐞 🐜 🪰 🪲 🪳 🦟 🦗 🕷️ 🕸️ 🦂 🐢 🐍 🦎 🦖 🦕 🐙 🦑 🦐 🦞 🦀 🐡 🐠 🐟 🐬 🐳 🐋 🦈 🐊 🐅 🐆 🦓 🦍 🦧 🐘 🦛 🦏 🐪 🐫 🦒 🦘 🦬 🐃 🐂 🐄 🐎 🐖 🐏 🐑 🦙 🐐 🦌 🐕 🐩 🦮 🐕‍🦺 🐈 🐈‍⬛ 🪶 🐓 🦃 🦤 🦚 🦜 🦢 🦩 🕊️ 🐇 🦝 🦨 🦡 🦫 🦦 🦥 🐁 🐀 🐿️ 🦔 🌵 🎄 🌲 🌳 🌴 🪴 🌱 🌿 ☘️ 🍀 🎍 🍃 🍂 🍁 🍄 🐚 🪨 🌾 💐 🌷 🌹 🥀 🌺 🌸 🌼 🌻")),

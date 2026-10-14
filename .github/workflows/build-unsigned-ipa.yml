@@ -1,29 +1,63 @@
 name: Build PersonalKeyboard IPA
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+  push:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
-
-      - name: Prepare source
+      - name: Extract source
         run: |
-          mkdir -p src
-          cp -R personalkeyboard-source src/
+          if [ -f personalkeyboard-source.zip ]; then
+            unzip -o personalkeyboard-source.zip -d src
+          elif [ -d personalkeyboard-source ]; then
+            mkdir -p src
+            cp -R personalkeyboard-source src/
+          else
+            echo "Source not found"
+            exit 1
+          fi
+          ls -la src/personalkeyboard-source
+
+      - name: Place icon
+        run: |
+          ICON=src/personalkeyboard-source/AppIcon.png
+          DEST_DIR=src/personalkeyboard-source/Sources/ContainerApp/Assets.xcassets/AppIcon.appiconset
+          mkdir -p "$DEST_DIR"
+          if [ -f "$ICON" ]; then
+            cp "$ICON" "$DEST_DIR/AppIcon.png"
+            echo "✅ Icon placed"
+          else
+            echo "⚠️ AppIcon.png not found — skipping"
+          fi
+          cat > "$DEST_DIR/Contents.json" << 'JSON'
+          {
+            "images" : [
+              {
+                "filename" : "AppIcon.png",
+                "idiom" : "universal",
+                "platform" : "ios",
+                "size" : "1024x1024"
+              }
+            ],
+            "info" : { "author" : "xcode", "version" : 1 }
+          }
+          JSON
+
+      - name: Install xcodegen
+        run: brew install xcodegen
 
       - name: Generate Xcode project
         working-directory: src/personalkeyboard-source
         run: xcodegen generate
 
-      - name: Build app
+      - name: Build unsigned
         working-directory: src/personalkeyboard-source
         run: |
           xcodebuild \
@@ -31,7 +65,6 @@ jobs:
             -scheme PersonalKeyboard \
             -configuration Release \
             -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
@@ -42,16 +75,16 @@ jobs:
       - name: Package IPA
         working-directory: src/personalkeyboard-source
         run: |
-          APP_PATH="$PWD/build/Build/Products/Release-iphoneos/PersonalKeyboard.app"
-          test -d "$APP_PATH"
+          APP=$(find build -name "PersonalKeyboard.app" -type d | head -1)
+          echo "APP=$APP"
+          test -n "$APP"
           mkdir -p Payload
-          cp -R "$APP_PATH" Payload/
+          cp -R "$APP" Payload/
           ditto -c -k --sequesterRsrc --keepParent Payload PersonalKeyboard-unsigned.ipa
+          ls -lh PersonalKeyboard-unsigned.ipa
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: PersonalKeyboard-unsigned-ipa
           path: src/personalkeyboard-source/PersonalKeyboard-unsigned.ipa
-          if-no-files-found: error
-          retention-days: 30

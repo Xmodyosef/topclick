@@ -1,14 +1,15 @@
 import SwiftUI
 import Translation
 import UIKit
+import AudioToolbox
 
 // MARK: - Design Tokens
 enum NaqraColors {
     static let accent = Color(red: 0.79, green: 0.66, blue: 0.38)
-    static let surface = Color.white.opacity(0.06)
+    static let surface = Color(red: 0.12, green: 0.12, blue: 0.14)
     static let textPrimary = Color.white
     static let textSecondary = Color.white.opacity(0.6)
-    static let border = Color.white.opacity(0.08)
+    static let border = Color.white.opacity(0.15)
 }
 
 enum Spacing {
@@ -105,6 +106,24 @@ enum ThemeCatalog {
         .init(id: "hailey", title: "دم", key: Color(red: 0.28, green: 0.10, blue: 0.12), ink: .white),
         .init(id: "ember", title: "جمر", key: Color(red: 0.32, green: 0.18, blue: 0.10), ink: .white),
         .init(id: "forest", title: "غابة", key: Color(red: 0.10, green: 0.24, blue: 0.16), ink: .white),
+        .init(id: "midnight_gold", title: "ذهب ليلي", key: Color(red: 0.12, green: 0.10, blue: 0.08), ink: Color(red: 0.85, green: 0.70, blue: 0.30)),
+        .init(id: "cocoa", title: "كاكاو", key: Color(red: 0.25, green: 0.15, blue: 0.10), ink: Color(red: 0.95, green: 0.85, blue: 0.75)),
+        .init(id: "cherry", title: "كرز", key: Color(red: 0.40, green: 0.18, blue: 0.22), ink: Color(red: 1.0, green: 0.85, blue: 0.88)),
+        .init(id: "matcha", title: "ماتشا", key: Color(red: 0.20, green: 0.28, blue: 0.18), ink: Color(red: 0.85, green: 0.95, blue: 0.80)),
+        .init(id: "neon", title: "نيون", key: Color(red: 0.08, green: 0.10, blue: 0.15), ink: Color(red: 0.0, green: 1.0, blue: 0.8)),
+        // مستوحاة من KeyboardKit (MIT) — ليست نسخاً
+        .init(id: "cotton_candy", title: "غزل", key: Color(red: 0.95, green: 0.75, blue: 0.85), ink: Color(red: 0.3, green: 0.15, blue: 0.35)),
+        .init(id: "neon_nights", title: "ليالي", key: Color(red: 0.1, green: 0.05, blue: 0.2), ink: Color(red: 0.0, green: 1.0, blue: 0.9)),
+        .init(id: "tron", title: "ترون", key: Color(red: 0.02, green: 0.05, blue: 0.1), ink: Color(red: 0.0, green: 0.8, blue: 1.0)),
+        .init(id: "candy_shop", title: "حلوى", key: Color(red: 0.9, green: 0.4, blue: 0.5), ink: .white),
+        .init(id: "minimal_light", title: "بسيط", key: Color(red: 0.95, green: 0.95, blue: 0.96), ink: Color(red: 0.2, green: 0.2, blue: 0.22)),
+        // Catppuccin (MIT)
+        .init(id: "catppuccin_latte", title: "لاتيه", key: Color(red: 0.94, green: 0.94, blue: 0.96), ink: Color(red: 0.30, green: 0.30, blue: 0.42)),
+        .init(id: "catppuccin_frappe", title: "فرابيه", key: Color(red: 0.19, green: 0.20, blue: 0.26), ink: Color(red: 0.78, green: 0.78, blue: 0.85)),
+        .init(id: "catppuccin_macchiato", title: "ماكياتو", key: Color(red: 0.14, green: 0.15, blue: 0.20), ink: Color(red: 0.80, green: 0.82, blue: 0.90)),
+        .init(id: "catppuccin_mocha", title: "موكا", key: Color(red: 0.12, green: 0.12, blue: 0.16), ink: Color(red: 0.80, green: 0.82, blue: 0.90)),
+        // Dracula (MIT)
+        .init(id: "dracula", title: "دراكولا", key: Color(red: 0.16, green: 0.16, blue: 0.21), ink: Color(red: 0.97, green: 0.97, blue: 0.95)),
     ]
 
     static let morning: [ThemeSwatch] = [
@@ -179,6 +198,11 @@ enum ThemeStore {
         }
         return nil
     }
+    static func int(_ key: String) -> Int? {
+        if let v = suite.object(forKey: key) as? Int { return v }
+        return fileDict()[key] as? Int
+    }
+
     static func bool(_ key: String) -> Bool? {
         if let v = fileDict()[key] as? Bool { return v }
         if suite.object(forKey: key) != nil { return suite.bool(forKey: key) }
@@ -191,6 +215,255 @@ enum ThemeStore {
 }
 
 struct ContentView: View {
+    var body: some View {
+        TabView {
+            KeyboardPreviewTab()
+                .tabItem { Label("معاينة", systemImage: "keyboard") }
+            ThemesTab()
+                .tabItem { Label("الثيمات", systemImage: "paintpalette") }
+            SettingsTab()
+                .tabItem { Label("الإعدادات", systemImage: "gear") }
+        }
+        .tint(NaqraColors.accent)
+        .preferredColorScheme(.dark)
+        .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+    }
+}
+
+struct KeyboardPreviewTab: View {
+    @State private var soundChoice = ThemeStore.string("soundChoice") ?? "system"
+    @State private var hapticLevel = ThemeStore.string("hapticLevel") ?? "medium"
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: Spacing.lg) {
+                    MiniKeyboardView()
+                        .frame(height: 200)
+                        .padding(.horizontal)
+                    soundPicker
+                    hapticPicker
+                }
+                .padding(.vertical)
+            }
+            .background(LinearGradient(colors: [Color.black, Color(red: 0.08, green: 0.08, blue: 0.12)], startPoint: .top, endPoint: .bottom))
+            .navigationTitle("معاينة")
+            .animation(.spring(response: 0.3), value: soundChoice)
+        }
+    }
+
+    private var soundPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("الصوت").font(.headline).foregroundStyle(.white)
+            Picker("الصوت", selection: $soundChoice) {
+                Text("نظامي").tag("system")
+                Text("كريمي").tag("creamy")
+                Text("ثوكي").tag("thocky")
+                Text("هادي").tag("soft")
+                Text("آلة كاتبة").tag("typewriter")
+                Text("بدون").tag("none")
+            }
+            .pickerStyle(.menu)
+            .onChange(of: soundChoice) { _, v in
+                ThemeStore.write("soundChoice", value: v)
+                TapSoundEngine.shared.play(.rowMid)
+            }
+        }
+        .padding(Spacing.md)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Radius.card))
+        .padding(.horizontal)
+    }
+
+    private var hapticPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("الاهتزاز").font(.headline).foregroundStyle(.white)
+            Picker("الاهتزاز", selection: $hapticLevel) {
+                Text("خفيف").tag("light")
+                Text("وسط").tag("medium")
+                Text("قوي").tag("strong")
+                Text("بدون").tag("none")
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: hapticLevel) { _, v in ThemeStore.write("hapticLevel", value: v) }
+        }
+        .padding(Spacing.md)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Radius.card))
+        .padding(.horizontal)
+    }
+}
+
+struct MiniKeyboardView: View {
+    let row1 = ["ض", "ص", "ث", "ق", "ف", "غ", "ع", "ه", "خ", "ح"]
+    let row2 = ["ش", "س", "ي", "ب", "ل", "ا", "ت", "ن", "م"]
+    let row3 = ["ك", "ط", "ذ", "د", "ز", "ر", "و"]
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            keyRow(row1)
+            keyRow(row2)
+            HStack(spacing: 4) {
+                keyButton("⇧", width: 40)
+                keyRow(row3)
+                keyButton("⌫", width: 40)
+            }
+        }
+        .padding(8)
+        .background(Color.white.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+    
+    private func keyRow(_ keys: [String]) -> some View {
+        HStack(spacing: 4) {
+            ForEach(keys, id: \.self) { k in keyButton(k) }
+        }
+    }
+    
+    private func keyButton(_ k: String, width: CGFloat? = nil) -> some View {
+        Button {
+            TapSoundEngine.shared.play(.rowMid)
+            UISelectionFeedbackGenerator().selectionChanged()
+        } label: {
+            Text(k)
+                .font(.system(size: 14, weight: .medium))
+                .frame(maxWidth: width == nil ? .infinity : nil)
+                .frame(width: width, height: 32)
+                .background(Color.white.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 5))
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.white)
+    }
+}
+
+struct ThemesTab: View {
+    @State private var themeID = ThemeStore.string("themeId") ?? "dark"
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
+                    ForEach(ThemeCatalog.core + ThemeCatalog.morning + ThemeCatalog.evening) { swatch in
+                        Button {
+                            themeID = swatch.id
+                            ThemeStore.write("themeId", value: swatch.id)
+                        } label: {
+                            VStack(spacing: 6) {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(swatch.key)
+                                    .frame(height: 50)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(themeID == swatch.id ? NaqraColors.accent : Color.clear, lineWidth: 2)
+                                    )
+                                Text(swatch.title)
+                                    .font(.caption)
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding()
+            }
+            .background(LinearGradient(colors: [Color.black, Color(red: 0.08, green: 0.08, blue: 0.12)], startPoint: .top, endPoint: .bottom))
+            .navigationTitle("الثيمات")
+            .animation(.spring(response: 0.3), value: themeID)
+        }
+    }
+}
+
+struct SettingsTab: View {
+    @State private var autocorrect = ThemeStore.bool("autocorrect") ?? true
+    @State private var suggestions = ThemeStore.bool("suggestions") ?? true
+    @State private var symbolRows = Int(ThemeStore.string("symbolRows") ?? "3") ?? 3
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: Spacing.lg) {
+                    guideCard
+                    togglesCard
+                    repairCard
+                    versionFooter
+                }
+                .padding()
+            }
+            .background(LinearGradient(colors: [Color.black, Color(red: 0.08, green: 0.08, blue: 0.12)], startPoint: .top, endPoint: .bottom))
+            .navigationTitle("الإعدادات")
+        }
+    }
+
+    private var guideCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("تفعيل اللوحة").font(.headline).foregroundStyle(.white)
+            StepRow(number: 1, text: "افتح الإعدادات", done: true)
+            StepRow(number: 2, text: "عام → لوحة المفاتيح", done: true)
+            StepRow(number: 3, text: "لوحات المفاتيح → إضافة", done: false)
+            StepRow(number: 4, text: "اختر نقرة", done: false)
+        }
+        .padding(Spacing.md)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Radius.card))
+    }
+
+    private var togglesCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Toggle("تصحيح تلقائي", isOn: $autocorrect)
+                .onChange(of: autocorrect) { _, v in ThemeStore.write("autocorrect", value: v) }
+            Toggle("اقتراحات", isOn: $suggestions)
+                .onChange(of: suggestions) { _, v in ThemeStore.write("suggestions", value: v) }
+            Stepper("صفوف الرموز: \(symbolRows)", value: $symbolRows, in: 1...4)
+                .onChange(of: symbolRows) { _, v in ThemeStore.write("symbolRows", value: String(v)) }
+        }
+        .padding(Spacing.md)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Radius.card))
+        .foregroundStyle(.white)
+    }
+
+    private var repairCard: some View {
+        Button {
+            ThemeStore.write("themeId", value: "dark")
+            ThemeStore.write("lastLanguage", value: "ar")
+        } label: {
+            Text("إصلاح اللوحة")
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(NaqraColors.accent)
+                .foregroundStyle(.black)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.button))
+        }
+    }
+
+    private var versionFooter: some View {
+        Text("نقرة 1.0")
+            .font(.caption)
+            .foregroundStyle(.white.opacity(0.4))
+    }
+}
+
+struct StepRow: View {
+    let number: Int
+    let text: String
+    let done: Bool
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle().fill(done ? NaqraColors.accent : Color.white.opacity(0.1))
+                    .frame(width: 28, height: 28)
+                if done {
+                    Image(systemName: "checkmark").font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.black)
+                } else {
+                    Text("\(number)").font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
+                }
+            }
+            Text(text).font(.system(size: 14)).foregroundStyle(.white)
+            Spacer()
+        }
+    }
+}
+
+// MARK: - Old ContentView (kept for reference)
+struct OldContentView: View {
     @State private var themeID = ThemeStore.string("themeId") ?? "dark"
     @State private var autocorrect = ThemeStore.bool("autocorrect") ?? true
     @State private var haptics = ThemeStore.bool("haptics") ?? true
@@ -198,14 +471,16 @@ struct ContentView: View {
     @State private var trackpad = ThemeStore.bool("trackpad") ?? true
     @State private var sounds = ThemeStore.bool("sounds") ?? true
     @State private var hasFullAccess = ThemeStore.bool("hasFullAccess") ?? false
+    @State private var showThemePreview = false
+    @State private var soundChoice = ThemeStore.string("soundChoice") ?? "system"
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.lg) {
                     accessCard
-                    NavigationLink {
-                        ThemePreviewScreen(themeID: $themeID)
+                    Button {
+                        showThemePreview = true
                     } label: {
                         Label("معاينة الثيمات", systemImage: "paintpalette")
                             .font(.headline)
@@ -214,6 +489,10 @@ struct ContentView: View {
                             .background(NaqraColors.border)
                             .clipShape(RoundedRectangle(cornerRadius: Radius.card))
                     }
+                    .sheet(isPresented: $showThemePreview) {
+                        ThemePreviewScreen(themeID: $themeID)
+                    }
+                    soundCard
                     extrasCard
                     repairCard
                     if #available(iOS 18.0, *) {
@@ -271,6 +550,56 @@ struct ContentView: View {
                     RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                         .stroke(NaqraColors.border, lineWidth: 1)
                 )
+    }
+
+    private var soundCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("الصوت").font(.headline)
+            ForEach(["system", "creamy", "thocky", "soft", "typewriter", "none"], id: \.self) { id in
+                HStack {
+                    Button {
+                        TapSoundEngine.shared.play(.rowMid)
+                    } label: {
+                        Image(systemName: "play.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(NaqraColors.accent)
+                    }
+                    .buttonStyle(.plain)
+                    Text(titleForSound(id))
+                        .font(.system(size: 15))
+                    Spacer()
+                    if soundChoice == id {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(NaqraColors.accent)
+                    }
+                }
+                .padding(.vertical, 8)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    soundChoice = id
+                    ThemeStore.write("soundChoice", value: id)
+                    TapSoundEngine.shared.play(.rowMid)
+                }
+            }
+        }
+        .padding(Spacing.md)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Radius.card))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.card)
+                .stroke(NaqraColors.border, lineWidth: 1)
+        )
+    }
+
+    private func titleForSound(_ id: String) -> String {
+        switch id {
+        case "system": return "نظامي"
+        case "creamy": return "كريمي"
+        case "thocky": return "ثوكي"
+        case "soft": return "هادي"
+        case "typewriter": return "آلة كاتبة"
+        case "none": return "بدون"
+        default: return id
+        }
     }
 
     private var extrasCard: some View {

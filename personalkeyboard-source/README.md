@@ -22,3 +22,11 @@
 GitHub Actions → IPA غير موقّع → ESign
 
 لا ترفع شهادات أو ملفات p12.
+
+
+## مصادر
+- الثيمات مستوحاة من [KeyboardKit](https://github.com/KeyboardKit/KeyboardKit) (MIT) — ليست نسخاً من الكود
+- الأصوات مستوحاة من [Mechvibes](https://github.com/hainguyents13/mechvibes) (MIT)
+- الأيقونات من SF Symbols
+- ثيمات [Catppuccin](https://github.com/catppuccin/catppuccin) (MIT)
+- ثيم [Dracula](https://github.com/dracula/dracula-theme) (MIT)

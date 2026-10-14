@@ -1,4 +1,5 @@
 import AVFoundation
+import AudioToolbox
 
 final class TapSoundEngine {
     static let shared = TapSoundEngine()
@@ -11,6 +12,12 @@ final class TapSoundEngine {
     enum Sound: Int { case rowHigh = 0, rowMid, rowLow, delete, space, emoji, enter }
 
     private let frequencies: [Double] = [880, 740, 620, 220, 520, 980, 660]
+    private let customFrequencies: [String: [Double]] = [
+        "creamy": [523.25, 493.88, 440.00, 392.00],
+        "thocky": [261.63, 246.94, 220.00, 196.00],
+        "soft": [659.25, 587.33, 523.25, 493.88],
+        "typewriter": [880, 740, 620, 500]
+    ]
 
     private init() {
         format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
@@ -33,6 +40,12 @@ final class TapSoundEngine {
 
     func play(_ sound: Sound = .rowMid) {
         guard isEnabled else { return }
+        let choice = ThemeIO.string("soundChoice") ?? "system"
+        if choice == "none" { return }
+        if choice == "system" {
+            AudioServicesPlaySystemSound(0x450)
+            return
+        }
         setupAudio()
         let sampleRate = format.sampleRate
         let duration: Double = sound == .delete ? 0.08 : 0.12
