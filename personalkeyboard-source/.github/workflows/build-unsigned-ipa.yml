@@ -1,83 +1,29 @@
 name: Build PersonalKeyboard IPA
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Extract source
-        run: |
-          if [ -f personalkeyboard-source.zip ]; then
-            unzip -o personalkeyboard-source.zip -d src
-          elif [ -d personalkeyboard-source ]; then
-            mkdir -p src
-            cp -R personalkeyboard-source src/
-          else
-            echo "Source not found"
-            exit 1
-          fi
-          ls -la src/personalkeyboard-source
-
-      - name: Place icon
-        run: |
-          ICON=src/personalkeyboard-source/AppIcon.png
-          DEST=src/personalkeyboard-source/Sources/ContainerApp/Assets.xcassets/AppIcon.appiconset/AppIcon.png
-          cp "$ICON" "$DEST"
-          # ensure Contents.json has filename
-          cat > src/personalkeyboard-source/Sources/ContainerApp/Assets.xcassets/AppIcon.appiconset/Contents.json << 'JSON'
-          {
-            "images" : [
-              {
-                "filename" : "AppIcon.png",
-                "idiom" : "universal",
-                "platform" : "ios",
-                "size" : "1024x1024"
-              }
-            ],
-            "info" : {
-              "author" : "xcode",
-              "version" : 1
-            }
-          }
-          JSON
-          # fix possible leading spaces from heredoc indent - rewrite clean
-          python3 - << 'PY'
-from pathlib import Path
-Path("src/personalkeyboard-source/Sources/ContainerApp/Assets.xcassets/AppIcon.appiconset/Contents.json").write_text("""{
-  "images" : [
-    {
-      "filename" : "AppIcon.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "size" : "1024x1024"
-    }
-  ],
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
-  }
-}
-""")
-print("Contents.json ok")
-PY
-          ls -la src/personalkeyboard-source/Sources/ContainerApp/Assets.xcassets/AppIcon.appiconset/
-          file "$DEST" || true
-
-      - name: Install xcodegen
+      - name: Install XcodeGen
         run: brew install xcodegen
+
+      - name: Prepare source
+        run: |
+          mkdir -p src
+          cp -R personalkeyboard-source src/
 
       - name: Generate Xcode project
         working-directory: src/personalkeyboard-source
         run: xcodegen generate
 
-      - name: Build unsigned
+      - name: Build app
         working-directory: src/personalkeyboard-source
         run: |
           xcodebuild \
@@ -85,6 +31,7 @@ PY
             -scheme PersonalKeyboard \
             -configuration Release \
             -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
@@ -95,16 +42,16 @@ PY
       - name: Package IPA
         working-directory: src/personalkeyboard-source
         run: |
-          APP=$(find build -name "PersonalKeyboard.app" -type d | head -1)
-          echo "APP=$APP"
-          test -n "$APP"
+          APP_PATH="$PWD/build/Build/Products/Release-iphoneos/PersonalKeyboard.app"
+          test -d "$APP_PATH"
           mkdir -p Payload
-          cp -R "$APP" Payload/
+          cp -R "$APP_PATH" Payload/
           ditto -c -k --sequesterRsrc --keepParent Payload PersonalKeyboard-unsigned.ipa
-          ls -lh PersonalKeyboard-unsigned.ipa
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: PersonalKeyboard-unsigned-ipa
           path: src/personalkeyboard-source/PersonalKeyboard-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30
