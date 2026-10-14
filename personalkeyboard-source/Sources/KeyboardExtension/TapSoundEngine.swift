@@ -1,4 +1,5 @@
 import AVFoundation
+import UIKit
 
 final class TapSoundEngine {
     static let shared = TapSoundEngine()
