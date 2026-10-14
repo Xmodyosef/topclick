@@ -435,7 +435,7 @@ struct SettingsTab: View {
     }
 
     private var versionFooter: some View {
-        Text("نقرة 1.0")
+        Text("نقرة 0.1")
             .font(.caption)
             .foregroundStyle(.white.opacity(0.4))
     }

@@ -1,69 +1,59 @@
 import AVFoundation
-import AudioToolbox
 
 final class TapSoundEngine {
     static let shared = TapSoundEngine()
     private let engine = AVAudioEngine()
-    private let playerNode = AVAudioPlayerNode()
-    private var format: AVAudioFormat!
+    private let player = AVAudioPlayerNode()
     private var isEnabled = true
-    private var started = false
+    private var audioReady = false
 
-    enum Sound: Int { case rowHigh = 0, rowMid, rowLow, delete, space, emoji, enter }
+    enum Sound { case rowMid, delete, space, emoji, enter }
 
-    private let frequencies: [Double] = [880, 740, 620, 220, 520, 980, 660]
-    private let customFrequencies: [String: [Double]] = [
-        "creamy": [523.25, 493.88, 440.00, 392.00],
-        "thocky": [261.63, 246.94, 220.00, 196.00],
-        "soft": [659.25, 587.33, 523.25, 493.88],
-        "typewriter": [880, 740, 620, 500]
+    private let customFrequencies: [Sound: [Float]] = [
+        .rowMid: [800, 850, 900],
+        .delete: [400, 350, 300],
+        .space: [600, 650, 700],
+        .emoji: [1000, 1100, 1200],
+        .enter: [500, 550, 450]
     ]
 
     private init() {
-        format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
-        engine.attach(playerNode)
-        engine.connect(playerNode, to: engine.mainMixerNode, format: format)
+        engine.attach(player)
+        engine.connect(player, to: engine.mainMixerNode, format: nil)
+        audioReady = setupAudio()
     }
 
-    func setEnabled(_ enabled: Bool) { isEnabled = enabled }
-
-    private func setupAudio() {
-        guard !started else { return }
+    private func setupAudio() -> Bool {
         do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.ambient, mode: .default, options: [.mixWithOthers])
-            try session.setActive(true, options: [])
             try engine.start()
-            started = true
-        } catch { print("[TapSoundEngine] \(error)") }
+            return true
+        } catch {
+            return false
+        }
     }
 
-    func play(_ sound: Sound = .rowMid) {
-        guard isEnabled else { return }
-        let choice = ThemeIO.string("soundChoice") ?? "system"
-        if choice == "none" { return }
-        if choice == "system" {
-            AudioServicesPlaySystemSound(0x450)
-            return
-        }
-        setupAudio()
+    func setEnabled(_ v: Bool) { isEnabled = v }
+
+    func play(_ s: Sound) {
+        guard isEnabled, audioReady else { return }
+        let freqs = customFrequencies[s] ?? [800]
+        let freq = freqs.randomElement() ?? 800
+        playTone(freq: freq)
+    }
+
+    private func playTone(freq: Float) {
+        let format = engine.mainMixerNode.outputFormat(forBus: 0)
         let sampleRate = format.sampleRate
-        let duration: Double = sound == .delete ? 0.08 : 0.12
+        let duration: Double = 0.05
         let length = Int(sampleRate * duration)
-        let idx = min(max(sound.rawValue, 0), frequencies.count - 1)
-        let frequency = frequencies[idx]
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(length)) else { return }
         buffer.frameLength = AVAudioFrameCount(length)
-        let channelData = buffer.floatChannelData![0]
+        let data = buffer.floatChannelData![0]
         for i in 0..<length {
             let t = Double(i) / sampleRate
-            let envelope = exp(-t * 25)
-            let sample = sin(2.0 * .pi * frequency * t) * envelope * 0.15
-            channelData[i] = Float(sample)
+            data[i] = Float(sin(2.0 * .pi * Double(freq) * t) * exp(-t * 40) * 0.1)
         }
-        DispatchQueue.main.async {
-            self.playerNode.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
-            if !self.playerNode.isPlaying { self.playerNode.play() }
-        }
+        player.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
+        if !player.isPlaying { player.play() }
     }
 }

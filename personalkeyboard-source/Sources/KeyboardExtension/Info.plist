@@ -8,22 +8,15 @@
   <string>0.1</string>
   <key>CFBundleVersion</key>
   <string>17</string>
-  <key>CFBundleLocalizations</key>
-  <array>
-    <string>ar</string>
-    <string>en</string>
-  </array>
   <key>NSExtension</key>
   <dict>
     <key>NSExtensionAttributes</key>
     <dict>
-      <key>IsASCIICapable</key>
-      <true/>
-      <key>PrefersRightToLeft</key>
-      <true/>
       <key>PrimaryLanguage</key>
       <string>ar</string>
       <key>RequestsOpenAccess</key>
+      <true/>
+      <key>PrefersRightToLeft</key>
       <true/>
     </dict>
     <key>NSExtensionPointIdentifier</key>
@@ -31,17 +24,5 @@
     <key>NSExtensionPrincipalClass</key>
     <string>$(PRODUCT_MODULE_NAME).KeyboardViewController</string>
   </dict>
-  <key>CFBundleIdentifier</key>
-  <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-  <key>CFBundleExecutable</key>
-  <string>$(EXECUTABLE_NAME)</string>
-  <key>CFBundleDevelopmentRegion</key>
-  <string>ar</string>
-  <key>CFBundlePackageType</key>
-  <string>XPC!</string>
-  <key>CFBundleName</key>
-  <string>$(PRODUCT_NAME)</string>
-  <key>CFBundleInfoDictionaryVersion</key>
-  <string>6.0</string>
 </dict>
 </plist>

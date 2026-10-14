@@ -4,9 +4,6 @@ import UIKit
 import AudioToolbox
 
 // Official system click (lightest, respects system mute)
-final class ClickerDummyView: UIView, UIInputViewAudioFeedback {
-    var enableInputClicksWhenVisible: Bool { true }
-}
 
 
 enum KeyboardLanguage { case arabic, english }
@@ -347,13 +344,11 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         ["1","2","3","4","5","6","7","8","9","0"],
         ["-","/",":","؛","(",")","؟","﷼","&","@"],
         [".","،","؟","!","'","«","»","٪","…","•"],
-        ["#","*","+","=","<","[","]","{","}","/"]
     ]]
     private let englishSymbolPages = [[
         ["1","2","3","4","5","6","7","8","9","0"],
         ["-","/",":",";","(",")","$","&","@","\""],
         [".",",","?","!","'","\"","+","=","/","•"],
-        ["#","*","+","=","<","[","]","{","}","/"]
     ]]
     private let emojiPack: [(icon: String, items: [String])] = KeyboardViewController.catalog()
 
@@ -463,7 +458,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     private func playSystemSound() {
         // Lightweight system sound (0x450) — respects mute, low memory
-        AudioServicesPlaySystemSound(0x450)
+        UIDevice.current.playInputClick()
     }
 
     private func lockHeight(_ v: UIView, _ h: CGFloat) {
@@ -522,7 +517,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         switch page {
         case .letters:
             rootStack.addArrangedSubview(makeToolbar())
-            rootStack.addArrangedSubview(makeSuggestionsRow())
+            let sugg = suggestions(); if !sugg.allSatisfy({ $0.isEmpty }) { rootStack.addArrangedSubview(makeSuggestionsRow()) }
             rootStack.addArrangedSubview(makeRow(numberRow, rowIdx: 0))
             let rows = language == .arabic ? (isShifted ? arabicShiftRows : arabicRows) : (isShifted ? englishUpper : englishLower)
             for (i, row) in rows.enumerated() {
@@ -1013,7 +1008,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
             b.setTitleColor(.white, for: .normal)
             b.backgroundColor = i == 0 ? UIColor.white.withAlphaComponent(0.28) : .clear
             b.layer.cornerRadius = 10 // Radius.key
-            b.contentEdgeInsets = UIEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
+            var config = UIButton.Configuration.plain(); config.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8); b.configuration = config
             bar.addArrangedSubview(b)
         }
         view.addSubview(bar)
