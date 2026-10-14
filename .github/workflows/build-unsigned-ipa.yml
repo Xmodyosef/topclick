@@ -1,48 +1,110 @@
 name: Build PersonalKeyboard IPA
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+  push:
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Install XcodeGen
+      - name: Extract source
+        run: |
+          if [ -f personalkeyboard-source.zip ]; then
+            unzip -o personalkeyboard-source.zip -d src
+          elif [ -d personalkeyboard-source ]; then
+            mkdir -p src
+            cp -R personalkeyboard-source src/
+          else
+            echo "Source not found"
+            exit 1
+          fi
+          ls -la src/personalkeyboard-source
+
+      - name: Place icon
+        run: |
+          ICON=src/personalkeyboard-source/AppIcon.png
+          DEST=src/personalkeyboard-source/Sources/ContainerApp/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+          cp "$ICON" "$DEST"
+          # ensure Contents.json has filename
+          cat > src/personalkeyboard-source/Sources/ContainerApp/Assets.xcassets/AppIcon.appiconset/Contents.json << 'JSON'
+          {
+            "images" : [
+              {
+                "filename" : "AppIcon.png",
+                "idiom" : "universal",
+                "platform" : "ios",
+                "size" : "1024x1024"
+              }
+            ],
+            "info" : {
+              "author" : "xcode",
+              "version" : 1
+            }
+          }
+          JSON
+          # fix possible leading spaces from heredoc indent - rewrite clean
+          python3 - << 'PY'
+from pathlib import Path
+Path("src/personalkeyboard-source/Sources/ContainerApp/Assets.xcassets/AppIcon.appiconset/Contents.json").write_text("""{
+  "images" : [
+    {
+      "filename" : "AppIcon.png",
+      "idiom" : "universal",
+      "platform" : "ios",
+      "size" : "1024x1024"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
+""")
+print("Contents.json ok")
+PY
+          ls -la src/personalkeyboard-source/Sources/ContainerApp/Assets.xcassets/AppIcon.appiconset/
+          file "$DEST" || true
+
+      - name: Install xcodegen
         run: brew install xcodegen
 
       - name: Generate Xcode project
+        working-directory: src/personalkeyboard-source
         run: xcodegen generate
 
-      - name: Build app
+      - name: Build unsigned
+        working-directory: src/personalkeyboard-source
         run: |
           xcodebuild \
             -project PersonalKeyboard.xcodeproj \
             -scheme PersonalKeyboard \
             -configuration Release \
             -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath "$PWD/build/DerivedData" \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
             build
 
       - name: Package IPA
+        working-directory: src/personalkeyboard-source
         run: |
-          APP_PATH="$PWD/build/DerivedData/Build/Products/Release-iphoneos/PersonalKeyboard.app"
-          mkdir -p "$PWD/build/Payload"
-          cp -R "$APP_PATH" "$PWD/build/Payload/PersonalKeyboard.app"
-          cd "$PWD/build"
-          zip -qry -X PersonalKeyboard-unsigned.ipa Payload
+          APP=$(find build -name "PersonalKeyboard.app" -type d | head -1)
+          echo "APP=$APP"
+          test -n "$APP"
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          ditto -c -k --sequesterRsrc --keepParent Payload PersonalKeyboard-unsigned.ipa
+          ls -lh PersonalKeyboard-unsigned.ipa
 
-      - name: Upload IPA
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: PersonalKeyboard-unsigned-ipa
-          path: build/PersonalKeyboard-unsigned.ipa
-          if-no-files-found: error
-          retention-days: 30
+          path: src/personalkeyboard-source/PersonalKeyboard-unsigned.ipa

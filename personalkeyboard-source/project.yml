@@ -26,7 +26,7 @@ targets:
         PRODUCT_NAME: PersonalKeyboard
         PRODUCT_BUNDLE_IDENTIFIER: app.personal.PersonalKeyboard
         MARKETING_VERSION: "0.1"
-        CURRENT_PROJECT_VERSION: 15
+        CURRENT_PROJECT_VERSION: 16
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Sources/ContainerApp/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -51,7 +51,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: app.personal.PersonalKeyboard.KeyboardExtension
         APPLICATION_EXTENSION_API_ONLY: YES
         MARKETING_VERSION: "0.1"
-        CURRENT_PROJECT_VERSION: 15
+        CURRENT_PROJECT_VERSION: 16
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Sources/KeyboardExtension/Info.plist
         TARGETED_DEVICE_FAMILY: "1,2"
