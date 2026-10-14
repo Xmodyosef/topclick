@@ -319,7 +319,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     private let letterFont = UIFont.systemFont(ofSize: 26, weight: .medium)
     private let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
-    private let boardHeight: CGFloat = 260
+    private let boardHeight: CGFloat = 324
 
     private let arabicRows = [
         ["ض","ص","ث","ق","ف","غ","ع","ه","خ","ح","ج"],
@@ -347,13 +347,13 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         ["1","2","3","4","5","6","7","8","9","0"],
         ["-","/",":","؛","(",")","؟","﷼","&","@"],
         [".","،","؟","!","'","«","»","٪","…","•"],
-        ["#","*","+","=","<","[","]","{","}","/"]
+        ["#","*","+","=","<","[","]","{","}","\"]
     ]]
     private let englishSymbolPages = [[
         ["1","2","3","4","5","6","7","8","9","0"],
         ["-","/",":",";","(",")","$","&","@","\""],
         [".",",","?","!","'","\"","+","=","/","•"],
-        ["#","*","+","=","<","[","]","{","}","/"]
+        ["#","*","+","=","<","[","]","{","}","\\"]
     ]]
     private let emojiPack: [(icon: String, items: [String])] = KeyboardViewController.catalog()
 
@@ -734,9 +734,12 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         space.addTarget(self, action: #selector(spaceDrag(_:event:)), for: .touchDragOutside)
         space.setContentHuggingPriority(.defaultLow - 1, for: .horizontal)
         space.setContentCompressionResistancePriority(.defaultLow - 1, for: .horizontal)
-        space.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
+        space.widthAnchor.constraint(greaterThanOrEqualToConstant: 150).isActive = true
         let enter = iconKey("arrow.down.to.line", #selector(enterTapped))
         enter.widthAnchor.constraint(equalToConstant: 46).isActive = true
+        let globe = iconKey("globe", #selector(advanceToNextInputMode))
+        globe.widthAnchor.constraint(equalToConstant: 40).isActive = true
+        s.addArrangedSubview(globe)
         s.addArrangedSubview(symbols)
         s.addArrangedSubview(emoji)
         s.addArrangedSubview(space)
@@ -1108,6 +1111,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     }
 
     private func autocorrectOnSpace() {
+        guard ThemeIO.bool("autocorrect") ?? true else { return }
         let before = textDocumentProxy.documentContextBeforeInput ?? ""
         let token = before.split(whereSeparator: { !$0.isLetter && !$0.isNumber && $0 != "'" }).last.map(String.init) ?? ""
         guard token.count >= 2, !knownWord(token) else { return }
@@ -1143,6 +1147,10 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         textDocumentProxy.insertText(" ")
         playSystemSound()
         tapHaptic()
+    }
+
+    @objc private func globeTapped() {
+        advanceToNextInputMode()
     }
 
     @objc private func periodTapped() {

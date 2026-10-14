@@ -296,6 +296,7 @@ struct MiniKeyboardView: View {
     let row1 = ["ض", "ص", "ث", "ق", "ف", "غ", "ع", "ه", "خ", "ح"]
     let row2 = ["ش", "س", "ي", "ب", "ل", "ا", "ت", "ن", "م"]
     let row3 = ["ك", "ط", "ذ", "د", "ز", "ر", "و"]
+    let row4 = ["123", "😊", "مسافة", ".", "↵"]
     
     var body: some View {
         VStack(spacing: 4) {
