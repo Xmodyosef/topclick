@@ -40,7 +40,7 @@ final class TapSoundEngine {
 
     func play(_ sound: Sound = .rowMid) {
         guard isEnabled else { return }
-        let choice = ThemeIO.string("soundChoice") ?? "system"
+        let choice = ThemeStore.string("soundChoice") ?? "system"
         if choice == "none" { return }
         if choice == "system" {
             AudioServicesPlaySystemSound(0x450)
