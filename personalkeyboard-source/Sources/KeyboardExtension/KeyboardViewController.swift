@@ -1,1 +1,1 @@
-open('/home/workdir/artifacts/KeyboardViewController_fixed.swift').read()
+PLACEHOLDER_KVC

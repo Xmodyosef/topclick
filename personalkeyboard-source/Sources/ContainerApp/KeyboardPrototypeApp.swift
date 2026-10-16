@@ -1,1 +1,1 @@
-open('/home/workdir/artifacts/KeyboardPrototypeApp_fixed.swift').read()
+PLACEHOLDER_APP
