@@ -56,6 +56,17 @@ enum ThemeIO {
     }
 }
 
+
+enum TimeTheme {
+    static func isMorning() -> Bool {
+        let hour = Calendar.current.component(.hour, from: Date())
+        return hour >= 6 && hour < 18
+    }
+    static func preferredThemeId() -> String {
+        isMorning() ? "morning" : "evening"
+    }
+}
+
 enum KeyboardPage { case letters, symbols, emoji }
 
 final class TranslationBridgeModel: ObservableObject {
@@ -121,7 +132,7 @@ struct NaqraPalette {
     ]
 
     static func current() -> NaqraPalette {
-        let raw = ThemeIO.string("themeId") ?? "dark"
+        let raw = ThemeIO.string("themeId") ?? TimeTheme.preferredThemeId()
         let id = normalizeThemeId(raw)
         if id == "custom" { return solid(customPalette()) }
         if id == "auto" {
@@ -363,6 +374,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         translationModel.onResult = { [weak self] t in self?.applyTranslation(t) }
         TapSoundEngine.shared.setEnabled(ThemeIO.bool("sounds") ?? true)
         armHaptics()
+        loadPreparedTheme()
         rebuild()
     }
 
@@ -458,8 +470,13 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     }
 
     private func playSystemSound() {
-        // Lightweight system sound (0x450) — respects mute, low memory
-        UIDevice.current.playInputClick()
+        // Official keyboard click — must be called on main thread and only when visible
+        guard enableInputClicksWhenVisible else { return }
+        let soundsOn = ThemeIO.bool("sounds") ?? true
+        guard soundsOn else { return }
+        DispatchQueue.main.async {
+            UIDevice.current.playInputClick()
+        }
     }
 
     private func lockHeight(_ v: UIView, _ h: CGFloat) {
@@ -509,7 +526,16 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         host.didMove(toParent: self)
     }
 
-    private func rebuild() {
+
+    private func loadPreparedTheme() {
+        // Theme is prepared by the container app and stored in App Group
+        // Keyboard only reads it — keeps extension light
+        palette = NaqraPalette.current()
+        blurView.effect = UIBlurEffect(style: palette.blurDark ? .systemUltraThinMaterialDark : .systemUltraThinMaterialLight)
+        view.backgroundColor = palette.background
+    }
+
+private func rebuild() {
         palette = NaqraPalette.current()
         view.backgroundColor = palette.background
         blurView.effect = nil
@@ -519,7 +545,6 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         switch page {
         case .letters:
             rootStack.addArrangedSubview(makeToolbar())
-            let showSuggestions = ThemeIO.bool("suggestions") ?? true; if showSuggestions { let sugg = suggestions(); if !sugg.allSatisfy({ $0.isEmpty }) { rootStack.addArrangedSubview(makeSuggestionsRow()) } }
             if showNumberRow {
                 rootStack.addArrangedSubview(makeRow(numberRow, rowIdx: 0))
             }
@@ -561,8 +586,24 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         clip.addTarget(self, action: #selector(copyPasteHold), for: .touchDown)
         clip.widthAnchor.constraint(equalToConstant: 36).isActive = true
         s.addArrangedSubview(clip)
-        let spacer = UIView()
-        s.addArrangedSubview(spacer)
+
+        // Suggestions in the middle of the toolbar
+        let showSuggestions = ThemeIO.bool("suggestions") ?? true
+        if showSuggestions {
+            let sugg = suggestions()
+            if !sugg.allSatisfy({ $0.isEmpty }) {
+                let suggRow = makeSuggestionsRow()
+                suggRow.setContentHuggingPriority(.defaultLow, for: .horizontal)
+                s.addArrangedSubview(suggRow)
+            } else {
+                let spacer = UIView()
+                s.addArrangedSubview(spacer)
+            }
+        } else {
+            let spacer = UIView()
+            s.addArrangedSubview(spacer)
+        }
+
         let tr = iconKey("translate", #selector(translateTapped))
         tr.widthAnchor.constraint(equalToConstant: 36).isActive = true
         s.addArrangedSubview(tr)
@@ -1129,12 +1170,13 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         guard auto else { return }
         let before = textDocumentProxy.documentContextBeforeInput ?? ""
         let token = before.split(whereSeparator: { !$0.isLetter && !$0.isNumber && $0 != "'" }).last.map(String.init) ?? ""
-        guard token.count >= 2, !knownWord(token) else { return }
+        guard token.count >= 2 else { return }
         let fixes = suggestions().filter { !$0.isEmpty && $0.caseInsensitiveCompare(token) != .orderedSame }
         guard let fix = fixes.first else { return }
         for _ in 0..<token.count { textDocumentProxy.deleteBackward() }
         textDocumentProxy.insertText(fix)
         tapHaptic(.action)
+        refreshSuggestions()
     }
 
 
@@ -1293,7 +1335,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     private static func catalog() -> [(icon: String, items: [String])] {
         func s(_ t: String) -> [String] { t.split(separator: " ").map(String.init) }
         return [
-            ("😀", loadFrequent() + s("😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😝 😜 🤪 🤨 🧐 🤓 😎 🤩 🥳 😏 😒 😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🤭 🤫 🤥 😶 😐 😑 🫠 🫡 🫢 🫣 🫤 🥹 🥲 😵‍💫 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 🤐 🥴 🤢 🤮 🤧 😷 🤒 🤕 🤑 🤠 😈 👿 🤡 👻 💀 👽 🤖 🎃 😺 😸 😹 😻 😼 😽 🙀 😿 😾")),
+            ("🕒", loadFrequent()),
+            ("😀", s("😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😝 😜 🤪 🤨 🧐 🤓 😎 🤩 🥳 😏 😒 😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🤭 🤫 🤥 😶 😐 😑 🫠 🫡 🫢 🫣 🫤 🥹 🥲 😵‍💫 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 🤐 🥴 🤢 🤮 🤧 😷 🤒 🤕 🤑 🤠 😈 👿 🤡 👻 💀 👽 🤖 🎃 😺 😸 😹 😻 😼 😽 🙀 😿 😾")),
             ("👋", s("👋 🤚 🖐️ ✋ 🖖 🫱 🫲 🫳 🫴 👌 🤌 🤏 ✌️ 🤞 🫰 🤟 🤘 🤙 👈 👉 👆 🖕 👇 ☝️ 🫵 👍 👎 ✊ 👊 🤛 🤜 👏 🙌 🫶 👐 🤲 🤝 🙏 ✍️ 💅 🤳 💪 🦾 🦿 🦵 🦶 👂 🦻 👃 🧠 🫀 🫁 🦷 🦴 👀 👁️ 👅 👄 🫦 👶 🧒 👦 👧 🧑 👱 👨 🧔 👩 🧓 👴 👵 🙍 🙎 🙅 🙆 💁 🙋 🧏 🙇 🤦 🤷 👮 🕵️ 💂 🥷 👷 🫅 🤴 👸 👳 👲 🧕 🤵 👰 🤰 🤱 👼 🎅 🤶 🧑‍🎄 🦸 🦹 🧙 🧚 🧛 🧜 🧝 🧞 🧟 💆 💇 🚶 🧍 🧎 🏃 💃 🕺 🕴️ 👯 🧖 🧗 🤺 🏇 ⛷️ 🏂 🏌️ 🏄 🏊 🤽 🚣 🧘 🛀 🛌 👭 👫 👬 💏 💑 👪")),
             ("❤️", s("❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❤️‍🩹 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 🩷 🩵 🩶 ♥️ ♦️ ♣️ ♠️ 🃏 🎴 💯 💢 💥 💫 💦 💨 💬 💭 🗯️ 💤 ⭐ 🌟 ✨ ⚡ ☄️ 🔥 🌪️ 🌈 ☀️ 🌤️ ⛅ 🌥️ ☁️ 🌦️ 🌧️ ⛈️ 🌩️ 🌨️ ❄️ ☃️ ⛄ 🌬️ 💧 💦 ☔ ☂️ 🌊 🌫️")),
             ("🐻", s("🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐻‍❄️ 🐨 🐯 🦁 🐮 🐷 🐽 🐸 🐵 🙈 🙉 🙊 🐒 🐔 🐧 🐦 🐤 🐣 🐥 🦆 🦅 🦉 🦇 🐺 🐗 🐴 🦄 🐝 🪱 🐛 🦋 🐌 🐞 🐜 🪰 🪲 🪳 🦟 🦗 🕷️ 🕸️ 🦂 🐢 🐍 🦎 🦖 🦕 🐙 🦑 🦐 🦞 🦀 🐡 🐠 🐟 🐬 🐳 🐋 🦈 🐊 🐅 🐆 🦓 🦍 🦧 🐘 🦛 🦏 🐪 🐫 🦒 🦘 🦬 🐃 🐂 🐄 🐎 🐖 🐏 🐑 🦙 🐐 🦌 🐕 🐩 🦮 🐕‍🦺 🐈 🐈‍⬛ 🪶 🐓 🦃 🦤 🦚 🦜 🦢 🦩 🕊️ 🐇 🦝 🦨 🦡 🦫 🦦 🦥 🐁 🐀 🐿️ 🦔 🌵 🎄 🌲 🌳 🌴 🪴 🌱 🌿 ☘️ 🍀 🎍 🍃 🍂 🍁 🍄 🐚 🪨 🌾 💐 🌷 🌹 🥀 🌺 🌸 🌼 🌻")),
