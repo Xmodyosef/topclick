@@ -317,12 +317,12 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     private let letterFont = UIFont.systemFont(ofSize: 26, weight: .medium)
     private let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
-    private let boardHeight: CGFloat = 324
+    private let boardHeight: CGFloat = 300
 
     private let arabicRows = [
         ["ض","ص","ث","ق","ف","غ","ع","ه","خ","ح","ج"],
-        ["ش","س","ي","ب","ل","ا","ت","ن","م","ك","ة"],
-        ["ء","ظ","ط","ذ","د","ز","ر","و","ى"]
+        ["ش","س","ي","ب","ل","ا","ت","ن","م","ك","ط"],
+        ["ئ","ء","ؤ","ر","لا","ى","ة","و","ز"]
     ]
     private let arabicShiftRows = [
         ["َ","ً","ُ","ٌ","ِ","ٍ","ْ","ّ","ـ","ٰ","ٓ"],
@@ -345,11 +345,13 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         ["1","2","3","4","5","6","7","8","9","0"],
         ["-","/",":","؛","(",")","؟","﷼","&","@"],
         [".","،","؟","!","'","«","»","٪","…","•"],
+        ["[","]","{","}","#","*","+","=","_","~"],
     ]]
     private let englishSymbolPages = [[
         ["1","2","3","4","5","6","7","8","9","0"],
         ["-","/",":",";","(",")","$","&","@","\""],
         [".",",","?","!","'","\"","+","=","/","•"],
+        ["[","]","{","}","#","*","_","~","^","%"],
     ]]
     private let emojiPack: [(icon: String, items: [String])] = KeyboardViewController.catalog()
 
@@ -380,7 +382,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
             c.isActive = true
             heightConstraint = c
         } else {
-            let h: CGFloat; switch page { case .letters: h = 324; case .symbols: h = 260; case .emoji: h = 320 }; heightConstraint?.constant = h
+            let h: CGFloat; switch page { case .letters: h = 300; case .symbols: h = 280; case .emoji: h = 300 }; heightConstraint?.constant = h
         }
         let incoming = ThemeIO.string("themeId") ?? "dark"
         if incoming != appliedThemeId {
@@ -486,9 +488,10 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         NSLayoutConstraint.activate([
             rootStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 5),
             rootStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -5),
-            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 0)
+            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 2),
+            rootStack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4)
         ])
-        rootStack.setContentHuggingPriority(.required, for: .vertical)
+        rootStack.setContentHuggingPriority(.defaultHigh, for: .vertical)
         rootStack.setContentCompressionResistancePriority(.required, for: .vertical)
     }
 
@@ -514,11 +517,11 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         blurView.effect = nil
         blurView.backgroundColor = palette.background
         rootStack.arrangedSubviews.forEach { rootStack.removeArrangedSubview($0); $0.removeFromSuperview() }
-        let h: CGFloat; switch page { case .letters: h = 324; case .symbols: h = 260; case .emoji: h = 320 }; heightConstraint?.constant = h
+        let h: CGFloat; switch page { case .letters: h = 300; case .symbols: h = 280; case .emoji: h = 300 }; heightConstraint?.constant = h
         switch page {
         case .letters:
             rootStack.addArrangedSubview(makeToolbar())
-            let showSuggestions = UserDefaults(suiteName: "group.app.personal.PersonalKeyboard")?.object(forKey: "suggestions") as? Bool ?? true; if showSuggestions { let sugg = suggestions(); if !sugg.allSatisfy({ $0.isEmpty }) { rootStack.addArrangedSubview(makeSuggestionsRow()) } }
+            let showSuggestions = ThemeIO.bool("suggestions") ?? true; if showSuggestions { let sugg = suggestions(); if !sugg.allSatisfy({ $0.isEmpty }) { rootStack.addArrangedSubview(makeSuggestionsRow()) } }
             rootStack.addArrangedSubview(makeRow(numberRow, rowIdx: 0))
             let rows = language == .arabic ? (isShifted ? arabicShiftRows : arabicRows) : (isShifted ? englishUpper : englishLower)
             for (i, row) in rows.enumerated() {
@@ -527,7 +530,15 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
             }
             rootStack.addArrangedSubview(makeBottom())
         case .symbols:
-            let rowsCount = UserDefaults(suiteName: "group.app.personal.PersonalKeyboard")?.integer(forKey: "symbolRows") ?? 3; let rows = Array(symbolPages[0].prefix(max(1, min(rowsCount, 4))))
+            let rowsCount: Int = {
+                if let str = ThemeIO.string("symbolRows"), let n = Int(str) { return max(1, min(n, 4)) }
+                let n = UserDefaults(suiteName: ThemeIO.group)?.integer(forKey: "symbolRows") ?? 0
+                return n > 0 ? max(1, min(n, 4)) : 3
+            }()
+            let pages = symbolPages
+            let pageIdx = min(max(symbolPageIndex, 0), max(pages.count - 1, 0))
+            let allRows = pages.isEmpty ? [] : pages[pageIdx]
+            let rows = Array(allRows.prefix(rowsCount))
             for (i, row) in rows.enumerated() {
                 if i == rows.count - 1 { rootStack.addArrangedSubview(makeSymbolLastRow(row)) }
                 else { rootStack.addArrangedSubview(makeRow(row, rowIdx: i + 1)) }
@@ -666,7 +677,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     }
 
     private func makeLastLetterRow(_ keys: [String]) -> UIView {
-        return makeActionRow(keys, leadingShift: language == .english)
+        return makeActionRow(keys, leadingShift: true)
     }
 
     private func makeSymbolLastRow(_ keys: [String]) -> UIView {
@@ -730,7 +741,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         space.addTarget(self, action: #selector(spaceDrag(_:event:)), for: .touchDragOutside)
         space.setContentHuggingPriority(.defaultLow - 1, for: .horizontal)
         space.setContentCompressionResistancePriority(.defaultLow - 1, for: .horizontal)
-        space.widthAnchor.constraint(greaterThanOrEqualToConstant: 150).isActive = true
+        space.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
         let enter = iconKey("arrow.down.to.line", #selector(enterTapped))
         enter.widthAnchor.constraint(equalToConstant: 46).isActive = true
         let globe = iconKey("globe", #selector(advanceToNextInputMode))
@@ -1107,13 +1118,16 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     }
 
     private func autocorrectOnSpace() {
-        let auto = UserDefaults(suiteName: "group.app.personal.PersonalKeyboard")?.object(forKey: "autocorrect") as? Bool ?? true; guard auto else { return }
+        let auto = ThemeIO.bool("autocorrect") ?? true
+        guard auto else { return }
         let before = textDocumentProxy.documentContextBeforeInput ?? ""
         let token = before.split(whereSeparator: { !$0.isLetter && !$0.isNumber && $0 != "'" }).last.map(String.init) ?? ""
         guard token.count >= 2, !knownWord(token) else { return }
-        guard let fix = suggestions().first, !fix.isEmpty, fix != token else { return }
+        let fixes = suggestions().filter { !$0.isEmpty && $0.caseInsensitiveCompare(token) != .orderedSame }
+        guard let fix = fixes.first else { return }
         for _ in 0..<token.count { textDocumentProxy.deleteBackward() }
         textDocumentProxy.insertText(fix)
+        tapHaptic(.action)
     }
 
 
