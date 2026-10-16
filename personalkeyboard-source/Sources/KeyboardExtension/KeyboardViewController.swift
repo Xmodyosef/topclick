@@ -328,12 +328,12 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     private let letterFont = UIFont.systemFont(ofSize: 26, weight: .medium)
     private let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
-    private let boardHeight: CGFloat = 290
+    private let boardHeight: CGFloat = 300
 
     private let arabicRows = [
         ["ض","ص","ث","ق","ف","غ","ع","ه","خ","ح","ج"],
-        ["ش","س","ي","ب","ل","ا","ت","ن","م","ك","ط"],
-        ["ئ","ء","ؤ","ر","لا","ى","ة","و","ز"]
+        ["ش","س","ي","ب","ل","ا","ت","ن","م","ك","ة"],
+        ["ئ","ظ","ط","ذ","د","ز","ر","و","ى"]
     ]
     private let englishLower = [
         ["q","w","e","r","t","y","u","i","o","p"],
