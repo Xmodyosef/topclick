@@ -293,10 +293,9 @@ struct KeyboardPreviewTab: View {
 }
 
 struct MiniKeyboardView: View {
-    let row1 = ["ض", "ص", "ث", "ق", "ف", "غ", "ع", "ه", "خ", "ح"]
-    let row2 = ["ش", "س", "ي", "ب", "ل", "ا", "ت", "ن", "م"]
-    let row3 = ["ك", "ط", "ذ", "د", "ز", "ر", "و"]
-    let row4 = ["123", "😊", "مسافة", ".", "↵"]
+    let row1 = ["ض","ص","ث","ق","ف","غ","ع","ه","خ","ح","ج"]
+    let row2 = ["ش","س","ي","ب","ل","ا","ت","ن","م","ك","ط"]
+    let row3 = ["ئ","ء","ؤ","ر","لا","ى","ة","و","ز"]
     
     var body: some View {
         VStack(spacing: 4) {
@@ -306,6 +305,14 @@ struct MiniKeyboardView: View {
                 keyButton("⇧", width: 40)
                 keyRow(row3)
                 keyButton("⌫", width: 40)
+            }
+            HStack(spacing: 4) {
+                keyButton("🌐", width: 36)
+                keyButton("123", width: 44)
+                keyButton("😊", width: 36)
+                Spacer()
+                keyButton(".", width: 36)
+                keyButton("↵", width: 44)
             }
         }
         .padding(8)
@@ -320,19 +327,13 @@ struct MiniKeyboardView: View {
     }
     
     private func keyButton(_ k: String, width: CGFloat? = nil) -> some View {
-        Button {
-            TapSoundEngine.shared.play(.rowMid)
-            UISelectionFeedbackGenerator().selectionChanged()
-        } label: {
-            Text(k)
-                .font(.system(size: 14, weight: .medium))
-                .frame(maxWidth: width == nil ? .infinity : nil)
-                .frame(width: width, height: 32)
-                .background(Color.white.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 5))
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(.white)
+        Text(k)
+            .font(.system(size: 13, weight: .medium))
+            .frame(maxWidth: width == nil ? .infinity : nil)
+            .frame(width: width, height: 30)
+            .background(Color.white.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+            .foregroundStyle(.white)
     }
 }
 
@@ -376,6 +377,7 @@ struct ThemesTab: View {
 struct SettingsTab: View {
     @State private var autocorrect = ThemeStore.bool("autocorrect") ?? true
     @State private var suggestions = ThemeStore.bool("suggestions") ?? true
+    @State private var showNumberRow = ThemeStore.bool("showNumberRow") ?? true
     @State private var symbolRows = Int(ThemeStore.string("symbolRows") ?? "3") ?? 3
 
     var body: some View {
@@ -412,6 +414,8 @@ struct SettingsTab: View {
                 .onChange(of: autocorrect) { _, v in ThemeStore.write("autocorrect", value: v) }
             Toggle("اقتراحات", isOn: $suggestions)
                 .onChange(of: suggestions) { _, v in ThemeStore.write("suggestions", value: v) }
+            Toggle("إظهار صف الأرقام", isOn: $showNumberRow)
+                .onChange(of: showNumberRow) { _, v in ThemeStore.write("showNumberRow", value: v) }
             Stepper("صفوف الرموز: \(symbolRows)", value: $symbolRows, in: 1...4)
                 .onChange(of: symbolRows) { _, v in ThemeStore.write("symbolRows", value: String(v)) }
         }

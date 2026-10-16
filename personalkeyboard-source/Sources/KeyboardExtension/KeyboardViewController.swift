@@ -325,7 +325,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         ["ئ","ء","ؤ","ر","لا","ى","ة","و","ز"]
     ]
     private let arabicShiftRows = [
-        ["َ","ً","ُ","ٌ","ِ","ٍ","ْ","ّ","ـ","ٰ","ٓ"],
+        ["أ","إ","آ","ى","ء","ؤ","لا","ة","ئ","ؤ","ء"],
         ["أ","إ","آ","ى","ء","ؤ","لا","لآ","لأ","لإ","ة"],
         ["،","؛","؟","٪","…","ـ","ى","ئ"]
     ]
@@ -340,6 +340,9 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         ["Z","X","C","V","B","N","M"]
     ]
     private let numberRow = ["1","2","3","4","5","6","7","8","9","0"]
+    private var showNumberRow: Bool {
+        ThemeIO.bool("showNumberRow") ?? true
+    }
     private var symbolPages: [[[String]]] { language == .arabic ? arabicSymbolPages : englishSymbolPages }
     private let arabicSymbolPages = [[
         ["1","2","3","4","5","6","7","8","9","0"],
@@ -522,7 +525,9 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         case .letters:
             rootStack.addArrangedSubview(makeToolbar())
             let showSuggestions = ThemeIO.bool("suggestions") ?? true; if showSuggestions { let sugg = suggestions(); if !sugg.allSatisfy({ $0.isEmpty }) { rootStack.addArrangedSubview(makeSuggestionsRow()) } }
-            rootStack.addArrangedSubview(makeRow(numberRow, rowIdx: 0))
+            if showNumberRow {
+                rootStack.addArrangedSubview(makeRow(numberRow, rowIdx: 0))
+            }
             let rows = language == .arabic ? (isShifted ? arabicShiftRows : arabicRows) : (isShifted ? englishUpper : englishLower)
             for (i, row) in rows.enumerated() {
                 if i == rows.count - 1 { rootStack.addArrangedSubview(makeLastLetterRow(row)) }
