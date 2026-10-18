@@ -606,6 +606,9 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     }
 
 private func rebuild() {
+        emojiPager?.delegate = nil
+        emojiPager = nil
+        emojiTabs = nil
         palette = NaqraPalette.current()
         view.backgroundColor = palette.background
         blurView.effect = nil
@@ -969,29 +972,42 @@ private func rebuild() {
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         guard scrollView === emojiPager, scrollView.bounds.width > 0 else { return }
         let idx = Int(round(scrollView.contentOffset.x / scrollView.bounds.width))
+        guard !emojiPack.isEmpty else { return }
         emojiCategoryIndex = min(max(idx, 0), emojiPack.count - 1)
         refreshTabs()
     }
 
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        emojiPack[collectionView.tag].items.count
+        guard emojiPack.indices.contains(collectionView.tag) else { return 0 }
+        return emojiPack[collectionView.tag].items.count
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "e", for: indexPath) as! EmojiCell
+        guard emojiPack.indices.contains(collectionView.tag),
+              emojiPack[collectionView.tag].items.indices.contains(indexPath.item) else {
+            cell.label.text = ""
+            cell.paint(palette)
+            return cell
+        }
         cell.label.text = emojiPack[collectionView.tag].items[indexPath.item]
         cell.paint(palette)
         return cell
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard emojiPack.indices.contains(collectionView.tag),
+              emojiPack[collectionView.tag].items.indices.contains(indexPath.item) else { return }
         let item = emojiPack[collectionView.tag].items[indexPath.item]
         textDocumentProxy.insertText(item)
         playSystemClick(.emoji)
         rememberEmoji(item)
-        emojiPack = Self.catalog()
-        collectionView.reloadData()
         tapHaptic()
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.page == .emoji else { return }
+            self.emojiPack = Self.catalog()
+            self.rebuild()
+        }
     }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
@@ -1007,6 +1023,7 @@ private func rebuild() {
     }
 
     @objc private func emojiTab(_ sender: UIButton) {
+        guard emojiPack.indices.contains(sender.tag) else { return }
         emojiCategoryIndex = sender.tag
         refreshTabs()
         guard let pager = emojiPager else { return }

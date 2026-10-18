@@ -56,6 +56,8 @@ def main() -> None:
     require('UIApplication.openSettingsURLString' in app and 'App-Prefs:' not in app, 'Full Access uses public app settings URL')
     require('private var themeOptionsCard' in app and 'Picker("نوع الصوت"' in app and 'Picker("خط الحروف"' in app, 'sound and font controls live with themes')
     require('fontStyle' in extension and 'let sound: TapSoundEngine.Sound' in extension, 'font selection and row-specific sound are applied')
+    require('emojiPager?.delegate = nil' in extension and 'guard emojiPack.indices.contains(collectionView.tag)' in extension, 'emoji page teardown and index guards prevent stale callbacks')
+    require('DispatchQueue.main.async { [weak self] in' in extension and 'self.emojiPack = Self.catalog()' in extension, 'emoji catalog refresh is deferred after selection')
     require('["ئ","ء","ؤ","ر","لا","ى","ز","ظ","ط","ذ","د"]' in extension, 'Arabic bottom row matches the Apple-style layout')
     require('"a": ["à", "á"' in extension and '"ا": ["أ", "إ", "آ"]' in extension, 'Arabic and English long-press alternatives exist')
     require('("😀", merge(Array(loadFrequent().prefix(24))' in extension and '("🕒", loadFrequent())' not in extension, 'frequent emojis merge into the main faces tab')
