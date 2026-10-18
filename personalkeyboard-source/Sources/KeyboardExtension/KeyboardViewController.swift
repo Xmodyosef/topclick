@@ -498,13 +498,13 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         }
     }
 
-    private func playSystemClick() { playSystemSound() }
-
-    private func playSystemSound() {
+    private func playSystemClick(_ sound: TapSoundEngine.Sound = .rowMid) {
         guard enableInputClicksWhenVisible else { return }
         TapSoundEngine.shared.setEnabled(ThemeIO.bool("sounds") ?? true)
-        TapSoundEngine.shared.play(.rowMid)
+        TapSoundEngine.shared.play(sound)
     }
+
+    private func playSystemSound() { playSystemClick(.rowMid) }
 
     private func showNotice(_ message: String) {
         noticeLabel?.removeFromSuperview()
