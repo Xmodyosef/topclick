@@ -56,6 +56,8 @@ def main() -> None:
     require('UIApplication.openSettingsURLString' in app and 'App-Prefs:' not in app, 'Full Access uses public app settings URL')
     require('private var themeOptionsCard' in app and 'Picker("نوع الصوت"' in app and 'Picker("خط الحروف"' in app, 'sound and font controls live with themes')
     require('fontStyle' in extension and 'let sound: TapSoundEngine.Sound' in extension, 'font selection and row-specific sound are applied')
+    require('["ئ","ء","ؤ","ر","لا","ى","ز","ظ","ط","ذ","د"]' in extension, 'Arabic bottom row matches the Apple-style layout')
+    require('"a": ["à", "á"' in extension and '"ا": ["أ", "إ", "آ"]' in extension, 'Arabic and English long-press alternatives exist')
     require('("😀", merge(Array(loadFrequent().prefix(24))' in extension and '("🕒", loadFrequent())' not in extension, 'frequent emojis merge into the main faces tab')
     copy_fn = extension[extension.index('    private func copyNow()'):extension.index('    private func pasteNow()')]
     require('textDocumentProxy.selectedText' in copy_fn and 'combined()' not in copy_fn, 'copy requires selected text and does not capture surrounding context')
