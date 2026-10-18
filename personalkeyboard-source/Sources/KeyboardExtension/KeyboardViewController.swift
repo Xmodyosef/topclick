@@ -181,6 +181,12 @@ struct NaqraPalette {
         case "e18": return Self.tone(0.20, 0.14, 0.10, dark: true, amber: true)
         case "e19": return Self.tone(0.12, 0.08, 0.20, dark: true)
         case "e20": return Self.tone(0.18, 0.10, 0.12, dark: true, amber: true)
+        case "aurora": return Self.tone(0.10, 0.28, 0.30, dark: true)
+        case "lavender": return Self.tone(0.28, 0.20, 0.42, dark: true)
+        case "sunset": return Self.tone(0.38, 0.14, 0.16, dark: true, amber: true)
+        case "mint": return Self.tone(0.08, 0.24, 0.22, dark: true)
+        case "rose": return Self.tone(0.36, 0.12, 0.24, dark: true)
+        case "mono": return Self.tone(0.22, 0.23, 0.25, dark: true)
         default: return .init(background: .clear, key: UIColor(red: 0.10, green: 0.16, blue: 0.28, alpha: 0.62), text: UIColor(red: 0.93, green: 0.96, blue: 1.0, alpha: 1), accent: UIColor(red: 0.36, green: 0.60, blue: 1.0, alpha: 1), blurDark: true)
         }
     }
@@ -391,16 +397,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         view.clipsToBounds = true
-        // Height setup only here — prevents layout jumps (MSIME pattern)
-        let desiredHeight: CGFloat = page == .letters ? boardHeight : 300
-        if heightConstraint == nil {
-            let c = view.heightAnchor.constraint(equalToConstant: desiredHeight)
-            c.priority = UILayoutPriority(999)
-            c.isActive = true
-            heightConstraint = c
-        } else {
-            heightConstraint?.constant = desiredHeight
-        }
+        updateHeightForCurrentSize()
         if themeSignature != appliedThemeId {
             appliedThemeId = themeSignature
             palette = NaqraPalette.current()
@@ -419,9 +416,24 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         deleteTimer = nil
     }
 
-    override func updateViewConstraints() {
-        // Height is set only in viewWillAppear
-        super.updateViewConstraints()
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateHeightForCurrentSize()
+    }
+    private func updateHeightForCurrentSize() {
+        guard view.bounds.width > 0 else { return }
+        let compact = view.bounds.width < 500
+        let desiredHeight: CGFloat
+        if page == .emoji { desiredHeight = compact ? 300 : 280 }
+        else { desiredHeight = compact ? boardHeight : 270 }
+        if heightConstraint == nil {
+            let c = view.heightAnchor.constraint(equalToConstant: desiredHeight)
+            c.priority = UILayoutPriority(999)
+            c.isActive = true
+            heightConstraint = c
+        } else if abs((heightConstraint?.constant ?? 0) - desiredHeight) > 0.5 {
+            heightConstraint?.constant = desiredHeight
+        }
     }
 
     private func persistAccess() { ThemeIO.write("hasFullAccess", value: hasFullAccess) }
@@ -820,9 +832,6 @@ private func rebuild() {
         let symbols = control(symbolsTitle, #selector(symbolsOrLettersTapped), font: 12)
         symbols.widthAnchor.constraint(equalToConstant: 42).isActive = true
 
-        let globe = iconKey("globe", #selector(nextKeyboardTapped))
-        globe.widthAnchor.constraint(equalToConstant: 32).isActive = true
-        globe.accessibilityLabel = "التبديل إلى لوحة مفاتيح أخرى"
 
         let emoji = UIButton(type: .system)
         emoji.setTitle("😊", for: .normal)
@@ -848,7 +857,6 @@ private func rebuild() {
         enter.accessibilityLabel = "إدخال سطر جديد"
 
         row.addArrangedSubview(symbols)
-        row.addArrangedSubview(globe)
         row.addArrangedSubview(emoji)
         row.addArrangedSubview(space)
         if emojiOn {
@@ -863,9 +871,6 @@ private func rebuild() {
         return row
     }
 
-    @objc private func nextKeyboardTapped() {
-        advanceToNextInputMode()
-    }
 
     private func makeEmojiTabs() -> UIView {
         let wrap = UIStackView()
@@ -966,8 +971,8 @@ private func rebuild() {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let item = emojiPack[collectionView.tag].items[indexPath.item]
         textDocumentProxy.insertText(item)
+        playSystemClick(.emoji)
         rememberEmoji(item)
-        playSystemSound()
         tapHaptic()
     }
 
@@ -1168,7 +1173,7 @@ private func rebuild() {
 
     @objc private func deleteTouchDown() {
         textDocumentProxy.deleteBackward()
-        playSystemSound()
+        playSystemClick(.delete)
         tapHaptic(.del)
         deleteTimer?.invalidate()
         deleteTimer = Timer.scheduledTimer(withTimeInterval: 0.35, repeats: false) { [weak self] _ in
@@ -1282,7 +1287,7 @@ private func rebuild() {
         lastSpaceTap = now
         autocorrectOnSpace()
         textDocumentProxy.insertText(" ")
-        playSystemSound()
+        playSystemClick(.space)
         tapHaptic()
     }
 
@@ -1294,7 +1299,7 @@ private func rebuild() {
 
     @objc private func enterTapped() {
         textDocumentProxy.insertText("\n")
-        playSystemSound()
+        playSystemClick(.enter)
         tapHaptic(.action)
     }
 

@@ -36,7 +36,7 @@ def main() -> None:
     bottom_start = extension.index('    private func makeBottom(')
     bottom_end = extension.index('    private func makeEmojiTabs()', bottom_start)
     bottom = extension[bottom_start:bottom_end]
-    require('advanceToNextInputMode()' in bottom, 'globe key advances to the next iOS keyboard')
+    require('let globe' not in bottom and 'advanceToNextInputMode()' not in bottom, 'visible globe key is intentionally removed')
     require('greaterThanOrEqualToConstant: 74' in bottom, 'bottom-row space key has a flexible minimum')
     fixed_width = 42 + 32 + 32 + 32 + 42 + (5 * 4) + 74
     emoji_page_width = fixed_width + (54 - 32)
