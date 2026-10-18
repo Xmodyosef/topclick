@@ -43,7 +43,7 @@ def main() -> None:
     require(fixed_width <= 310 and emoji_page_width <= 310, 'bottom-row controls fit a 320pt viewport with 5pt side insets')
 
     require('private let boardHeight: CGFloat = 324' in extension, 'keyboard height reserves space for the bottom row')
-    require('private let arabicShiftRows' in extension and '(isShifted ? arabicShiftRows : arabicRows)' in extension, 'Arabic Shift uses its alternate key layer')
+    require('arabicShiftRows' in extension and '(isShifted ? arabicShiftRows : arabicRows)' in extension, 'Arabic Shift uses its stable alternate key layer')
     require('if showNumberRow {' in extension and 'showNumberRow' in app, 'number-row setting is read by extension and app')
     autocorrect = extension[extension.index('    private func autocorrectOnSpace()'):extension.index('    @objc private func spaceTouchUp()')]
     require('arabicFixes' in autocorrect and 'language == .english' in autocorrect, 'autocorrect supports Arabic fixes and English checking')
@@ -58,9 +58,9 @@ def main() -> None:
     require('letterFont' in extension and '.systemFont(ofSize: 26, weight: .medium)' in extension and 'fontStyle' not in extension, 'one compact keyboard font is applied')
     require('emojiPager?.delegate = nil' in extension and 'guard emojiPack.indices.contains(collectionView.tag)' in extension, 'emoji page teardown and index guards prevent stale callbacks')
     require('DispatchQueue.main.async { [weak self] in' in extension and 'self.emojiPack = Self.catalog()' in extension, 'emoji catalog refresh is deferred after selection')
-    require('["ي","و","ر","ز","د","ذ","ط","ظ","ئ"]' in extension, 'Arabic bottom row matches the approved layout')
-    require('"a": ["à", "á"' in extension and '"ا": ["أ", "إ", "آ"]' in extension, 'Arabic and English long-press alternatives exist')
-    require('["ي","و","ر","ز","د","ذ","ط","ظ","ئ"]' in extension, 'Arabic third row matches the approved layout')
+    require('["ي","و","ر","ز","د","ذ","ط","ظ"]' in extension, 'Arabic bottom row matches the approved layout without ئ')
+    require('"ا": ["أ", "إ", "آ"]' in extension and '"و": ["ؤ"]' in extension and '"ي": ["ئ", "ى"]' in extension, 'Arabic long-press alternatives exist')
+    require('["ي","و","ر","ز","د","ذ","ط","ظ"]' in extension, 'Arabic third row matches the approved layout without ئ')
     require('.environment(\\.layoutDirection, .rightToLeft)' in app, 'preview uses the same RTL direction as the keyboard')
     require('("😀", merge(Array(loadFrequent().prefix(24))' in extension and '("🕒", loadFrequent())' not in extension, 'frequent emojis merge into the main faces tab')
     copy_fn = extension[extension.index('    private func copyNow()'):extension.index('    private func pasteNow()')]
