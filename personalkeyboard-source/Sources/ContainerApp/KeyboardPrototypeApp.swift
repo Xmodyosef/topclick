@@ -157,13 +157,19 @@ enum ThemeCatalog {
         .init(id: "m7", title: "نعناع", key: Color(red: 0.84, green: 0.93, blue: 0.88), ink: Color(red: 0.22, green: 0.16, blue: 0.10), accent: Color(red: 0.72, green: 0.48, blue: 0.22)),
         .init(id: "m12", title: "ورد", key: Color(red: 0.96, green: 0.86, blue: 0.90), ink: Color(red: 0.22, green: 0.16, blue: 0.10), accent: Color(red: 0.72, green: 0.48, blue: 0.22)),
         .init(id: "e5", title: "برقوق ليلي", key: Color(red: 0.18, green: 0.10, blue: 0.22), ink: Color.white.opacity(0.94), accent: Color(red: 0.82, green: 0.58, blue: 0.22)),
-        .init(id: "e11", title: "جمر", key: Color(red: 0.22, green: 0.10, blue: 0.08), ink: Color(red: 0.96, green: 0.78, blue: 0.42), accent: Color(red: 0.82, green: 0.58, blue: 0.22))
+        .init(id: "e11", title: "جمر", key: Color(red: 0.22, green: 0.10, blue: 0.08), ink: Color(red: 0.96, green: 0.78, blue: 0.42), accent: Color(red: 0.82, green: 0.58, blue: 0.22)),
+        .init(id: "aurora", title: "شفق", key: Color(red: 0.10, green: 0.28, blue: 0.30), ink: Color(red: 0.80, green: 1.0, blue: 0.92), accent: Color(red: 0.32, green: 0.86, blue: 0.74)),
+        .init(id: "lavender", title: "لافندر", key: Color(red: 0.28, green: 0.20, blue: 0.42), ink: Color(red: 0.94, green: 0.88, blue: 1.0), accent: Color(red: 0.70, green: 0.58, blue: 1.0)),
+        .init(id: "sunset", title: "غروب", key: Color(red: 0.38, green: 0.14, blue: 0.16), ink: Color(red: 1.0, green: 0.86, blue: 0.72), accent: Color(red: 1.0, green: 0.48, blue: 0.28)),
+        .init(id: "mint", title: "نعناع ليلي", key: Color(red: 0.08, green: 0.24, blue: 0.22), ink: Color(red: 0.76, green: 1.0, blue: 0.90), accent: Color(red: 0.24, green: 0.82, blue: 0.62)),
+        .init(id: "rose", title: "وردي", key: Color(red: 0.36, green: 0.12, blue: 0.24), ink: Color(red: 1.0, green: 0.84, blue: 0.92), accent: Color(red: 0.96, green: 0.42, blue: 0.68)),
+        .init(id: "mono", title: "أحادي", key: Color(red: 0.22, green: 0.23, blue: 0.25), ink: Color.white, accent: Color(red: 0.70, green: 0.74, blue: 0.80))
     ]
 
     static let groups: [ThemeGroup] = [
         .init(id: "daily", title: "اليومي", themes: selected(["auto", "light", "dark", "ocean"])),
         .init(id: "morning", title: "ألوان الصباح", themes: selected(["morning", "m7", "m12"])),
-        .init(id: "evening", title: "ألوان المساء", themes: selected(["evening", "forest", "violet", "e5", "e11"]))
+        .init(id: "evening", title: "ألوان المساء", themes: selected(["evening", "forest", "violet", "e5", "e11", "aurora", "lavender", "sunset", "mint", "rose", "mono"]))
     ]
 
     static func swatch(for id: String) -> ThemeSwatch {
@@ -381,7 +387,6 @@ struct MiniKeyboardView: View {
             }
             HStack(spacing: 3) {
                 keyButton("123", width: 31, height: 30, font: 9, emphasized: true)
-                keyButton("🌐", width: 25, height: 30, font: 12)
                 keyButton("😊", width: 25, height: 30, font: 12)
                 keyButton("مسافة", height: 30, font: 9)
                 keyButton(".", width: 22, height: 30, font: 12)
@@ -427,7 +432,6 @@ struct MiniKeyboardView: View {
 
 struct ThemesTab: View {
     @State private var themeID = ThemeStore.themeID
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
 
     var body: some View {
         NavigationStack {
@@ -453,11 +457,16 @@ struct ThemesTab: View {
                                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                                 .foregroundStyle(NaqraColors.textPrimary)
                                 .padding(.horizontal, 2)
-                            LazyVGrid(columns: columns, spacing: 10) {
-                                ForEach(group.themes) { theme in
-                                    themeTile(theme)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                LazyHStack(alignment: .top, spacing: 10) {
+                                    ForEach(group.themes) { theme in
+                                        themeTile(theme)
+                                            .frame(width: 142)
+                                    }
                                 }
+                                .scrollTargetLayout()
                             }
+                            .scrollTargetBehavior(.viewAligned)
                         }
                     }
                 }
@@ -707,6 +716,17 @@ struct SettingsTab: View {
                 instruction(2, "لوحات المفاتيح ← نقرة")
                 instruction(3, "فعّل السماح بالوصول الكامل للنسخ والترجمة")
             }
+            Button {
+                if let url = URL(string: "App-Prefs:root=General&path=Keyboard/Keyboards") {
+                    UIApplication.shared.open(url)
+                }
+            } label: {
+                Label("فتح إعدادات لوحات المفاتيح", systemImage: "arrow.up.forward.app")
+                    .font(.system(size: 13, weight: .semibold))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(NaqraColors.accent)
             Text("قد تتحدّث الحالة بعد إغلاق اللوحة وفتحها مرة أخرى.")
                 .font(.system(size: 11))
                 .foregroundStyle(NaqraColors.textSecondary)

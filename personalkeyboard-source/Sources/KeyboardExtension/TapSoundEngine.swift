@@ -33,7 +33,7 @@ final class TapSoundEngine {
         if started { return true }
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
             try session.setActive(true)
             try engine.start()
             started = true
@@ -53,7 +53,10 @@ final class TapSoundEngine {
             DispatchQueue.main.async { UIDevice.current.playInputClick() }
             return
         }
-        guard setupAudio() else { return }
+        guard setupAudio() else {
+            DispatchQueue.main.async { UIDevice.current.playInputClick() }
+            return
+        }
 
         let frequencies = customFrequencies[choice] ?? systemFrequencies
         let index = min(max(sound.rawValue, 0), frequencies.count - 1)
