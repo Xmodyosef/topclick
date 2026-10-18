@@ -60,6 +60,7 @@ def main() -> None:
     require('DispatchQueue.main.async { [weak self] in' in extension and 'self.emojiPack = Self.catalog()' in extension, 'emoji catalog refresh is deferred after selection')
     require('["ع","ظ","ط","ذ","د","ز","ر","و","ي"]' in extension, 'Arabic bottom row matches the reference layout')
     require('"ا": ["أ", "إ", "آ"]' in extension and '"و": ["ؤ"]' in extension and '"ي": ["ئ", "ى"]' in extension, 'Arabic long-press alternatives exist')
+    require('bar.centerXAnchor.constraint(equalTo: view.leftAnchor, constant: frame.midX)' in extension and 'bar.centerXAnchor.constraint(equalTo: view.leadingAnchor, constant: frame.midX)' not in extension, 'long-press popup uses physical X coordinate in RTL')
     require('["ع","ظ","ط","ذ","د","ز","ر","و","ي"]' in extension, 'Arabic third row matches the reference layout')
     require('.environment(\\.layoutDirection, .rightToLeft)' in app, 'preview uses the same RTL direction as the keyboard')
     require('("😀", merge(Array(loadFrequent().prefix(24))' in extension and '("🕒", loadFrequent())' not in extension, 'frequent emojis merge into the main faces tab')

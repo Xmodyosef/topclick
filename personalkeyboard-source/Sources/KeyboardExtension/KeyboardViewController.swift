@@ -1172,7 +1172,10 @@ private func rebuild() {
             bar.bottomAnchor.constraint(equalTo: view.topAnchor, constant: max(frame.minY - 6, 50)),
             bar.heightAnchor.constraint(equalToConstant: 44)
         ])
-        let center = bar.centerXAnchor.constraint(equalTo: view.leadingAnchor, constant: frame.midX)
+        // `frame.midX` is measured from the physical left edge. Using the
+        // directional `leadingAnchor` mirrors that coordinate in Arabic RTL,
+        // moving the long-press popup away from the key that was pressed.
+        let center = bar.centerXAnchor.constraint(equalTo: view.leftAnchor, constant: frame.midX)
         center.priority = .defaultHigh
         center.isActive = true
         bar.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 6).isActive = true
