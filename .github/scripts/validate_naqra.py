@@ -53,6 +53,9 @@ def main() -> None:
     require('AudioServicesPlaySystemSound(1104)' in sound, 'sound has a system fallback')
     require('Button { insertPreview(title) }' in app and 'TextField("اكتب للتجربة…"' in app, 'preview is interactive')
     require('private var emojiPack' in extension and 'emojiPack = Self.catalog()' in extension, 'emoji catalog refreshes after selection')
+    require('UIApplication.openSettingsURLString' in app and 'App-Prefs:' not in app, 'Full Access uses public app settings URL')
+    require('private var themeOptionsCard' in app and 'Picker("نوع الصوت"' in app and 'Picker("خط الحروف"' in app, 'sound and font controls live with themes')
+    require('fontStyle' in extension and 'let sound: TapSoundEngine.Sound' in extension, 'font selection and row-specific sound are applied')
     require('("😀", merge(Array(loadFrequent().prefix(24))' in extension and '("🕒", loadFrequent())' not in extension, 'frequent emojis merge into the main faces tab')
     copy_fn = extension[extension.index('    private func copyNow()'):extension.index('    private func pasteNow()')]
     require('textDocumentProxy.selectedText' in copy_fn and 'combined()' not in copy_fn, 'copy requires selected text and does not capture surrounding context')

@@ -332,7 +332,14 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     private var pendingTranslationText = ""
     private var clipboardLongPressInProgress = false
 
-    private let letterFont = UIFont.systemFont(ofSize: 26, weight: .medium)
+    private var letterFont: UIFont {
+        switch ThemeIO.string("fontStyle") ?? "system" {
+        case "rounded": return .systemFont(ofSize: 26, weight: .medium, design: .rounded)
+        case "serif": return .systemFont(ofSize: 26, weight: .medium, design: .serif)
+        case "mono": return .monospacedSystemFont(ofSize: 25, weight: .medium)
+        default: return .systemFont(ofSize: 26, weight: .medium)
+        }
+    }
     private let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
     private let boardHeight: CGFloat = 324
     private var themeSignature: String {
@@ -1116,11 +1123,8 @@ private func rebuild() {
         guard !text.isEmpty else { return }
         textDocumentProxy.insertText(text)
         let row = sender.tag
-        switch row {
-        case 0: playSystemSound()
-        case 1: playSystemSound()
-        default: playSystemSound()
-        }
+        let sound: TapSoundEngine.Sound = row == 0 ? .rowTop : (row == 1 ? .rowMid : .rowBot)
+        playSystemClick(sound)
         tapHaptic()
         if page == .letters, language == .english, isShifted {
             isShifted = false

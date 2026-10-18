@@ -270,8 +270,6 @@ struct ContentView: View {
 struct KeyboardPreviewTab: View {
     @State private var themeID = ThemeStore.themeID
     @State private var showNumberRow = ThemeStore.bool("showNumberRow") ?? true
-    @State private var soundChoice = ThemeStore.string("soundChoice") ?? "system"
-
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -304,16 +302,7 @@ struct KeyboardPreviewTab: View {
                         statusPill(icon: "number", title: showNumberRow ? "صف الأرقام ظاهر" : "صف الأرقام مخفي")
                     }
 
-                    SettingsCard(title: "لمسة سريعة", subtitle: "تُحفظ الخيارات وتصل إلى لوحة المفاتيح") {
-                        HStack {
-                            Label("صوت المفاتيح", systemImage: soundChoice == "none" ? "speaker.slash" : "speaker.wave.2")
-                                .foregroundStyle(NaqraColors.textPrimary)
-                            Spacer()
-                            Text(soundTitle(soundChoice))
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(NaqraColors.accent)
-                        }
-                        Divider().overlay(NaqraColors.border)
+                    SettingsCard(title: "لمسة سريعة", subtitle: "الثيم المختار يصل إلى لوحة المفاتيح مباشرة") {
                         HStack {
                             Label("المجموعة النشطة", systemImage: "paintpalette")
                                 .foregroundStyle(NaqraColors.textPrimary)
@@ -347,19 +336,8 @@ struct KeyboardPreviewTab: View {
     private func reload() {
         themeID = ThemeStore.themeID
         showNumberRow = ThemeStore.bool("showNumberRow") ?? true
-        soundChoice = ThemeStore.string("soundChoice") ?? "system"
     }
 
-    private func soundTitle(_ id: String) -> String {
-        switch id {
-        case "creamy": return "كريمي"
-        case "thocky": return "ثوكي"
-        case "soft": return "هادئ"
-        case "typewriter": return "آلة كاتبة"
-        case "none": return "صامت"
-        default: return "نظامي"
-        }
-    }
 }
 
 struct MiniKeyboardView: View {
@@ -445,6 +423,9 @@ struct MiniKeyboardView: View {
 struct ThemesTab: View {
     @State private var themeID = ThemeStore.themeID
     @State private var previewText = ""
+    @State private var sounds = ThemeStore.bool("sounds") ?? true
+    @State private var soundChoice = ThemeStore.string("soundChoice") ?? "system"
+    @State private var fontStyle = ThemeStore.string("fontStyle") ?? "system"
 
     var body: some View {
         NavigationStack {
@@ -466,6 +447,7 @@ struct ThemesTab: View {
                             .environment(\.layoutDirection, .rightToLeft)
                         MiniKeyboardView(themeID: themeID, previewText: $previewText)
                     }
+                    themeOptionsCard
 
                     ForEach(ThemeCatalog.groups) { group in
                         VStack(alignment: .leading, spacing: NaqraSpacing.sm) {
@@ -493,6 +475,33 @@ struct ThemesTab: View {
             .navigationTitle("الثيمات")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear { themeID = ThemeStore.themeID }
+        }
+    }
+
+    private var themeOptionsCard: some View {
+        SettingsCard(title: "صوت وخط الثيم", subtitle: "جرّب المظهر والصوت والحروف من مكان واحد") {
+            Toggle("أصوات المفاتيح", isOn: $sounds)
+                .onChange(of: sounds) { _, value in ThemeStore.write("sounds", value: value) }
+            Picker("نوع الصوت", selection: $soundChoice) {
+                Text("نظامي").tag("system")
+                Text("كريمي").tag("creamy")
+                Text("ثوكي").tag("thocky")
+                Text("هادئ").tag("soft")
+                Text("آلة كاتبة").tag("typewriter")
+                Text("بدون").tag("none")
+            }
+            .onChange(of: soundChoice) { _, value in ThemeStore.write("soundChoice", value: value) }
+            .disabled(!sounds)
+            Picker("خط الحروف", selection: $fontStyle) {
+                Text("بسيط").tag("system")
+                Text("مستدير").tag("rounded")
+                Text("نسخي").tag("serif")
+                Text("أحادي").tag("mono")
+            }
+            .onChange(of: fontStyle) { _, value in ThemeStore.write("fontStyle", value: value) }
+            Text("يُطبّق الخط على الحروف العربية والإنجليزية عند فتح اللوحة مجددًا.")
+                .font(.system(size: 11))
+                .foregroundStyle(NaqraColors.textSecondary)
         }
     }
 
@@ -552,8 +561,6 @@ struct SettingsTab: View {
     @State private var suggestions = ThemeStore.bool("suggestions") ?? true
     @State private var haptics = ThemeStore.bool("haptics") ?? true
     @State private var hapticLevel = ThemeStore.string("hapticLevel") ?? "medium"
-    @State private var soundChoice = ThemeStore.string("soundChoice") ?? "system"
-    @State private var sounds = ThemeStore.bool("sounds") ?? true
     @State private var trackpad = ThemeStore.bool("trackpad") ?? true
     @State private var symbolRows = Int(ThemeStore.string("symbolRows") ?? "3") ?? 3
     @State private var clipboardHistoryEnabled = ThemeStore.bool("clipboardHistoryEnabled") ?? false
@@ -673,20 +680,7 @@ struct SettingsTab: View {
     }
 
     private var feelCard: some View {
-        SettingsCard(title: "الصوت والاهتزاز", subtitle: "اختر استجابة مريحة، أو عطّلها بالكامل") {
-            Toggle("أصوات المفاتيح", isOn: $sounds)
-                .onChange(of: sounds) { _, value in ThemeStore.write("sounds", value: value) }
-            Picker("نوع الصوت", selection: $soundChoice) {
-                Text("نظامي").tag("system")
-                Text("كريمي").tag("creamy")
-                Text("ثوكي").tag("thocky")
-                Text("هادئ").tag("soft")
-                Text("آلة كاتبة").tag("typewriter")
-                Text("بدون").tag("none")
-            }
-            .onChange(of: soundChoice) { _, value in ThemeStore.write("soundChoice", value: value) }
-            .disabled(!sounds)
-            Divider().overlay(NaqraColors.border)
+        SettingsCard(title: "الاهتزاز", subtitle: "اختر استجابة لمسية مريحة") {
             Toggle("اهتزاز المفاتيح", isOn: $haptics)
                 .onChange(of: haptics) { _, value in ThemeStore.write("haptics", value: value) }
             Picker("قوة الاهتزاز", selection: $hapticLevel) {
@@ -733,7 +727,7 @@ struct SettingsTab: View {
                 instruction(3, "فعّل السماح بالوصول الكامل للنسخ والترجمة")
             }
             Button {
-                if let url = URL(string: "App-Prefs:root=General&path=Keyboard/Keyboards") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
                     UIApplication.shared.open(url)
                 }
             } label: {
@@ -743,7 +737,7 @@ struct SettingsTab: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(NaqraColors.accent)
-            Text("قد تتحدّث الحالة بعد إغلاق اللوحة وفتحها مرة أخرى.")
+            Text("يفتح iOS إعدادات التطبيق؛ التفعيل النهائي يدويًا من عام ← لوحة المفاتيح، ولا يسمح iOS لأي تطبيق بالتفعيل تلقائيًا.")
                 .font(.system(size: 11))
                 .foregroundStyle(NaqraColors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -783,8 +777,6 @@ struct SettingsTab: View {
         suggestions = ThemeStore.bool("suggestions") ?? true
         haptics = ThemeStore.bool("haptics") ?? true
         hapticLevel = ThemeStore.string("hapticLevel") ?? "medium"
-        soundChoice = ThemeStore.string("soundChoice") ?? "system"
-        sounds = ThemeStore.bool("sounds") ?? true
         trackpad = ThemeStore.bool("trackpad") ?? true
         symbolRows = min(4, max(1, Int(ThemeStore.string("symbolRows") ?? "3") ?? 3))
         iconMode = ThemeStore.string("iconMode") ?? "auto"
