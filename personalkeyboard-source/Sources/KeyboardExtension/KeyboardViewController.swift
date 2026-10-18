@@ -334,8 +334,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     private var letterFont: UIFont {
         switch ThemeIO.string("fontStyle") ?? "system" {
-        case "rounded": return .systemFont(ofSize: 26, weight: .medium, design: .rounded)
-        case "serif": return .systemFont(ofSize: 26, weight: .medium, design: .serif)
+        case "rounded": return UIFont(name: "AvenirNext-Medium", size: 26) ?? .systemFont(ofSize: 26, weight: .medium)
+        case "serif": return UIFont(name: "Georgia", size: 26) ?? .systemFont(ofSize: 26, weight: .medium)
         case "mono": return .monospacedSystemFont(ofSize: 25, weight: .medium)
         default: return .systemFont(ofSize: 26, weight: .medium)
         }
