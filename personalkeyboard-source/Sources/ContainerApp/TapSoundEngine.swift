@@ -45,12 +45,13 @@ final class TapSoundEngine {
     func play(_ sound: Sound = .rowMid) {
         guard isEnabled, ThemeStore.bool("sounds") ?? true else { return }
         let choice = ThemeStore.string("soundChoice") ?? "system"
-        guard choice != "none" else { return }
+        // Legacy "none" and unavailable custom modes fall back to the reliable system click.
+        if choice == "none" { AudioServicesPlaySystemSound(1104); return }
         if choice == "system" {
             AudioServicesPlaySystemSound(0x450)
             return
         }
-        guard setupAudio() else { return }
+        guard setupAudio() else { AudioServicesPlaySystemSound(1104); return }
 
         let samples = customFrequencies[choice] ?? frequencies
         let index = min(max(sound.rawValue, 0), samples.count - 1)

@@ -49,7 +49,8 @@ final class TapSoundEngine {
     func play(_ sound: Sound, variation: Float = 0) {
         guard isEnabled else { return }
         let choice = ThemeIO.string("soundChoice") ?? "system"
-        guard choice != "none" else { return }
+        // Legacy "none" and unavailable custom modes fall back to the reliable system click.
+        if choice == "none" { AudioServicesPlaySystemSound(1104); return }
         if choice == "system" {
             DispatchQueue.main.async { AudioServicesPlaySystemSound(1104) }
             return

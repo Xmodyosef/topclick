@@ -333,12 +333,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     private var clipboardLongPressInProgress = false
 
     private var letterFont: UIFont {
-        switch ThemeIO.string("fontStyle") ?? "system" {
-        case "rounded": return UIFont(name: "AvenirNext-Medium", size: 26) ?? .systemFont(ofSize: 26, weight: .medium)
-        case "serif": return UIFont(name: "Georgia", size: 26) ?? .systemFont(ofSize: 26, weight: .medium)
-        case "mono": return .monospacedSystemFont(ofSize: 25, weight: .medium)
-        default: return .systemFont(ofSize: 26, weight: .medium)
-        }
+        // One compact, predictable font keeps Arabic and English aligned.
+        .systemFont(ofSize: 26, weight: .medium)
     }
     private let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
     private let boardHeight: CGFloat = 324
@@ -351,13 +347,13 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     private let arabicRows = [
         ["ض","ص","ث","ق","ف","غ","ع","ه","خ","ح","ج"],
         ["ش","س","ي","ب","ل","ا","ت","ن","م","ك","ة"],
-        ["ئ","ء","ؤ","ر","لا","ى","ز","ظ","ط","ذ","د"]
+        ["ي","و","ر","ز","د","ذ","ط","ظ","ئ"]
     ]
     // Arabic has no upper-case layer; Shift keeps the same readable letters.
     private let arabicShiftRows = [
         ["ض","ص","ث","ق","ف","غ","ع","ه","خ","ح","ج"],
         ["ش","س","ي","ب","ل","ا","ت","ن","م","ك","ة"],
-        ["ئ","ء","ؤ","ر","لا","ى","ز","ظ","ط","ذ","د"]
+        ["ي","و","ر","ز","د","ذ","ط","ظ","ئ"]
     ]
     private let englishLower = [
         ["q","w","e","r","t","y","u","i","o","p"],

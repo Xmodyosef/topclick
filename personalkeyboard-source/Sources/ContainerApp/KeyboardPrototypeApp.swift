@@ -85,7 +85,7 @@ struct KeyboardPrototypeApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environment(\.layoutDirection, .rightToLeft)
+                .environment(\.layoutDirection, .leftToRight)
                 .onAppear { AppIconSwitcher.applyAutomaticIfNeeded() }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -349,7 +349,6 @@ struct MiniKeyboardView: View {
     private let numbers = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
     private let row1 = ["ض", "ص", "ث", "ق", "ف", "غ", "ع", "ه", "خ", "ح", "ج"]
     private let row2 = ["ش", "س", "ي", "ب", "ل", "ا", "ت", "ن", "م", "ك", "ة"]
-    private let row3 = ["ئ", "ظ", "ط", "ذ", "د", "ز", "ر", "و", "ى"]
 
     init(themeID: String? = nil, showNumberRow: Bool? = nil, previewText: Binding<String> = .constant("")) {
         self.themeID = themeID ?? ThemeStore.themeID
@@ -358,6 +357,8 @@ struct MiniKeyboardView: View {
     }
     private func insertPreview(_ title: String) {
         TapSoundEngine.shared.setEnabled(true)
+        ThemeStore.write("sounds", value: true)
+        ThemeStore.write("soundChoice", value: "system")
         if title == "123" {
             TapSoundEngine.shared.play(.rowMid)
             previewNumberRow.toggle()
@@ -387,11 +388,8 @@ struct MiniKeyboardView: View {
             keyRow(row1, height: 29, font: 12)
             keyRow(row2, height: 29, font: 12)
             HStack(spacing: 3) {
-                keyRow(row3, height: 29, font: 12)
-                keyButton("⌫", width: 29, height: 29, font: 12, emphasized: true)
-            }
-            HStack(spacing: 3) {
                 keyButton("123", width: 31, height: 30, font: 9, emphasized: true)
+                keyButton("⌫", width: 29, height: 30, font: 12, emphasized: true)
                 keyButton("😊", width: 25, height: 30, font: 12)
                 keyButton("مسافة", height: 30, font: 9)
                 keyButton(".", width: 22, height: 30, font: 12)
@@ -404,7 +402,7 @@ struct MiniKeyboardView: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(style.accent.opacity(0.22), lineWidth: 1)
         }
-        .environment(\.layoutDirection, .leftToRight)
+        .environment(\.layoutDirection, .rightToLeft)
     }
 
     private func keyRow(_ keys: [String], height: CGFloat, font: CGFloat) -> some View {
@@ -441,7 +439,6 @@ struct MiniKeyboardView: View {
 struct ThemesTab: View {
     @State private var themeID = ThemeStore.themeID
     @State private var previewText = ""
-    @State private var fontStyle = ThemeStore.string("fontStyle") ?? "system"
 
     var body: some View {
         NavigationStack {
@@ -495,20 +492,12 @@ struct ThemesTab: View {
     }
 
     private var themeOptionsCard: some View {
-        SettingsCard(title: "خط الحروف", subtitle: "اضغط مفاتيح المعاينة لتجربة صوت الثيم مباشرة") {
-            Picker("خط الحروف", selection: $fontStyle) {
-                Text("بسيط").tag("system")
-                Text("مستدير").tag("rounded")
-                Text("نسخي").tag("serif")
-                Text("أحادي").tag("mono")
-            }
-            .onChange(of: fontStyle) { _, value in ThemeStore.write("fontStyle", value: value) }
-            Text("يُطبّق الخط على الحروف العربية والإنجليزية عند فتح اللوحة مجددًا.")
-                .font(.system(size: 11))
+        SettingsCard(title: "صوت الكيبورد", subtitle: "صوت النظام يعمل تلقائيًا مع كل ثيم") {
+            Label("الصوت الافتراضي مفعّل", systemImage: "speaker.wave.2.fill")
+                .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(NaqraColors.textSecondary)
         }
     }
-
     private func themeTile(_ theme: ThemeSwatch) -> some View {
         Button {
             themeID = theme.id
