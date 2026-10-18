@@ -54,7 +54,7 @@ def main() -> None:
     require('Button { insertPreview(title) }' in app and 'TextField("اكتب للتجربة…"' in app, 'preview is interactive')
     require('private var emojiPack' in extension and 'emojiPack = Self.catalog()' in extension, 'emoji catalog refreshes after selection')
     require('UIApplication.openSettingsURLString' in app and 'App-Prefs:' not in app, 'Full Access uses public app settings URL')
-    require('private var themeOptionsCard' in app and 'Picker("نوع الصوت"' in app and 'Picker("خط الحروف"' in app, 'sound and font controls live with themes')
+    require('private var themeOptionsCard' in app and 'Picker("خط الحروف"' in app and 'TapSoundEngine.shared.play' in app and 'Picker("نوع الصوت"' not in app, 'theme preview sound and font controls are compact')
     require('fontStyle' in extension and 'let sound: TapSoundEngine.Sound' in extension, 'font selection and row-specific sound are applied')
     require('emojiPager?.delegate = nil' in extension and 'guard emojiPack.indices.contains(collectionView.tag)' in extension, 'emoji page teardown and index guards prevent stale callbacks')
     require('DispatchQueue.main.async { [weak self] in' in extension and 'self.emojiPack = Self.catalog()' in extension, 'emoji catalog refresh is deferred after selection')

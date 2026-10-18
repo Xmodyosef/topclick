@@ -356,19 +356,36 @@ struct MiniKeyboardView: View {
         self._previewText = previewText
     }
     private func insertPreview(_ title: String) {
-        if title == "مسافة" { previewText.append(" ") }
-        else if title.count == 1 || title.contains("😊") { previewText.append(title) }
+        TapSoundEngine.shared.setEnabled(true)
+        if title == "123" {
+            TapSoundEngine.shared.play(.rowMid)
+            previewNumberRow.toggle()
+        } else if title == "⌫" {
+            TapSoundEngine.shared.play(.delete)
+            if !previewText.isEmpty { previewText.removeLast() }
+        } else if title == "↵" {
+            TapSoundEngine.shared.play(.enter)
+            previewText.append("\n")
+        } else if title == "😊" {
+            TapSoundEngine.shared.play(.emoji)
+            previewText.append(title)
+        } else if title == "مسافة" {
+            TapSoundEngine.shared.play(.space)
+            previewText.append(" ")
+        } else if title.count == 1 {
+            TapSoundEngine.shared.play(.rowMid)
+            previewText.append(title)
+        }
     }
 
     private var style: ThemeSwatch { ThemeCatalog.swatch(for: themeID) }
 
     var body: some View {
         VStack(spacing: 4) {
-            if showNumberRow { keyRow(numbers, height: 23, font: 10) }
+            if showNumberRow || previewNumberRow { keyRow(numbers, height: 23, font: 10) }
             keyRow(row1, height: 29, font: 12)
             keyRow(row2, height: 29, font: 12)
             HStack(spacing: 3) {
-                keyButton("⇧", width: 27, height: 29, font: 12, emphasized: true)
                 keyRow(row3, height: 29, font: 12)
                 keyButton("⌫", width: 29, height: 29, font: 12, emphasized: true)
             }
@@ -423,8 +440,6 @@ struct MiniKeyboardView: View {
 struct ThemesTab: View {
     @State private var themeID = ThemeStore.themeID
     @State private var previewText = ""
-    @State private var sounds = ThemeStore.bool("sounds") ?? true
-    @State private var soundChoice = ThemeStore.string("soundChoice") ?? "system"
     @State private var fontStyle = ThemeStore.string("fontStyle") ?? "system"
 
     var body: some View {
@@ -459,7 +474,7 @@ struct ThemesTab: View {
                                 LazyHStack(alignment: .top, spacing: 10) {
                                     ForEach(group.themes) { theme in
                                         themeTile(theme)
-                                            .frame(width: 142)
+                                            .frame(width: 112)
                                     }
                                 }
                                 .scrollTargetLayout()
@@ -479,19 +494,7 @@ struct ThemesTab: View {
     }
 
     private var themeOptionsCard: some View {
-        SettingsCard(title: "صوت وخط الثيم", subtitle: "جرّب المظهر والصوت والحروف من مكان واحد") {
-            Toggle("أصوات المفاتيح", isOn: $sounds)
-                .onChange(of: sounds) { _, value in ThemeStore.write("sounds", value: value) }
-            Picker("نوع الصوت", selection: $soundChoice) {
-                Text("نظامي").tag("system")
-                Text("كريمي").tag("creamy")
-                Text("ثوكي").tag("thocky")
-                Text("هادئ").tag("soft")
-                Text("آلة كاتبة").tag("typewriter")
-                Text("بدون").tag("none")
-            }
-            .onChange(of: soundChoice) { _, value in ThemeStore.write("soundChoice", value: value) }
-            .disabled(!sounds)
+        SettingsCard(title: "خط الحروف", subtitle: "اضغط مفاتيح المعاينة لتجربة صوت الثيم مباشرة") {
             Picker("خط الحروف", selection: $fontStyle) {
                 Text("بسيط").tag("system")
                 Text("مستدير").tag("rounded")
@@ -513,19 +516,19 @@ struct ThemesTab: View {
             VStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(theme.key)
-                    .frame(height: 62)
+                    .frame(height: 48)
                     .overlay(alignment: .center) {
                         HStack(spacing: 4) {
                             ForEach(["ض", "ص", "ث"], id: \.self) { letter in
                                 Text(letter)
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .font(.system(size: 12, weight: .semibold))
                                     .foregroundStyle(theme.ink)
                                     .frame(maxWidth: .infinity)
-                                    .frame(height: 31)
+                                    .frame(height: 24)
                                     .background(theme.accent.opacity(0.35), in: RoundedRectangle(cornerRadius: 5))
                             }
                         }
-                        .padding(.horizontal, 7)
+                        .padding(.horizontal, 5)
                     }
                     .overlay {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -533,19 +536,19 @@ struct ThemesTab: View {
                     }
                 HStack(spacing: 4) {
                     Text(theme.title)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(NaqraColors.textPrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                     if themeID == theme.id {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 11))
+                            .font(.system(size: 10))
                             .foregroundStyle(NaqraColors.accent)
                     }
                 }
             }
-            .padding(6)
-            .background(NaqraColors.surface.opacity(0.8), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+            .padding(4)
+            .background(NaqraColors.surface.opacity(0.8), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("ثيم \(theme.title)")
