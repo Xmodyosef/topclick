@@ -64,7 +64,7 @@ jobs:
         run: |
           APP=$(find build -name "PersonalKeyboard.app" -type d | head -1)
           test -n "$APP"
-          python3 "$GITHUB_WORKSPACE/.github/scripts/validate_naqra.py" "$GITHUB_WORKSPACE/src/personalkeyboard-source" --built-app "$APP"
+          python3 "$GITHUB_WORKSPACE/.github/scripts/validate_built_app.py" "$APP"
 
       - name: Package IPA
         working-directory: src/personalkeyboard-source
