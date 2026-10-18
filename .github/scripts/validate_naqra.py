@@ -52,6 +52,8 @@ def main() -> None:
     sound = (source / 'Sources/KeyboardExtension/TapSoundEngine.swift').read_text()
     require('AudioServicesPlaySystemSound(1104)' in sound, 'sound has a system fallback')
     require('Button { insertPreview(title) }' in app and 'TextField("اكتب للتجربة…"' in app, 'preview is interactive')
+    require('private var emojiPack' in extension and 'emojiPack = Self.catalog()' in extension, 'emoji catalog refreshes after selection')
+    require('("😀", merge(Array(loadFrequent().prefix(24))' in extension and '("🕒", loadFrequent())' not in extension, 'frequent emojis merge into the main faces tab')
     copy_fn = extension[extension.index('    private func copyNow()'):extension.index('    private func pasteNow()')]
     require('textDocumentProxy.selectedText' in copy_fn and 'combined()' not in copy_fn, 'copy requires selected text and does not capture surrounding context')
     require('clipboardHistoryEnabled' in extension and 'func clear()' in extension, 'clipboard history is opt-in and clearable')
