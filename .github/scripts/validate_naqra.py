@@ -45,9 +45,13 @@ def main() -> None:
     require('private let boardHeight: CGFloat = 324' in extension, 'keyboard height reserves space for the bottom row')
     require('private let arabicShiftRows' in extension and '(isShifted ? arabicShiftRows : arabicRows)' in extension, 'Arabic Shift uses its alternate key layer')
     require('if showNumberRow {' in extension and 'showNumberRow' in app, 'number-row setting is read by extension and app')
-    require('knownWord(token)' not in extension[extension.index('    private func autocorrectOnSpace()'):extension.index('    @objc private func spaceTouchUp()')], 'English-only autocorrect does not replace Arabic words')
     autocorrect = extension[extension.index('    private func autocorrectOnSpace()'):extension.index('    @objc private func spaceTouchUp()')]
-    require('language == .english' in autocorrect and 'misspelling.location != NSNotFound' in autocorrect, 'autocorrect is limited to detected English misspellings')
+    require('arabicFixes' in autocorrect and 'language == .english' in autocorrect, 'autocorrect supports Arabic fixes and English checking')
+    require('misspelling.location != NSNotFound' in autocorrect, 'English autocorrect is limited to detected misspellings')
+    require('suite.synchronize()' in extension and 'suite.synchronize()' in app, 'shared preferences synchronize before reads')
+    sound = (source / 'Sources/KeyboardExtension/TapSoundEngine.swift').read_text()
+    require('AudioServicesPlaySystemSound(1104)' in sound, 'sound has a system fallback')
+    require('Button { insertPreview(title) }' in app and 'TextField("اكتب للتجربة…"' in app, 'preview is interactive')
     copy_fn = extension[extension.index('    private func copyNow()'):extension.index('    private func pasteNow()')]
     require('textDocumentProxy.selectedText' in copy_fn and 'combined()' not in copy_fn, 'copy requires selected text and does not capture surrounding context')
     require('clipboardHistoryEnabled' in extension and 'func clear()' in extension, 'clipboard history is opt-in and clearable')

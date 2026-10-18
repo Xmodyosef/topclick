@@ -201,7 +201,9 @@ enum ThemeStore {
 
     static func write(_ key: String, value: Any) {
         suite.set(value, forKey: key)
+        suite.synchronize()
         UserDefaults.standard.set(value, forKey: key)
+        UserDefaults.standard.synchronize()
         CFNotificationCenterPostNotification(
             CFNotificationCenterGetDarwinNotifyCenter(),
             CFNotificationName(notificationName as CFString),
@@ -210,7 +212,8 @@ enum ThemeStore {
     }
 
     static func string(_ key: String) -> String? {
-        suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
+        suite.synchronize()
+        return suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
     }
 
     static var themeID: String {
@@ -362,15 +365,21 @@ struct KeyboardPreviewTab: View {
 struct MiniKeyboardView: View {
     let themeID: String
     let showNumberRow: Bool
+    @Binding private var previewText: String
 
     private let numbers = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
     private let row1 = ["ض", "ص", "ث", "ق", "ف", "غ", "ع", "ه", "خ", "ح", "ج"]
     private let row2 = ["ش", "س", "ي", "ب", "ل", "ا", "ت", "ن", "م", "ك", "ة"]
     private let row3 = ["ئ", "ظ", "ط", "ذ", "د", "ز", "ر", "و", "ى"]
 
-    init(themeID: String? = nil, showNumberRow: Bool? = nil) {
+    init(themeID: String? = nil, showNumberRow: Bool? = nil, previewText: Binding<String> = .constant("")) {
         self.themeID = themeID ?? ThemeStore.themeID
         self.showNumberRow = showNumberRow ?? ThemeStore.bool("showNumberRow") ?? true
+        self._previewText = previewText
+    }
+    private func insertPreview(_ title: String) {
+        if title == "مسافة" { previewText.append(" ") }
+        else if title.count == 1 || title.contains("😊") { previewText.append(title) }
     }
 
     private var style: ThemeSwatch { ThemeCatalog.swatch(for: themeID) }
@@ -417,14 +426,17 @@ struct MiniKeyboardView: View {
         font: CGFloat,
         emphasized: Bool = false
     ) -> some View {
-        Text(title)
-            .font(.system(size: font, weight: .medium, design: .rounded))
-            .lineLimit(1)
-            .minimumScaleFactor(0.7)
-            .foregroundStyle(style.ink)
-            .frame(maxWidth: width == nil ? .infinity : nil)
-            .frame(width: width, height: height)
-            .background(emphasized ? style.accent.opacity(0.42) : style.key.opacity(0.78), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+        Button { insertPreview(title) } label: {
+            Text(title)
+                .font(.system(size: font, weight: .medium, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .foregroundStyle(style.ink)
+                .frame(maxWidth: width == nil ? .infinity : nil)
+                .frame(width: width, height: height)
+                .background(emphasized ? style.accent.opacity(0.42) : style.key.opacity(0.78), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -432,6 +444,7 @@ struct MiniKeyboardView: View {
 
 struct ThemesTab: View {
     @State private var themeID = ThemeStore.themeID
+    @State private var previewText = ""
 
     var body: some View {
         NavigationStack {
@@ -447,8 +460,11 @@ struct ThemesTab: View {
                     }
                     .padding(.top, NaqraSpacing.sm)
 
-                    SettingsCard(title: "المعاينة الحية", subtitle: ThemeCatalog.swatch(for: themeID).title) {
-                        MiniKeyboardView(themeID: themeID)
+                    SettingsCard(title: "معاينة فعلية", subtitle: "اضغط المفاتيح واكتب قبل تفعيل اللوحة") {
+                        TextField("اكتب للتجربة…", text: $previewText)
+                            .textFieldStyle(.roundedBorder)
+                            .environment(\.layoutDirection, .rightToLeft)
+                        MiniKeyboardView(themeID: themeID, previewText: $previewText)
                     }
 
                     ForEach(ThemeCatalog.groups) { group in
@@ -761,6 +777,7 @@ struct SettingsTab: View {
     }
 
     private func reload() {
+        ThemeStore.suite.synchronize()
         showNumberRow = ThemeStore.bool("showNumberRow") ?? true
         autocorrect = ThemeStore.bool("autocorrect") ?? true
         suggestions = ThemeStore.bool("suggestions") ?? true

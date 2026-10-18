@@ -15,7 +15,9 @@ enum ThemeIO {
 
     static func write(_ key: String, value: Any) {
         suite.set(value, forKey: key)
+        suite.synchronize()
         UserDefaults.standard.set(value, forKey: key)
+        UserDefaults.standard.synchronize()
         CFNotificationCenterPostNotification(
             CFNotificationCenterGetDarwinNotifyCenter(),
             CFNotificationName(notificationName as CFString),
@@ -24,10 +26,12 @@ enum ThemeIO {
     }
 
     static func string(_ key: String) -> String? {
-        suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
+        suite.synchronize()
+        return suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
     }
 
     static func bool(_ key: String) -> Bool? {
+        suite.synchronize()
         if suite.object(forKey: key) != nil { return suite.bool(forKey: key) }
         if UserDefaults.standard.object(forKey: key) != nil { return UserDefaults.standard.bool(forKey: key) }
         return nil
@@ -1241,33 +1245,26 @@ private func rebuild() {
     }
 
     private func autocorrectOnSpace() {
-        guard ThemeIO.bool("autocorrect") ?? true, language == .english else { return }
+        guard ThemeIO.bool("autocorrect") ?? true else { return }
         let before = textDocumentProxy.documentContextBeforeInput ?? ""
         let token = before.split(whereSeparator: { !$0.isLetter && !$0.isNumber && $0 != "'" }).last.map(String.init) ?? ""
         guard token.count >= 2 else { return }
-
-        let checker = UITextChecker()
-        let range = NSRange(location: 0, length: token.utf16.count)
-        let misspelling = checker.rangeOfMisspelledWord(
-            in: token,
-            range: range,
-            startingAt: 0,
-            wrap: false,
-            language: "en_US"
-        )
-        guard misspelling.location != NSNotFound,
-              let fix = checker.guesses(forWordRange: range, in: token, language: "en_US")?.first,
-              fix.caseInsensitiveCompare(token) != .orderedSame else { return }
+        let fix: String?
+        if language == .english {
+            let checker = UITextChecker()
+            let range = NSRange(location: 0, length: token.utf16.count)
+            let misspelling = checker.rangeOfMisspelledWord(in: token, range: range, startingAt: 0, wrap: false, language: "en_US")
+            fix = misspelling.location != NSNotFound ? checker.guesses(forWordRange: range, in: token, language: "en_US")?.first : nil
+        } else {
+            let arabicFixes = ["هاذا": "هذا", "هاذه": "هذه", "هاذ": "هذا", "الذيي": "الذي", "اللذي": "الذي", "انشاءالله": "إن شاء الله", "شكراا": "شكرًا", "مساءا": "مساءً"]
+            fix = arabicFixes[token]
+        }
+        guard let fix, fix.caseInsensitiveCompare(token) != .orderedSame else { return }
         for _ in 0..<token.count { textDocumentProxy.deleteBackward() }
         textDocumentProxy.insertText(fix)
         tapHaptic(.action)
         refreshSuggestions()
     }
-
-
-
-
-
     @objc private func spaceTouchUp() {
         if spaceIsTrackpad { spaceIsTrackpad = false; return }
         let now = Date()

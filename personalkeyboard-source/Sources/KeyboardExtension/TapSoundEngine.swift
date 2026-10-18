@@ -1,4 +1,5 @@
 import AVFoundation
+import AudioToolbox
 import UIKit
 
 final class TapSoundEngine {
@@ -50,11 +51,11 @@ final class TapSoundEngine {
         let choice = ThemeIO.string("soundChoice") ?? "system"
         guard choice != "none" else { return }
         if choice == "system" {
-            DispatchQueue.main.async { UIDevice.current.playInputClick() }
+            DispatchQueue.main.async { AudioServicesPlaySystemSound(1104) }
             return
         }
         guard setupAudio() else {
-            DispatchQueue.main.async { UIDevice.current.playInputClick() }
+            DispatchQueue.main.async { AudioServicesPlaySystemSound(1104) }
             return
         }
 
