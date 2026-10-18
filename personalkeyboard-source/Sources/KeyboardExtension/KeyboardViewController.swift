@@ -308,7 +308,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     private var emojiCategoryIndex = 0
     private var palette = NaqraPalette.current()
 
-    private let blurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
+    // Keep the extension light: a solid background avoids a live blur pass.
+    private let blurView = UIVisualEffectView(effect: nil)
     private let rootStack = UIStackView()
     private var heightConstraint: NSLayoutConstraint?
     private var deleteTimer: Timer?
@@ -1031,11 +1032,9 @@ private func rebuild() {
         b.layer.borderWidth = 0.6
         let line = palette.blurDark ? UIColor.white.withAlphaComponent(0.20) : UIColor.black.withAlphaComponent(0.10)
         b.layer.borderColor = line.cgColor
-        b.layer.shadowColor = UIColor.black.cgColor
-        b.layer.shadowOpacity = 0.08
-        b.layer.shadowRadius = 1
-        b.layer.shadowOffset = CGSize(width: 0, height: 1)
-        b.clipsToBounds = false
+        // Shadows on every key force extra offscreen compositing in the extension.
+        b.layer.shadowOpacity = 0
+        b.clipsToBounds = true
     }
 
     private let holdMap: [String: [String]] = [

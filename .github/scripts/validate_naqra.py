@@ -56,6 +56,7 @@ def main() -> None:
     require('UIApplication.openSettingsURLString' in app and 'App-Prefs:' not in app, 'Full Access uses public app settings URL')
     require('private var themeOptionsCard' in app and 'صوت النظام يعمل تلقائيًا' in app and 'Picker("خط الحروف"' not in app and 'Picker("نوع الصوت"' not in app, 'theme preview uses one compact system sound')
     require('letterFont' in extension and '.systemFont(ofSize: 26, weight: .medium)' in extension and 'fontStyle' not in extension, 'one compact keyboard font is applied')
+    require('UIVisualEffectView(effect: nil)' in extension and 'b.layer.shadowOpacity = 0' in extension, 'keyboard avoids live blur and per-key shadows')
     require('emojiPager?.delegate = nil' in extension and 'guard emojiPack.indices.contains(collectionView.tag)' in extension, 'emoji page teardown and index guards prevent stale callbacks')
     require('DispatchQueue.main.async { [weak self] in' in extension and 'self.emojiPack = Self.catalog()' in extension, 'emoji catalog refresh is deferred after selection')
     require('["ع","ظ","ط","ذ","د","ز","ر","و","ي"]' in extension, 'Arabic bottom row matches the reference layout')
