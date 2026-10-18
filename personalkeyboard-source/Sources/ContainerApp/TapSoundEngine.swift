@@ -1,5 +1,6 @@
 import AVFoundation
 import AudioToolbox
+import UIKit
 
 final class TapSoundEngine {
     static let shared = TapSoundEngine()
@@ -27,39 +28,43 @@ final class TapSoundEngine {
 
     func setEnabled(_ enabled: Bool) { isEnabled = enabled }
 
-    private func setupAudio() {
-        guard !started else { return }
+    private func setupAudio() -> Bool {
+        guard !started else { return true }
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.ambient, mode: .default, options: [.mixWithOthers])
-            try session.setActive(true, options: [])
+            try session.setActive(true)
             try engine.start()
             started = true
-        } catch { print("[TapSoundEngine] \(error)") }
+            return true
+        } catch {
+            return false
+        }
     }
 
     func play(_ sound: Sound = .rowMid) {
-        guard isEnabled else { return }
+        guard isEnabled, ThemeStore.bool("sounds") ?? true else { return }
         let choice = ThemeStore.string("soundChoice") ?? "system"
-        if choice == "none" { return }
+        guard choice != "none" else { return }
         if choice == "system" {
             AudioServicesPlaySystemSound(0x450)
             return
         }
-        setupAudio()
-        let sampleRate = format.sampleRate
-        let duration: Double = sound == .delete ? 0.08 : 0.12
-        let length = Int(sampleRate * duration)
-        let idx = min(max(sound.rawValue, 0), frequencies.count - 1)
-        let frequency = frequencies[idx]
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(length)) else { return }
+        guard setupAudio() else { return }
+
+        let samples = customFrequencies[choice] ?? frequencies
+        let index = min(max(sound.rawValue, 0), samples.count - 1)
+        let frequency = samples[index]
+        let duration: Double = sound == .delete ? 0.06 : 0.08
+        let length = Int(format.sampleRate * duration)
+        guard length > 0,
+              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(length)),
+              let channelData = buffer.floatChannelData else { return }
         buffer.frameLength = AVAudioFrameCount(length)
-        let channelData = buffer.floatChannelData![0]
-        for i in 0..<length {
-            let t = Double(i) / sampleRate
-            let envelope = exp(-t * 25)
-            let sample = sin(2.0 * .pi * frequency * t) * envelope * 0.15
-            channelData[i] = Float(sample)
+        let samplesBuffer = channelData[0]
+        for index in 0..<length {
+            let time = Double(index) / format.sampleRate
+            samplesBuffer[index] = Float(sin(2.0 * .pi * frequency * time) * exp(-time * 30) * 0.12)
         }
         DispatchQueue.main.async {
             self.playerNode.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)

@@ -25,30 +25,17 @@ jobs:
           fi
           ls -la src/personalkeyboard-source
 
-      - name: Place icon
+      - name: Validate source and regression checks
+        run: python3 .github/scripts/validate_naqra.py src/personalkeyboard-source
+
+      - name: Verify app icon assets
         run: |
-          ICON=src/personalkeyboard-source/AppIcon.png
-          DEST_DIR=src/personalkeyboard-source/Sources/ContainerApp/Assets.xcassets/AppIcon.appiconset
-          mkdir -p "$DEST_DIR"
-          if [ -f "$ICON" ]; then
-            cp "$ICON" "$DEST_DIR/AppIcon.png"
-            echo "✅ Icon placed"
-          else
-            echo "⚠️ AppIcon.png not found — skipping"
-          fi
-          cat > "$DEST_DIR/Contents.json" << 'JSON'
-          {
-            "images" : [
-              {
-                "filename" : "AppIcon.png",
-                "idiom" : "universal",
-                "platform" : "ios",
-                "size" : "1024x1024"
-              }
-            ],
-            "info" : { "author" : "xcode", "version" : 1 }
-          }
-          JSON
+          ASSETS=src/personalkeyboard-source/Sources/ContainerApp/Assets.xcassets
+          test -f "$ASSETS/AppIconMorning.appiconset/AppIconMorning.png"
+          test -f "$ASSETS/AppIconEvening.appiconset/AppIconEvening.png"
+          test -f "$ASSETS/MorningArtwork.imageset/MorningArtwork.png"
+          test -f "$ASSETS/EveningArtwork.imageset/EveningArtwork.png"
+          echo "Morning and evening icon assets are present"
 
       - name: Install xcodegen
         run: brew install xcodegen
@@ -71,6 +58,13 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM="" \
             build
+
+      - name: Verify built app and alternate icon metadata
+        working-directory: src/personalkeyboard-source
+        run: |
+          APP=$(find build -name "PersonalKeyboard.app" -type d | head -1)
+          test -n "$APP"
+          python3 "$GITHUB_WORKSPACE/.github/scripts/validate_naqra.py" "$GITHUB_WORKSPACE/src/personalkeyboard-source" --built-app "$APP"
 
       - name: Package IPA
         working-directory: src/personalkeyboard-source

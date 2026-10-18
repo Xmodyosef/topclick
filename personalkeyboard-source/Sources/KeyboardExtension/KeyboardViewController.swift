@@ -10,52 +10,29 @@ enum KeyboardLanguage { case arabic, english }
 
 enum ThemeIO {
     static let group = "group.app.personal.PersonalKeyboard"
+    static let notificationName = "app.personal.PersonalKeyboard.prefs"
     static var suite: UserDefaults { UserDefaults(suiteName: group) ?? .standard }
-    static var fileURL: URL? {
-        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group)?
-            .appendingPathComponent("naqra-prefs.json")
-    }
-    static func fileDict() -> [String: Any] {
-        guard let url = fileURL, let data = try? Data(contentsOf: url),
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [:] }
-        return obj
-    }
-    static let boardName = UIPasteboard.Name("group.app.personal.PersonalKeyboard")
+
     static func write(_ key: String, value: Any) {
         suite.set(value, forKey: key)
         UserDefaults.standard.set(value, forKey: key)
-        suite.synchronize()
-        UserDefaults.standard.synchronize()
-        var d = fileDict()
-        d[key] = value
-        if let url = fileURL, let data = try? JSONSerialization.data(withJSONObject: d, options: []) {
-            try? data.write(to: url, options: .atomic)
-        }
-        if let text = value as? String, key == "themeId" {
-            let pb = UIPasteboard(name: boardName, create: true)
-            pb?.string = "naqra|themeId|" + text
-        }
-        CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFNotificationName("app.personal.PersonalKeyboard.prefs" as CFString), nil, nil, true)
+        CFNotificationCenterPostNotification(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            CFNotificationName(notificationName as CFString),
+            nil, nil, true
+        )
     }
+
     static func string(_ key: String) -> String? {
-        if let v = fileDict()[key] as? String { return v }
-        if let v = suite.string(forKey: key) { return v }
-        if let v = UserDefaults.standard.string(forKey: key) { return v }
-        if key == "themeId",
-           let raw = UIPasteboard(name: boardName, create: false)?.string,
-           raw.hasPrefix("naqra|themeId|") {
-            return String(raw.dropFirst("naqra|themeId|".count))
-        }
-        return nil
+        suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
     }
+
     static func bool(_ key: String) -> Bool? {
-        if let v = fileDict()[key] as? Bool { return v }
         if suite.object(forKey: key) != nil { return suite.bool(forKey: key) }
         if UserDefaults.standard.object(forKey: key) != nil { return UserDefaults.standard.bool(forKey: key) }
         return nil
     }
 }
-
 
 enum TimeTheme {
     static func isMorning() -> Bool {
@@ -75,6 +52,7 @@ final class TranslationBridgeModel: ObservableObject {
     var sourceLang = "ar"
     var targetLang = "en"
     var onResult: ((String) -> Void)?
+    var onError: ((String) -> Void)?
 }
 
 struct TranslationBridgeView: View {
@@ -94,7 +72,9 @@ struct TranslationBridgeView: View {
                         do {
                             let response = try await session.translate(text)
                             await MainActor.run { model.onResult?(response.targetText) }
-                        } catch {}
+                        } catch {
+                            await MainActor.run { model.onError?("تعذّرت الترجمة. تحقق من توفر حزمة اللغة وحاول مجددًا") }
+                        }
                     }
                     .id(model.token)
             }
@@ -132,13 +112,10 @@ struct NaqraPalette {
     ]
 
     static func current() -> NaqraPalette {
-        let raw = ThemeIO.string("themeId") ?? TimeTheme.preferredThemeId()
+        let raw = ThemeIO.string("themeId") ?? "auto"
         let id = normalizeThemeId(raw)
         if id == "custom" { return solid(customPalette()) }
-        if id == "auto" {
-            let dark = UITraitCollection.current.userInterfaceStyle == .dark
-            return solid(preset(dark ? "dark" : "light"))
-        }
+        if id == "auto" { return solid(preset(TimeTheme.preferredThemeId())) }
         return solid(preset(id))
     }
 
@@ -152,6 +129,7 @@ struct NaqraPalette {
 
     static func preset(_ id: String) -> NaqraPalette {
         switch id {
+        case "dark": return .init(background: .clear, key: UIColor(red: 0.10, green: 0.16, blue: 0.28, alpha: 0.62), text: UIColor(red: 0.93, green: 0.96, blue: 1.0, alpha: 1), accent: UIColor(red: 0.36, green: 0.60, blue: 1.0, alpha: 1), blurDark: true)
         case "light": return .init(background: .clear, key: UIColor(red: 0.90, green: 0.95, blue: 0.99, alpha: 0.82), text: UIColor(red: 0.14, green: 0.27, blue: 0.40, alpha: 1), accent: UIColor(red: 0.28, green: 0.52, blue: 0.86, alpha: 1), blurDark: false)
         case "glass": return .init(background: .clear, key: UIColor(red: 0.86, green: 0.82, blue: 0.96, alpha: 0.38), text: UIColor(red: 0.18, green: 0.16, blue: 0.28, alpha: 1), accent: UIColor(red: 0.62, green: 0.42, blue: 0.88, alpha: 1), blurDark: false)
         case "ocean": return .init(background: .clear, key: UIColor(red: 0.06, green: 0.22, blue: 0.32, alpha: 0.55), text: UIColor(red: 0.62, green: 0.96, blue: 0.98, alpha: 1), accent: UIColor(red: 0.16, green: 0.78, blue: 0.84, alpha: 1), blurDark: true)
@@ -240,11 +218,18 @@ struct NaqraPalette {
     static func saveTheme(_ id: String) { ThemeIO.write("themeId", value: id) }
     static func normalizeThemeId(_ raw: String) -> String {
         switch raw {
-        case "charcoal","smoke": return "dark"
+        case "charcoal","smoke","catppuccin_frappe","catppuccin_macchiato": return "dark"
         case "teal": return "ocean"
-        case "midnight": return "cobalt"
-        case "snow": return "light"
+        case "midnight","midnight_gold","neon_nights","tron","cobalt_night": return "cobalt"
+        case "snow","minimal_light","catppuccin_latte": return "light"
         case "clear": return "glass"
+        case "matcha": return "m7"
+        case "cotton_candy","candy_shop": return "m12"
+        case "cherry": return "e5"
+        case "cocoa": return "e5"
+        case "neon": return "forest"
+        case "catppuccin_mocha": return "e2"
+        case "dracula": return "violet"
         default: return raw
         }
     }
@@ -282,11 +267,20 @@ final class ClipboardHistory {
     private let max = 20
 
     var items: [String] {
-        get { ThemeIO.string(key)?.split(separator: "\u{1F}").map(String.init) ?? [] }
+        guard ThemeIO.bool("clipboardHistoryEnabled") ?? false else { return [] }
+        return ThemeIO.string(key)?.split(separator: "\u{1F}").map(String.init) ?? []
     }
 
+    func ensurePrivacyDefault() {
+        guard ThemeIO.bool("clipboardHistoryEnabled") == nil else { return }
+        ThemeIO.write("clipboardHistoryEnabled", value: false)
+        ThemeIO.write(key, value: "")
+    }
+
+    func clear() { ThemeIO.write(key, value: "") }
+
     func add(_ text: String) {
-        guard !text.isEmpty else { return }
+        guard ThemeIO.bool("clipboardHistoryEnabled") ?? false, !text.isEmpty else { return }
         var list = items
         list.removeAll { $0 == text }
         list.insert(text, at: 0)
@@ -324,16 +318,27 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     private var emojiTabs: UIStackView?
     private var suggestionButtons: [UIButton] = []
     private var appliedThemeId = ""
-
+    private var noticeLabel: UILabel?
+    private var pendingTranslationText = ""
+    private var clipboardLongPressInProgress = false
 
     private let letterFont = UIFont.systemFont(ofSize: 26, weight: .medium)
     private let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
-    private let boardHeight: CGFloat = 300
+    private let boardHeight: CGFloat = 324
+    private var themeSignature: String {
+        let id = ThemeIO.string("themeId") ?? "auto"
+        return id == "auto" ? "auto-\(TimeTheme.preferredThemeId())" : id
+    }
 
     private let arabicRows = [
         ["ض","ص","ث","ق","ف","غ","ع","ه","خ","ح","ج"],
         ["ش","س","ي","ب","ل","ا","ت","ن","م","ك","ة"],
         ["ئ","ظ","ط","ذ","د","ز","ر","و","ى"]
+    ]
+    private let arabicShiftRows = [
+        ["أ","إ","آ","ى","ء","ؤ","لا","ة","ئ","ؤ","ء"],
+        ["أ","إ","آ","ى","ء","ؤ","لا","لآ","لأ","لإ","ة"],
+        ["،","؛","؟","٪","…","ـ","ى","ئ"]
     ]
     private let englishLower = [
         ["q","w","e","r","t","y","u","i","o","p"],
@@ -372,6 +377,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         loadPrefs()
         listenPrefs()
         translationModel.onResult = { [weak self] t in self?.applyTranslation(t) }
+        translationModel.onError = { [weak self] message in self?.showNotice(message) }
+        ClipboardHistory.shared.ensurePrivacyDefault()
         TapSoundEngine.shared.setEnabled(ThemeIO.bool("sounds") ?? true)
         armHaptics()
         rebuild()
@@ -385,17 +392,17 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         super.viewWillAppear(animated)
         view.clipsToBounds = true
         // Height setup only here — prevents layout jumps (MSIME pattern)
+        let desiredHeight: CGFloat = page == .letters ? boardHeight : 300
         if heightConstraint == nil {
-            let c = view.heightAnchor.constraint(equalToConstant: boardHeight)
+            let c = view.heightAnchor.constraint(equalToConstant: desiredHeight)
             c.priority = UILayoutPriority(999)
             c.isActive = true
             heightConstraint = c
         } else {
-            let h: CGFloat; switch page { case .letters: h = 300; case .symbols: h = 280; case .emoji: h = 300 }; heightConstraint?.constant = h
+            heightConstraint?.constant = desiredHeight
         }
-        let incoming = ThemeIO.string("themeId") ?? "dark"
-        if incoming != appliedThemeId {
-            appliedThemeId = incoming
+        if themeSignature != appliedThemeId {
+            appliedThemeId = themeSignature
             palette = NaqraPalette.current()
             rebuild()
         }
@@ -435,7 +442,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
                 guard let observer else { return }
                 let vc = Unmanaged<KeyboardViewController>.fromOpaque(observer).takeUnretainedValue()
                 DispatchQueue.main.async {
-                    vc.appliedThemeId = ThemeIO.string("themeId") ?? "dark"
+                    vc.appliedThemeId = vc.themeSignature
                     vc.palette = NaqraPalette.current()
                     vc.rebuild()
                 }
@@ -446,35 +453,74 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         )
     }
 
-    private var batteryQuiet: Bool { ProcessInfo.processInfo.isLowPowerModeEnabled }
-    private var hapticsOn: Bool { (ThemeIO.bool("haptics") ?? true) && !batteryQuiet }
+    private var hapticsOn: Bool {
+        (ThemeIO.bool("haptics") ?? true) && ThemeIO.string("hapticLevel") != "none"
+    }
     private var trackpadOn: Bool { ThemeIO.bool("trackpad") ?? true }
     private enum Pulse { case key, action, del, move }
     private let selectionFeedback = UISelectionFeedbackGenerator()
 
+    private var impactStyle: UIImpactFeedbackGenerator.FeedbackStyle {
+        switch ThemeIO.string("hapticLevel") ?? "medium" {
+        case "light": return .light
+        case "strong": return .heavy
+        default: return .medium
+        }
+    }
+
     private func armHaptics() {
-        guard hapticsOn, hasFullAccess else { return }
+        guard hapticsOn else { return }
+        UIImpactFeedbackGenerator(style: impactStyle).prepare()
         selectionFeedback.prepare()
     }
 
     private func tapHaptic(_ pulse: Pulse = .key) {
-        guard hapticsOn, hasFullAccess else { return }
-        selectionFeedback.selectionChanged()
-        selectionFeedback.prepare()
+        guard hapticsOn else { return }
+        if case .move = pulse {
+            selectionFeedback.selectionChanged()
+            selectionFeedback.prepare()
+        } else {
+            let feedback = UIImpactFeedbackGenerator(style: impactStyle)
+            feedback.impactOccurred()
+            feedback.prepare()
+        }
     }
 
-    private func playSystemClick() {
-        // Official Apple click — lightest, follows system sound settings
-        UIDevice.current.playInputClick()
-    }
+    private func playSystemClick() { playSystemSound() }
 
     private func playSystemSound() {
-        // Official keyboard click — must be called on main thread and only when visible
         guard enableInputClicksWhenVisible else { return }
-        let soundsOn = ThemeIO.bool("sounds") ?? true
-        guard soundsOn else { return }
-        DispatchQueue.main.async {
-            UIDevice.current.playInputClick()
+        TapSoundEngine.shared.setEnabled(ThemeIO.bool("sounds") ?? true)
+        TapSoundEngine.shared.play(.rowMid)
+    }
+
+    private func showNotice(_ message: String) {
+        noticeLabel?.removeFromSuperview()
+        let label = UILabel()
+        label.text = message
+        label.textColor = .white
+        label.font = .systemFont(ofSize: 13, weight: .medium)
+        label.textAlignment = .center
+        label.numberOfLines = 2
+        label.backgroundColor = UIColor.black.withAlphaComponent(0.88)
+        label.layer.cornerRadius = 12
+        label.layer.cornerCurve = .continuous
+        label.clipsToBounds = true
+        label.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            label.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
+            label.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 12),
+            label.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -12),
+            label.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, constant: -24)
+        ])
+        label.layoutMargins = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
+        label.isUserInteractionEnabled = false
+        noticeLabel = label
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) { [weak self, weak label] in
+            label?.removeFromSuperview()
+            if self?.noticeLabel === label { self?.noticeLabel = nil }
         }
     }
 
@@ -540,14 +586,17 @@ private func rebuild() {
         blurView.effect = nil
         blurView.backgroundColor = palette.background
         rootStack.arrangedSubviews.forEach { rootStack.removeArrangedSubview($0); $0.removeFromSuperview() }
-        let h: CGFloat; switch page { case .letters: h = 300; case .symbols: h = 280; case .emoji: h = 300 }; heightConstraint?.constant = h
+        let h: CGFloat = page == .letters ? boardHeight : 300
+        heightConstraint?.constant = h
         switch page {
         case .letters:
             rootStack.addArrangedSubview(makeToolbar())
             if showNumberRow {
                 rootStack.addArrangedSubview(makeRow(numberRow, rowIdx: 0))
             }
-            let rows = language == .arabic ? arabicRows : (isShifted ? englishUpper : englishLower)
+            let rows = language == .arabic
+                ? (isShifted ? arabicShiftRows : arabicRows)
+                : (isShifted ? englishUpper : englishLower)
             for (i, row) in rows.enumerated() {
                 if i == rows.count - 1 { rootStack.addArrangedSubview(makeLastLetterRow(row)) }
                 else { rootStack.addArrangedSubview(makeRow(row, rowIdx: i + 1)) }
@@ -582,7 +631,10 @@ private func rebuild() {
         s.distribution = .fill
         s.semanticContentAttribute = .forceLeftToRight
         let clip = iconKey("doc.on.clipboard", #selector(copyPasteTapped))
-        clip.addTarget(self, action: #selector(copyPasteHold), for: .touchDown)
+        let holdGesture = UILongPressGestureRecognizer(target: self, action: #selector(copyPasteHold(_:)))
+        holdGesture.minimumPressDuration = 0.38
+        holdGesture.cancelsTouchesInView = true
+        clip.addGestureRecognizer(holdGesture)
         clip.widthAnchor.constraint(equalToConstant: 36).isActive = true
         s.addArrangedSubview(clip)
 
@@ -757,46 +809,62 @@ private func rebuild() {
     }
 
     private func makeBottom(emojiOn: Bool = false) -> UIView {
-        let s = UIStackView()
-        s.axis = .horizontal
-        s.spacing = 6
-        s.distribution = .fill
-        s.semanticContentAttribute = .forceLeftToRight
-        let symbolsTitle: String
-        if page == .symbols { symbolsTitle = "ABC" }
-        else if page == .emoji { symbolsTitle = "رجوع" }
-        else { symbolsTitle = "123" }
-        let symbols = control(symbolsTitle, #selector(symbolsOrLettersTapped), font: 13)
-        symbols.widthAnchor.constraint(equalToConstant: 46).isActive = true
+        let row = UIStackView()
+        row.axis = .horizontal
+        row.spacing = 4
+        row.distribution = .fill
+        row.alignment = .fill
+        row.semanticContentAttribute = .forceLeftToRight
+
+        let symbolsTitle = page == .symbols ? "ABC" : (page == .emoji ? "رجوع" : "123")
+        let symbols = control(symbolsTitle, #selector(symbolsOrLettersTapped), font: 12)
+        symbols.widthAnchor.constraint(equalToConstant: 42).isActive = true
+
+        let globe = iconKey("globe", #selector(nextKeyboardTapped))
+        globe.widthAnchor.constraint(equalToConstant: 32).isActive = true
+        globe.accessibilityLabel = "التبديل إلى لوحة مفاتيح أخرى"
+
         let emoji = UIButton(type: .system)
         emoji.setTitle("😊", for: .normal)
-        emoji.titleLabel?.font = .systemFont(ofSize: 20)
+        emoji.titleLabel?.font = .systemFont(ofSize: 19)
         paint(emoji)
         emoji.addTarget(self, action: #selector(emojiTapped), for: .touchUpInside)
-        emoji.widthAnchor.constraint(equalToConstant: 36).isActive = true
-        let space = control(" ", #selector(spaceTouchUp), font: 14)
-        space.setTitle("", for: .normal)
+        emoji.widthAnchor.constraint(equalToConstant: 32).isActive = true
+        emoji.accessibilityLabel = "لوحة الرموز التعبيرية"
+
+        let space = control("", #selector(spaceTouchUp), font: 14)
         space.addTarget(self, action: #selector(spaceTouchDown(_:event:)), for: .touchDown)
         space.addTarget(self, action: #selector(spaceDrag(_:event:)), for: .touchDragInside)
         space.addTarget(self, action: #selector(spaceDrag(_:event:)), for: .touchDragOutside)
-        space.setContentHuggingPriority(.defaultLow - 1, for: .horizontal)
-        space.setContentCompressionResistancePriority(.defaultLow - 1, for: .horizontal)
-        space.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
+        space.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        space.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        let minimumSpace = space.widthAnchor.constraint(greaterThanOrEqualToConstant: 74)
+        minimumSpace.priority = UILayoutPriority(999)
+        minimumSpace.isActive = true
+        space.accessibilityLabel = "مسافة"
+
         let enter = iconKey("arrow.down.to.line", #selector(enterTapped))
-        enter.widthAnchor.constraint(equalToConstant: 46).isActive = true
-        s.addArrangedSubview(symbols)
-        s.addArrangedSubview(emoji)
-        s.addArrangedSubview(space)
+        enter.widthAnchor.constraint(equalToConstant: 42).isActive = true
+        enter.accessibilityLabel = "إدخال سطر جديد"
+
+        row.addArrangedSubview(symbols)
+        row.addArrangedSubview(globe)
+        row.addArrangedSubview(emoji)
+        row.addArrangedSubview(space)
         if emojiOn {
-            s.addArrangedSubview(makeDeleteKey())
+            row.addArrangedSubview(makeDeleteKey())
         } else {
-            let period = control(".", #selector(periodTapped), font: 20)
-            period.widthAnchor.constraint(equalToConstant: 36).isActive = true
-            s.addArrangedSubview(period)
+            let period = control(".", #selector(periodTapped), font: 18)
+            period.widthAnchor.constraint(equalToConstant: 32).isActive = true
+            row.addArrangedSubview(period)
         }
-        s.addArrangedSubview(enter)
-        lockHeight(s, 44)
-        return s
+        row.addArrangedSubview(enter)
+        lockHeight(row, 44)
+        return row
+    }
+
+    @objc private func nextKeyboardTapped() {
+        advanceToNextInputMode()
     }
 
     private func makeEmojiTabs() -> UIView {
@@ -966,6 +1034,8 @@ private func rebuild() {
         let b = UIButton(type: .system)
         b.setTitle(t, for: .normal)
         b.titleLabel?.font = letterFont
+        b.titleLabel?.adjustsFontSizeToFitWidth = true
+        b.titleLabel?.minimumScaleFactor = 0.7
         paint(b)
         b.tag = rowIdx
         b.addTarget(self, action: #selector(charDown(_:)), for: .touchDown)
@@ -1093,6 +1163,7 @@ private func rebuild() {
     @objc private func shiftTapped() {
         isShifted.toggle()
         rebuild()
+        tapHaptic(.action)
     }
 
     @objc private func deleteTouchDown() {
@@ -1165,20 +1236,28 @@ private func rebuild() {
     }
 
     private func autocorrectOnSpace() {
-        let auto = ThemeIO.bool("autocorrect") ?? true
-        guard auto else { return }
+        guard ThemeIO.bool("autocorrect") ?? true, language == .english else { return }
         let before = textDocumentProxy.documentContextBeforeInput ?? ""
         let token = before.split(whereSeparator: { !$0.isLetter && !$0.isNumber && $0 != "'" }).last.map(String.init) ?? ""
         guard token.count >= 2 else { return }
-        let fixes = suggestions().filter { !$0.isEmpty && $0.caseInsensitiveCompare(token) != .orderedSame }
-        guard let fix = fixes.first else { return }
+
+        let checker = UITextChecker()
+        let range = NSRange(location: 0, length: token.utf16.count)
+        let misspelling = checker.rangeOfMisspelledWord(
+            in: token,
+            range: range,
+            startingAt: 0,
+            wrap: false,
+            language: "en_US"
+        )
+        guard misspelling.location != NSNotFound,
+              let fix = checker.guesses(forWordRange: range, in: token, language: "en_US")?.first,
+              fix.caseInsensitiveCompare(token) != .orderedSame else { return }
         for _ in 0..<token.count { textDocumentProxy.deleteBackward() }
         textDocumentProxy.insertText(fix)
         tapHaptic(.action)
         refreshSuggestions()
     }
-
-
 
 
 
@@ -1237,84 +1316,113 @@ private func rebuild() {
         rebuild()
     }
 
-    @objc private func copyPasteTapped() { copyNow() }
-
-    @objc private func copyPasteHold() {
-        let items = ClipboardHistory.shared.items
-        if items.isEmpty {
-            NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(armPaste), object: nil)
-            perform(#selector(armPaste), with: nil, afterDelay: 0.38)
-            return
-        }
-        let sheet = UIAlertController(title: "الحافظة", message: nil, preferredStyle: .actionSheet)
-        for item in items.prefix(8) {
-            let title = item.count > 40 ? String(item.prefix(40)) + "…" : item
-            sheet.addAction(UIAlertAction(title: title, style: .default) { [weak self] _ in
-                self?.textDocumentProxy.insertText(item)
-            })
-        }
-        sheet.addAction(UIAlertAction(title: "إلغاء", style: .cancel))
-        if let pop = sheet.popoverPresentationController {
-            pop.sourceView = view
-            pop.sourceRect = CGRect(x: view.bounds.midX, y: 40, width: 1, height: 1)
-        }
-        present(sheet, animated: true)
+    @objc private func copyPasteTapped() {
+        guard !clipboardLongPressInProgress else { return }
+        copyNow()
     }
 
-    @objc private func armPaste() { pasteNow() }
+    @objc private func copyPasteHold(_ gesture: UILongPressGestureRecognizer) {
+        switch gesture.state {
+        case .began:
+            clipboardLongPressInProgress = true
+            guard hasFullAccess else {
+                showNotice("لصق الحافظة يحتاج تفعيل الوصول الكامل للوحة")
+                return
+            }
+            let items = ClipboardHistory.shared.items
+            guard !items.isEmpty else {
+                pasteNow()
+                return
+            }
+            let sheet = UIAlertController(title: "الحافظة المحفوظة", message: "تُخزّن محليًا على هذا الجهاز", preferredStyle: .actionSheet)
+            for item in items.prefix(8) {
+                let title = item.count > 40 ? String(item.prefix(40)) + "…" : item
+                sheet.addAction(UIAlertAction(title: title, style: .default) { [weak self] _ in
+                    self?.textDocumentProxy.insertText(item)
+                })
+            }
+            sheet.addAction(UIAlertAction(title: "مسح السجل", style: .destructive) { _ in
+                ClipboardHistory.shared.clear()
+            })
+            sheet.addAction(UIAlertAction(title: "إلغاء", style: .cancel))
+            if let pop = sheet.popoverPresentationController {
+                pop.sourceView = view
+                pop.sourceRect = CGRect(x: view.bounds.midX, y: 40, width: 1, height: 1)
+            }
+            present(sheet, animated: true)
+        case .ended, .cancelled, .failed:
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                self?.clipboardLongPressInProgress = false
+            }
+        default:
+            break
+        }
+    }
 
     private func copyNow() {
-        guard hasFullAccess else { return }
+        guard hasFullAccess else {
+            showNotice("النسخ يحتاج تفعيل الوصول الكامل للوحة")
+            return
+        }
         persistAccess()
-        let selected = textDocumentProxy.selectedText
-        let text = (selected?.isEmpty == false ? selected : nil) ?? combined()
-        guard let text, !text.isEmpty else { return }
+        guard let text = textDocumentProxy.selectedText, !text.isEmpty else {
+            showNotice("حدّد النص أولًا، ثم اضغط زر النسخ")
+            return
+        }
         UIPasteboard.general.string = text
         ClipboardHistory.shared.add(text)
         tapHaptic()
     }
 
     private func pasteNow() {
-        guard hasFullAccess else { return }
+        guard hasFullAccess else {
+            showNotice("اللصق يحتاج تفعيل الوصول الكامل للوحة")
+            return
+        }
         persistAccess()
-        if let t = UIPasteboard.general.string, !t.isEmpty {
-            textDocumentProxy.insertText(t)
+        if let text = UIPasteboard.general.string, !text.isEmpty {
+            textDocumentProxy.insertText(text)
             tapHaptic()
+        } else {
+            showNotice("الحافظة فارغة")
         }
     }
 
     @objc private func translateTapped() {
-        guard hasFullAccess else { return }
+        guard hasFullAccess else {
+            showNotice("الترجمة تحتاج تفعيل الوصول الكامل للوحة")
+            return
+        }
         persistAccess()
-        let selected = textDocumentProxy.selectedText
-        let text = (selected?.isEmpty == false ? selected : nil)
-            ?? textDocumentProxy.documentContextBeforeInput
-            ?? combined()
-        guard let text, !text.isEmpty else { return }
-        let ar = text.unicodeScalars.filter { $0.value >= 0x0600 && $0.value <= 0x06FF }.count
-        let toEn = ar >= max(1, text.count / 4)
-        translationModel.sourceLang = toEn ? "ar" : "en"
-        translationModel.targetLang = toEn ? "en" : "ar"
+        guard #available(iOS 18.0, *) else {
+            showNotice("الترجمة تتطلب iOS 18 أو أحدث")
+            return
+        }
+        guard let text = textDocumentProxy.selectedText, !text.isEmpty else {
+            showNotice("حدّد النص الذي تريد ترجمته أولًا")
+            return
+        }
+        pendingTranslationText = text
+        let arabicCount = text.unicodeScalars.filter { $0.value >= 0x0600 && $0.value <= 0x06FF }.count
+        let translateToEnglish = arabicCount >= max(1, text.count / 4)
+        translationModel.sourceLang = translateToEnglish ? "ar" : "en"
+        translationModel.targetLang = translateToEnglish ? "en" : "ar"
         translationModel.sourceText = text
         translationModel.token += 1
     }
 
     private func applyTranslation(_ text: String) {
-        guard !text.isEmpty else { return }
-        if let selected = textDocumentProxy.selectedText, !selected.isEmpty {
-            textDocumentProxy.deleteBackward()
-            textDocumentProxy.insertText(text)
+        guard !text.isEmpty else {
+            showNotice("لم تصل نتيجة ترجمة")
             return
         }
-        if let before = textDocumentProxy.documentContextBeforeInput {
-            for _ in 0..<before.count { textDocumentProxy.deleteBackward() }
+        guard textDocumentProxy.selectedText == pendingTranslationText else {
+            showNotice("تغيّر التحديد؛ حدّد النص مرة أخرى وأعد المحاولة")
+            return
         }
         textDocumentProxy.insertText(text)
-    }
-
-    private func combined() -> String? {
-        let v = (textDocumentProxy.documentContextBeforeInput ?? "") + (textDocumentProxy.documentContextAfterInput ?? "")
-        return v.isEmpty ? nil : v
+        pendingTranslationText = ""
+        tapHaptic(.action)
     }
 
     @objc private func dismissKeyboardAction() { dismissKeyboard() }
