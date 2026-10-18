@@ -778,7 +778,9 @@ private func rebuild() {
         s.distribution = .fillEqually
         s.heightAnchor.constraint(equalToConstant: 44).isActive = true
         s.distribution = .fillEqually
-        s.semanticContentAttribute = .forceLeftToRight
+        s.semanticContentAttribute = rowIdx == 0
+            ? .forceLeftToRight
+            : (language == .arabic ? .forceRightToLeft : .forceLeftToRight)
         keys.forEach { s.addArrangedSubview(charKey($0, rowIdx: rowIdx)) }
         lockHeight(s, 44)
         return s
@@ -807,6 +809,7 @@ private func rebuild() {
         mid.axis = .horizontal
         mid.spacing = 6
         mid.distribution = .fillEqually
+        mid.semanticContentAttribute = language == .arabic ? .forceRightToLeft : .forceLeftToRight
         keys.forEach { mid.addArrangedSubview(charKey($0, rowIdx: 2)) }
         wrap.addArrangedSubview(mid)
         wrap.addArrangedSubview(makeDeleteKey())
