@@ -347,7 +347,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     private let arabicRows = [
         ["ض","ص","ث","ق","ف","غ","ع","ه","خ","ح","ج"],
         ["ش","س","ي","ب","ل","ا","ت","ن","م","ك","ة"],
-        ["ي","و","ر","ز","د","ذ","ط","ظ"]
+        ["ع","ظ","ط","ذ","د","ز","ر","و","ي"]
     ]
     // Arabic has no upper-case layer; Shift keeps the same readable letters.
     private var arabicShiftRows: [[String]] {
@@ -784,9 +784,7 @@ private func rebuild() {
         s.distribution = .fillEqually
         s.heightAnchor.constraint(equalToConstant: 44).isActive = true
         s.distribution = .fillEqually
-        s.semanticContentAttribute = rowIdx == 0
-            ? .forceLeftToRight
-            : (language == .arabic ? .forceRightToLeft : .forceLeftToRight)
+        s.semanticContentAttribute = .forceLeftToRight
         keys.forEach { s.addArrangedSubview(charKey($0, rowIdx: rowIdx)) }
         lockHeight(s, 44)
         return s
@@ -815,7 +813,7 @@ private func rebuild() {
         mid.axis = .horizontal
         mid.spacing = 6
         mid.distribution = .fillEqually
-        mid.semanticContentAttribute = language == .arabic ? .forceRightToLeft : .forceLeftToRight
+        mid.semanticContentAttribute = .forceLeftToRight
         keys.forEach { mid.addArrangedSubview(charKey($0, rowIdx: 2)) }
         wrap.addArrangedSubview(mid)
         wrap.addArrangedSubview(makeDeleteKey())

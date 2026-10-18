@@ -58,9 +58,9 @@ def main() -> None:
     require('letterFont' in extension and '.systemFont(ofSize: 26, weight: .medium)' in extension and 'fontStyle' not in extension, 'one compact keyboard font is applied')
     require('emojiPager?.delegate = nil' in extension and 'guard emojiPack.indices.contains(collectionView.tag)' in extension, 'emoji page teardown and index guards prevent stale callbacks')
     require('DispatchQueue.main.async { [weak self] in' in extension and 'self.emojiPack = Self.catalog()' in extension, 'emoji catalog refresh is deferred after selection')
-    require('["ي","و","ر","ز","د","ذ","ط","ظ"]' in extension, 'Arabic bottom row matches the approved layout without ئ')
+    require('["ع","ظ","ط","ذ","د","ز","ر","و","ي"]' in extension, 'Arabic bottom row matches the reference layout')
     require('"ا": ["أ", "إ", "آ"]' in extension and '"و": ["ؤ"]' in extension and '"ي": ["ئ", "ى"]' in extension, 'Arabic long-press alternatives exist')
-    require('["ي","و","ر","ز","د","ذ","ط","ظ"]' in extension, 'Arabic third row matches the approved layout without ئ')
+    require('["ع","ظ","ط","ذ","د","ز","ر","و","ي"]' in extension, 'Arabic third row matches the reference layout')
     require('.environment(\\.layoutDirection, .rightToLeft)' in app, 'preview uses the same RTL direction as the keyboard')
     require('("😀", merge(Array(loadFrequent().prefix(24))' in extension and '("🕒", loadFrequent())' not in extension, 'frequent emojis merge into the main faces tab')
     copy_fn = extension[extension.index('    private func copyNow()'):extension.index('    private func pasteNow()')]
