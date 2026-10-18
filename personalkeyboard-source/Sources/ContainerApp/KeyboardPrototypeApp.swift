@@ -344,6 +344,7 @@ struct MiniKeyboardView: View {
     let themeID: String
     let showNumberRow: Bool
     @Binding private var previewText: String
+    @State private var previewNumberRow = false
 
     private let numbers = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
     private let row1 = ["ض", "ص", "ث", "ق", "ف", "غ", "ع", "ه", "خ", "ح", "ج"]
