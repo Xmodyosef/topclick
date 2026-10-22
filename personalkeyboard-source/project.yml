@@ -46,6 +46,9 @@ targets:
       - path: Sources/KeyboardExtension
         excludes:
           - "Info.plist"
+          - "Resources"
+    resources:
+      - path: Sources/KeyboardExtension/Resources
     settings:
       base:
         PRODUCT_NAME: KeyboardExtension

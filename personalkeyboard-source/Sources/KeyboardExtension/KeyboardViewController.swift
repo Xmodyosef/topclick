@@ -49,46 +49,20 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     }
 
     // Apple-style Arabic layout: 11 / 11 / 11 keys, kept simple and predictable.
-    let arabicRows = [
-        ["ض","ص","ث","ق","ف","غ","ع","ه","خ","ح","ج"],
-        ["ش","س","ي","ب","ل","ا","ت","ن","م","ك","ة"],
-        ["ع","ظ","ط","ذ","د","ز","ر","و","ي"]
-    ]
-    // Arabic has no upper-case layer; Shift keeps the same readable letters.
-    var arabicShiftRows: [[String]] {
-        arabicRows
+    var arabicRows: [[String]] { KeyboardDataLoader.layouts().arabicRows }
+    var arabicShiftRows: [[String]] { arabicRows }
+    var englishLower: [[String]] { KeyboardDataLoader.layouts().englishLower }
+    var englishUpper: [[String]] { KeyboardDataLoader.layouts().englishUpper }
+    var symbolPages: [[[String]]] {
+        language == .arabic
+            ? KeyboardDataLoader.layouts().arabicSymbolPages
+            : KeyboardDataLoader.layouts().englishSymbolPages
     }
-    let englishLower = [
-        ["q","w","e","r","t","y","u","i","o","p"],
-        ["a","s","d","f","g","h","j","k","l"],
-        ["z","x","c","v","b","n","m"]
-    ]
-    let englishUpper = [
-        ["Q","W","E","R","T","Y","U","I","O","P"],
-        ["A","S","D","F","G","H","J","K","L"],
-        ["Z","X","C","V","B","N","M"]
-    ]
-    let numberRow = ["1","2","3","4","5","6","7","8","9","0"]
-    var showNumberRow: Bool {
-        ThemeIO.bool("showNumberRow") ?? true
-    }
-    var symbolPages: [[[String]]] { language == .arabic ? arabicSymbolPages : englishSymbolPages }
-    let arabicSymbolPages = [[
-        ["1","2","3","4","5","6","7","8","9","0"],
-        ["-","/",":","؛","(",")","؟","﷼","&","@"],
-        [".","،","؟","!","'","«","»","٪","…","•"],
-        ["[","]","{","}","#","*","+","=","_","~"],
-    ]]
-    let englishSymbolPages = [[
-        ["1","2","3","4","5","6","7","8","9","0"],
-        ["-","/",":",";","(",")","$","&","@","\""],
-        [".",",","?","!","'","\"","+","=","/","•"],
-        ["[","]","{","}","#","*","_","~","^","%"],
-    ]]
-    var emojiPack: [(icon: String, items: [String])] = KeyboardViewController.catalog()
+    var emojiPack: [(icon: String, items: [String])] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        emojiPack = Self.catalog()
         view.backgroundColor = .clear
         configureRoot()
         attachBridge()
@@ -175,17 +149,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         return String(s.lowercased().map { map[$0] ?? $0 })
     }
 
-    static let arabicLexicon = [
-        "السلام","عليكم","ورحمة","الله","صباح","الخير","مساء","كيف","حالك",
-        "الحمد","شكرا","عفوا","نعم","لا","ممكن","أريد","اليوم",
-        "غدا","الآن","هنا","هناك","هذا","هذه","ذلك","التي","الذي","كان",
-        "تكون","يكون","بعد","قبل","حتى","عند","بين","كل","بعض","جدا",
-        "مرحبا","أهلا","وسهلا","تمام","زين","طيب","يعني","لكن","أيضا",
-        "اليمن","صنعاء","كتاب","كتابة","كتب","مدرسة","جامعة","عمل",
-        "كيفك","يا","أخي","أختي","وين","متى","ليش","عشان","بكرة","أمس",
-        "البيت","الشغل","السيارة","الجوال","ماء","أكل","شرب","نوم","صحة",
-        "أحب","أبغى","أقدر","ما","في","هذي","ذلك","سلام","آسف","موافق","الحين"
-    ]
+    static var arabicLexicon: [String] { KeyboardDataLoader.arabicLexicon() }
 
 
 
@@ -211,21 +175,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
 
 
-    let holdMap: [String: [String]] = [
-        "ا": ["أ", "إ", "آ"],
-        "و": ["ؤ"],
-        "ي": ["ئ", "ى"],
-        "ه": ["ة"],
-        "ل": ["لا", "لأ", "لإ", "لآ"],
-        "س": ["ش"],
-        "ص": ["ض"],
-        "ط": ["ظ"],
-        "ع": ["غ"],
-        "ج": ["چ"],
-        "ح": ["خ"],
-        "ز": ["ژ"],
-        "د": ["ذ"]
-    ]
+    var holdMap: [String: [String]] { KeyboardDataLoader.layouts().holdMap }
 
 
     func alts(for key: String) -> [String] {
@@ -304,30 +254,12 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
 
     static func loadFrequent() -> [String] {
-        let raw = ThemeIO.string("frequentEmoji") ?? "😀 😂 ❤️ 😍 🔥 👍 🙏 😊 ✨ 😭 👏 💕 🌹 🇾🇪 🎉 😎 🤔 😅 😁 😘 💪 ✌️ 💯 💙"
+        let raw = ThemeIO.string("frequentEmoji") ?? "😀 😂 ❤️ 😍 🔥 👍 🙏 😊 ✨ 😭 👏 💕 🌹 🇾🇪 🎉 😎"
         return raw.split(separator: " ").map(String.init)
     }
 
-
     static func catalog() -> [(icon: String, items: [String])] {
-        func s(_ t: String) -> [String] { t.split(separator: " ").map(String.init) }
-        func merge(_ first: [String], _ second: [String]) -> [String] {
-            var seen = Set<String>()
-            return (first + second).filter { seen.insert($0).inserted }
-        }
-        return [
-            ("😀", merge(Array(loadFrequent().prefix(24)), s("😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😝 😜 🤪 🤨 🧐 🤓 😎 🤩 🥳 😏 😒 😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🤭 🤫 🤥 😶 😐 😑 🫠 🫡 🫢 🫣 🫤 🥹 🥲 😵‍💫 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 🤐 🥴 🤢 🤮 🤧 😷 🤒 🤕 🤑 🤠 😈 👿 🤡 👻 💀 👽 🤖 🎃 😺 😸 😹 😻 😼 😽 🙀 😿 😾"))),
-            ("👋", s("👋 🤚 🖐️ ✋ 🖖 🫱 🫲 🫳 🫴 👌 🤌 🤏 ✌️ 🤞 🫰 🤟 🤘 🤙 👈 👉 👆 🖕 👇 ☝️ 🫵 👍 👎 ✊ 👊 🤛 🤜 👏 🙌 🫶 👐 🤲 🤝 🙏 ✍️ 💅 🤳 💪 🦾 🦿 🦵 🦶 👂 🦻 👃 🧠 🫀 🫁 🦷 🦴 👀 👁️ 👅 👄 🫦 👶 🧒 👦 👧 🧑 👱 👨 🧔 👩 🧓 👴 👵 🙍 🙎 🙅 🙆 💁 🙋 🧏 🙇 🤦 🤷 👮 🕵️ 💂 🥷 👷 🫅 🤴 👸 👳 👲 🧕 🤵 👰 🤰 🤱 👼 🎅 🤶 🧑‍🎄 🦸 🦹 🧙 🧚 🧛 🧜 🧝 🧞 🧟 💆 💇 🚶 🧍 🧎 🏃 💃 🕺 🕴️ 👯 🧖 🧗 🤺 🏇 ⛷️ 🏂 🏌️ 🏄 🏊 🤽 🚣 🧘 🛀 🛌 👭 👫 👬 💏 💑 👪")),
-            ("❤️", s("❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❤️‍🩹 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 🩷 🩵 🩶 ♥️ ♦️ ♣️ ♠️ 🃏 🎴 💯 💢 💥 💫 💦 💨 💬 💭 🗯️ 💤 ⭐ 🌟 ✨ ⚡ ☄️ 🔥 🌪️ 🌈 ☀️ 🌤️ ⛅ 🌥️ ☁️ 🌦️ 🌧️ ⛈️ 🌩️ 🌨️ ❄️ ☃️ ⛄ 🌬️ 💧 💦 ☔ ☂️ 🌊 🌫️")),
-            ("🐻", s("🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐻‍❄️ 🐨 🐯 🦁 🐮 🐷 🐽 🐸 🐵 🙈 🙉 🙊 🐒 🐔 🐧 🐦 🐤 🐣 🐥 🦆 🦅 🦉 🦇 🐺 🐗 🐴 🦄 🐝 🪱 🐛 🦋 🐌 🐞 🐜 🪰 🪲 🪳 🦟 🦗 🕷️ 🕸️ 🦂 🐢 🐍 🦎 🦖 🦕 🐙 🦑 🦐 🦞 🦀 🐡 🐠 🐟 🐬 🐳 🐋 🦈 🐊 🐅 🐆 🦓 🦍 🦧 🐘 🦛 🦏 🐪 🐫 🦒 🦘 🦬 🐃 🐂 🐄 🐎 🐖 🐏 🐑 🦙 🐐 🦌 🐕 🐩 🦮 🐕‍🦺 🐈 🐈‍⬛ 🪶 🐓 🦃 🦤 🦚 🦜 🦢 🦩 🕊️ 🐇 🦝 🦨 🦡 🦫 🦦 🦥 🐁 🐀 🐿️ 🦔 🌵 🎄 🌲 🌳 🌴 🪴 🌱 🌿 ☘️ 🍀 🎍 🍃 🍂 🍁 🍄 🐚 🪨 🌾 💐 🌷 🌹 🥀 🌺 🌸 🌼 🌻")),
-            ("🍔", s("🍏 🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🫐 🍈 🍒 🍑 🥭 🍍 🥥 🥝 🍅 🍆 🥑 🥦 🥬 🥒 🌶️ 🫑 🌽 🥕 🫒 🧄 🧅 🥔 🍠 🥐 🥯 🍞 🥖 🥨 🧀 🥚 🍳 🧈 🥞 🧇 🥓 🥩 🍗 🍖 🦴 🌭 🍔 🍟 🍕 🫓 🥪 🥙 🧆 🌮 🌯 🫔 🥗 🥘 🫕 🥫 🍝 🍜 🍲 🍛 🍣 🍱 🥟 🦪 🍤 🍙 🍚 🍘 🍥 🥠 🥮 🍢 🍡 🍧 🍨 🍦 🥧 🧁 🍰 🎂 🍮 🍭 🍬 🍫 🍿 🍩 🍪 🌰 🥜 🍯 🥛 🍼 🫖 ☕ 🍵 🧃 🥤 🧋 🍶 🍺 🍻 🥂 🍷 🥃 🍸 🍹 🧉 🍾 🧊 🥄 🍴 🍽️ 🥢 🧂")),
-            ("✈️", s("🚗 🚕 🚙 🚌 🚎 🏎️ 🚓 🚑 🚒 🚐 🛻 🚚 🚛 🚜 🛴 🚲 🛵 🏍️ 🛺 🚨 🚔 🚍 🚘 🚖 🚡 🚠 🚟 🚃 🚋 🚞 🚝 🚄 🚅 🚈 🚂 🚆 🚇 🚊 🚉 ✈️ 🛫 🛬 🛩️ 💺 🛰️ 🚀 🛸 🚁 🛶 ⛵ 🚤 🛥️ 🛳️ ⛴️ 🚢 ⚓ ⛽ 🚧 🚦 🚥 🚏 🗺️ 🗿 🗽 🗼 🏰 🏯 🏟️ 🎡 🎢 🎠 ⛲ ⛱️ 🏖️ 🏝️ 🏜️ 🌋 ⛰️ 🏔️ 🗻 🏕️ ⛺ 🏠 🏡 🏘️ 🏚️ 🏗️ 🏭 🏢 🏬 🏣 🏤 🏥 🏦 🏨 🏪 🏫 🏩 💒 🏛️ ⛪ 🕌 🕍 🛕 🕋 ⛩️ 🛤️ 🛣️ 🗾 🎑 🏞️ 🌅 🌄 🌠 🎇 🎆 🌇 🌆 🏙️ 🌃 🌌 🌉 🌁")),
-            ("⚽", s("⚽ 🏀 🏈 ⚾ 🥎 🎾 🏐 🏉 🥏 🎱 🪀 🏓 🏸 🏒 🏑 🥍 🏏 🥅 ⛳ 🪁 🏹 🎣 🤿 🥊 🥋 🎽 🛹 🛼 🛷 ⛸️ 🥌 🎿 ⛷️ 🏂 🪂 🏋️ 🤼 🤸 ⛹️ 🤺 🤾 🏌️ 🏇 🧘 🏄 🏊 🤽 🚣 🧗 🚵 🚴 🏆 🥇 🥈 🥉 🏅 🎖️ 🏵️ 🎗️ 🎫 🎟️ 🎪 🤹 🎭 🩰 🎨 🎬 🎤 🎧 🎼 🎹 🥁 🎷 🎺 🎸 🪕 🎻 🎲 ♟️ 🎯 🎳 🎮 🎰 🧩")),
-            ("💡", s("⌚ 📱 📲 💻 ⌨️ 🖥️ 🖨️ 🖱️ 🖲️ 🕹️ 🗜️ 💽 💾 💿 📀 📼 📷 📸 📹 🎥 📽️ 🎞️ 📞 ☎️ 📟 📠 📺 📻 🎙️ 🎚️ 🎛️ 🧭 ⏱️ ⏲️ ⏰ 🕰️ ⌛ ⏳ 📡 🔋 🔌 💡 🔦 🕯️ 🪔 🧯 🛢️ 💸 💵 💴 💶 💷 💰 💳 💎 ⚖️ 🪜 🧰 🪛 🔧 🔨 ⚒️ 🛠️ ⛏️ 🪝 🔩 ⚙️ 🧱 ⛓️ 🧲 🔫 💣 🧨 🪓 🔪 🗡️ ⚔️ 🛡️ 🚬 ⚰️ 🪦 🏺 🔮 📿 🧿 💈 ⚗️ 🔭 🔬 🕳️ 🩹 🩺 💊 💉 🩸 🧬 🦠 🧫 🧪 🌡️ 🧹 🧺 🧻 🚽 🚰 🚿 🛁 🛀 🧼 🪥 🪒 🧽 🪣 🧴 🛎️ 🔑 🗝️ 🚪 🪑 🛋️ 🛏️ 🛌 🧸 🖼️ 🪞 🪟 🛍️ 🛒 🎁 🎈 🎏 🎀 🪄 🪅 🎊 🎉 🎎 🏮 🎐 🧧 ✉️ 📩 📨 📧 💌 📥 📤 📦 🏷️ 📪 📫 📬 📭 📮 📯 📜 📃 📄 📑 🧾 📊 📈 📉 🗒️ 🗓️ 📆 📅 🗑️ 📇 🗃️ 🗳️ 🗄️ 📋 📁 📂 🗂️ 🗞️ 📰 📓 📔 📒 📕 📗 📘 📙 📚 📖 🔖 🧷 🔗 📎 🖇️ 📐 📏 🧮 📌 📍 ✂️ 🖊️ 🖋️ ✒️ 🖌️ 🖍️ 📝 ✏️ 🔍 🔎 🔏 🔐 🔒 🔓")),
-            ("⭐", s("✅ ❌ ❎ ✔️ ☑️ 🔘 🔴 🟠 🟡 🟢 🔵 🟣 ⚫ ⚪ 🟤 🔺 🔻 🔸 🔹 🔶 🔷 🔳 🔲 ▪️ ▫️ ◾ ◽ ◼️ ◻️ 🟥 🟧 🟨 🟩 🟦 🟪 ⬛ ⬜ 🟫 🔈 🔇 🔉 🔊 🔔 🔕 📣 📢 👁️‍🗨️ 🗨️ ♀️ ♂️ ⚧️ ♾️ ♻️ ⚜️ 🔱 📛 🔰 ⭕ ➕ ➖ ➗ ✖️ 🟰 ‼️ ⁉️ ❓ ❔ ❕ ❗ 〰️ 💱 💲")),
-            ("🌙", s("🌙 🌛 🌜 🌝 🌞 ⭐ 🌟 🌠 🌌 🪐 🌍 🌎 🌏 🌐 🌑 🌒 🌓 🌔 🌕 🌖 🌗 🌘")),
-            ("🇾🇪", s("🇾🇪 🇸🇦 🇦🇪 🇰🇼 🇶🇦 🇧🇭 🇴🇲 🇯🇴 🇱🇧 🇸🇾 🇮🇶 🇵🇸 🇪🇬 🇱🇾 🇹🇳 🇩🇿 🇲🇦 🇸🇩 🇸🇴 🇩🇯 🇰🇲 🇲🇷 🇺🇸 🇬🇧 🇨🇦 🇦🇺 🇳🇿 🇮🇪 🇫🇷 🇩🇪 🇮🇹 🇪🇸 🇵🇹 🇳🇱 🇧🇪 🇨🇭 🇦🇹 🇸🇪 🇳🇴 🇩🇰 🇫🇮 🇵🇱 🇨🇿 🇸🇰 🇭🇺 🇷🇴 🇧🇬 🇬🇷 🇹🇷 🇷🇺 🇺🇦 🇷🇸 🇭🇷 🇸🇮 🇧🇦 🇦🇱 🇲🇰 🇨🇳 🇯🇵 🇰🇷 🇰🇵 🇮🇳 🇵🇰 🇧🇩 🇱🇰 🇳🇵 🇧🇹 🇲🇲 🇹🇭 🇻🇳 🇰🇭 🇱🇦 🇲🇾 🇸🇬 🇮🇩 🇵🇭 🇧🇳 🇹🇱 🇲🇳 🇰🇿 🇺🇿 🇹🇲 🇹🇯 🇰🇬 🇦🇫 🇮🇷 🇦🇲 🇬🇪 🇦🇿 🇧🇷 🇦🇷 🇨🇱 🇨🇴 🇵🇪 🇻🇪 🇪🇨 🇧🇴 🇵🇾 🇺🇾 🇬🇾 🇸🇷 🇲🇽 🇬🇹 🇧🇿 🇸🇻 🇭🇳 🇳🇮 🇨🇷 🇵🇦 🇨🇺 🇩🇴 🇭🇹 🇯🇲 🇹🇹 🇧🇸 🇧🇧 🇿🇦 🇳🇬 🇰🇪 🇪🇹 🇬🇭 🇹🇿 🇺🇬 🇷🇼 🇸🇳 🇨🇮 🇨🇲 🇦🇴 🇿🇼 🇿🇲 🇲🇼 🇲🇿 🇳🇦 🇧🇼 🇲🇬 🇲🇺 🇸🇨 🏳️ 🏴 🏴‍☠️ 🏁 🚩 🎌 🏳️‍🌈 🇺🇳 🇪🇺"))
-        ]
+        KeyboardDataLoader.emojiCatalog(frequent: loadFrequent())
     }
 }
 
