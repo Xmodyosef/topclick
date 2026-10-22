@@ -43,6 +43,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     }
     let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
     let boardHeight: CGFloat = 324
+    let numberRow = ["1","2","3","4","5","6","7","8","9","0"]
+    var showNumberRow: Bool { ThemeIO.bool("showNumberRow") ?? true }
     var themeSignature: String {
         let id = ThemeIO.string("themeId") ?? "auto"
         return id == "auto" ? "auto-\(TimeTheme.preferredThemeId())" : id
@@ -214,16 +216,6 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
 
 
-    func knownWord(_ token: String) -> Bool {
-        if language == .english {
-            let checker = UITextChecker()
-            let range = NSRange(location: 0, length: token.utf16.count)
-            let miss = checker.rangeOfMisspelledWord(in: token, range: range, startingAt: 0, wrap: false, language: "en_US")
-            return miss.location == NSNotFound
-        }
-        let folded = Self.fold(token)
-        return Self.arabicLexicon.contains { Self.fold($0) == folded }
-    }
 
 
 

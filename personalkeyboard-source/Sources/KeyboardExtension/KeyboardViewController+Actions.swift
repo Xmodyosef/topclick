@@ -23,6 +23,7 @@ extension KeyboardViewController {
                 DispatchQueue.main.async {
                     vc.appliedThemeId = vc.themeSignature
                     vc.palette = NaqraPalette.current()
+                    TapSoundEngine.shared.setEnabled(ThemeIO.bool("sounds") ?? true)
                     vc.rebuild()
                 }
             },
@@ -46,13 +47,6 @@ extension KeyboardViewController {
             host.view.topAnchor.constraint(equalTo: view.topAnchor)
         ])
         host.didMove(toParent: self)
-    }
-    func loadPreparedTheme() {
-        // Theme is prepared by the container app and stored in App Group
-        // Keyboard only reads it — keeps extension light
-        palette = NaqraPalette.current()
-        blurView.effect = UIBlurEffect(style: palette.blurDark ? .systemUltraThinMaterialDark : .systemUltraThinMaterialLight)
-        view.backgroundColor = palette.background
     }
     @objc func copyPasteTapped() {
         guard !clipboardLongPressInProgress else { return }

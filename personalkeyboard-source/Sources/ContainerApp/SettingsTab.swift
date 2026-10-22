@@ -10,6 +10,8 @@ struct SettingsTab: View {
     @State private var autocorrect = ThemeStore.bool("autocorrect") ?? true
     @State private var suggestions = ThemeStore.bool("suggestions") ?? true
     @State private var haptics = ThemeStore.bool("haptics") ?? true
+        sounds = ThemeStore.bool("sounds") ?? true
+    @State private var sounds = ThemeStore.bool("sounds") ?? true
     @State private var hapticLevel = ThemeStore.string("hapticLevel") ?? "medium"
     @State private var trackpad = ThemeStore.bool("trackpad") ?? true
     @State private var symbolRows = Int(ThemeStore.string("symbolRows") ?? "3") ?? 3
@@ -225,6 +227,7 @@ struct SettingsTab: View {
         autocorrect = ThemeStore.bool("autocorrect") ?? true
         suggestions = ThemeStore.bool("suggestions") ?? true
         haptics = ThemeStore.bool("haptics") ?? true
+        sounds = ThemeStore.bool("sounds") ?? true
         hapticLevel = ThemeStore.string("hapticLevel") ?? "medium"
         trackpad = ThemeStore.bool("trackpad") ?? true
         symbolRows = min(4, max(1, Int(ThemeStore.string("symbolRows") ?? "3") ?? 3))

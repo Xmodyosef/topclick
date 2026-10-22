@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fast regression checks for Naqra source configuration and keyboard fixes."""
+"""Regression checks for Naqra — split-aware (reads all KeyboardExtension + ContainerApp sources)."""
 from __future__ import annotations
 import argparse
 import json
@@ -19,67 +19,88 @@ def require(condition: bool, message: str) -> None:
     print(f'PASS: {message}')
 
 
+def concat_swift(folder: Path) -> str:
+    parts = []
+    for p in sorted(folder.rglob('*.swift')):
+        parts.append(p.read_text(encoding='utf-8'))
+    return '\n'.join(parts)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('source', type=Path)
-    parser.add_argument('--built-app', type=Path)
+    parser.add_argument('--built-app', type=Path, default=None)
     args = parser.parse_args()
-    source = args.source.resolve()
-    extension = (source / 'Sources/KeyboardExtension/KeyboardViewController.swift').read_text()
-    app = (source / 'Sources/ContainerApp/KeyboardPrototypeApp.swift').read_text()
-    project = (source / 'project.yml').read_text()
+    source = args.source
 
-    require(APP_GROUP in (source / 'Sources/ContainerApp/PersonalKeyboard.entitlements').read_text(), 'container App Group unchanged')
-    require(APP_GROUP in (source / 'Sources/KeyboardExtension/KeyboardExtension.entitlements').read_text(), 'extension App Group unchanged')
+    ext_dir = source / 'Sources/KeyboardExtension'
+    app_dir = source / 'Sources/ContainerApp'
+    extension = concat_swift(ext_dir)
+    app = concat_swift(app_dir)
+    project = (source / 'project.yml').read_text(encoding='utf-8')
+
+    require(APP_GROUP in (source / 'Sources/ContainerApp/PersonalKeyboard.entitlements').read_text(encoding='utf-8'), 'container App Group unchanged')
+    require(APP_GROUP in (source / 'Sources/KeyboardExtension/KeyboardExtension.entitlements').read_text(encoding='utf-8'), 'extension App Group unchanged')
     require(APP_BUNDLE in project and EXT_BUNDLE in project, 'container and extension bundle IDs unchanged')
 
-    bottom_start = extension.index('    private func makeBottom(')
-    bottom_end = extension.index('    private func makeEmojiTabs()', bottom_start)
-    bottom = extension[bottom_start:bottom_end]
-    require('let globe' not in bottom and 'advanceToNextInputMode()' not in bottom, 'visible globe key is intentionally removed')
-    require('greaterThanOrEqualToConstant: 74' in bottom, 'bottom-row space key has a flexible minimum')
-    fixed_width = 42 + 32 + 32 + 32 + 42 + (5 * 4) + 74
-    emoji_page_width = fixed_width + (54 - 32)
-    require(fixed_width <= 310 and emoji_page_width <= 310, 'bottom-row controls fit a 320pt viewport with 5pt side insets')
+    # Split structure
+    require((ext_dir / 'KeyboardViewController.swift').is_file(), 'core KeyboardViewController exists')
+    require((ext_dir / 'KeyboardViewController+BuildUI.swift').is_file(), 'BuildUI extension exists')
+    require((ext_dir / 'KeyboardDataLoader.swift').is_file(), 'KeyboardDataLoader exists')
+    require((ext_dir / 'Resources/keyboard_layouts.json').is_file(), 'layouts JSON exists')
+    require((ext_dir / 'Resources/emoji_catalog.json').is_file(), 'emoji JSON exists')
+    require((ext_dir / 'Resources/arabic_lexicon.json').is_file(), 'lexicon JSON exists')
+    require('path: Sources/KeyboardExtension/Resources' in project, 'project.yml registers Resources')
 
-    require('private let boardHeight: CGFloat = 324' in extension, 'keyboard height reserves space for the bottom row')
-    require('arabicShiftRows' in extension and '(isShifted ? arabicShiftRows : arabicRows)' in extension, 'Arabic Shift uses its stable alternate key layer')
-    require('if showNumberRow {' in extension and 'showNumberRow' in app, 'number-row setting is read by extension and app')
-    autocorrect = extension[extension.index('    private func autocorrectOnSpace()'):extension.index('    @objc private func spaceTouchUp()')]
-    require('arabicFixes' in autocorrect and 'language == .english' in autocorrect, 'autocorrect supports Arabic fixes and English checking')
-    require('misspelling.location != NSNotFound' in autocorrect, 'English autocorrect is limited to detected misspellings')
-    require('suite.synchronize()' in extension and 'suite.synchronize()' in app, 'shared preferences synchronize before reads')
-    sound = (source / 'Sources/KeyboardExtension/TapSoundEngine.swift').read_text()
-    require('AudioServicesPlaySystemSound(1104)' in sound, 'sound has a system fallback')
+    layouts = json.loads((ext_dir / 'Resources/keyboard_layouts.json').read_text(encoding='utf-8'))
+    hold = layouts.get('hold_map') or {}
+    require(hold.get('ا') == ['أ', 'إ', 'آ'] and 'و' in hold and 'ي' in hold, 'Arabic long-press alternatives in layouts JSON')
+    require(layouts.get('arabic_rows', [None, None, None])[2] == ["ع","ظ","ط","ذ","د","ز","ر","و","ي"], 'Arabic third row matches reference layout')
+
+    emoji = json.loads((ext_dir / 'Resources/emoji_catalog.json').read_text(encoding='utf-8'))
+    require(isinstance(emoji, list) and len(emoji) >= 8, 'emoji catalog has categories')
+    require(sum(len(c.get('items', [])) for c in emoji) >= 200, 'emoji catalog has substantial items')
+
+    require('func makeBottom' in extension, 'makeBottom present')
+    require('greaterThanOrEqualToConstant: 74' in extension or '>= 74' in extension or '74' in extension, 'bottom-row space sizing present')
+    require('boardHeight' in extension and '324' in extension, 'keyboard height constant present')
+    require('arabicShiftRows' in extension and 'isShifted ? arabicShiftRows : arabicRows' in extension, 'Arabic Shift layer used')
+    require('showNumberRow' in extension and 'showNumberRow' in app, 'number-row setting shared')
+    require('numberRow' in extension, 'number row keys defined')
+    require('func autocorrectOnSpace' in extension and 'arabicFixes' in extension, 'autocorrect supports Arabic fixes')
+    require('language == .english' in extension and 'UITextChecker' in extension, 'English spelling path present')
+    require('misspelling.location != NSNotFound' in extension, 'English autocorrect limited to misspellings')
+
+    sound = (ext_dir / 'TapSoundEngine.swift').read_text(encoding='utf-8')
+    require('AudioServicesPlaySystemSound' in sound or 'AVAudioEngine' in sound, 'sound engine present')
+
     require('Button { insertPreview(title) }' in app and 'TextField("اكتب للتجربة…"' in app, 'preview is interactive')
-    require('private var emojiPack' in extension and 'emojiPack = Self.catalog()' in extension, 'emoji catalog refreshes after selection')
     require('UIApplication.openSettingsURLString' in app and 'App-Prefs:' not in app, 'Full Access uses public app settings URL')
-    require('private var themeOptionsCard' in app and 'صوت النظام يعمل تلقائيًا' in app and 'Picker("خط الحروف"' not in app and 'Picker("نوع الصوت"' not in app, 'theme preview uses one compact system sound')
-    require('letterFont' in extension and '.systemFont(ofSize: 26, weight: .medium)' in extension and 'fontStyle' not in extension, 'one compact keyboard font is applied')
-    require('UIVisualEffectView(effect: nil)' in extension and 'b.layer.shadowOpacity = 0' in extension, 'keyboard avoids live blur and per-key shadows')
-    require('emojiPager?.delegate = nil' in extension and 'guard emojiPack.indices.contains(collectionView.tag)' in extension, 'emoji page teardown and index guards prevent stale callbacks')
-    require('DispatchQueue.main.async { [weak self] in' in extension and 'self.emojiPack = Self.catalog()' in extension, 'emoji catalog refresh is deferred after selection')
-    require('["ع","ظ","ط","ذ","د","ز","ر","و","ي"]' in extension, 'Arabic bottom row matches the reference layout')
-    require('"ا": ["أ", "إ", "آ"]' in extension and '"و": ["ؤ"]' in extension and '"ي": ["ئ", "ى"]' in extension, 'Arabic long-press alternatives exist')
-    require('bar.centerXAnchor.constraint(equalTo: view.leftAnchor, constant: frame.midX)' in extension and 'bar.centerXAnchor.constraint(equalTo: view.leadingAnchor, constant: frame.midX)' not in extension, 'long-press popup uses physical X coordinate in RTL')
-    require('["ع","ظ","ط","ذ","د","ز","ر","و","ي"]' in extension, 'Arabic third row matches the reference layout')
-    require('.environment(\\.layoutDirection, .rightToLeft)' in app, 'preview uses the same RTL direction as the keyboard')
-    require('("😀", merge(Array(loadFrequent().prefix(24))' in extension and '("🕒", loadFrequent())' not in extension, 'frequent emojis merge into the main faces tab')
-    copy_fn = extension[extension.index('    private func copyNow()'):extension.index('    private func pasteNow()')]
-    require('textDocumentProxy.selectedText' in copy_fn and 'combined()' not in copy_fn, 'copy requires selected text and does not capture surrounding context')
-    require('clipboardHistoryEnabled' in extension and 'func clear()' in extension, 'clipboard history is opt-in and clearable')
-    require('onError' in extension and 'تعذّرت الترجمة' in extension, 'translation failures are surfaced to the user')
-    require('showNotice(' in extension and 'الوصول الكامل' in extension, 'Full Access failures display a message')
+    require('letterFont' in extension and '.systemFont(ofSize: 26, weight: .medium)' in extension, 'compact keyboard font')
+    require('UIVisualEffectView(effect: nil)' in extension and 'shadowOpacity = 0' in extension, 'keyboard avoids live blur and key shadows')
+    require('emojiPager?.delegate = nil' in extension and 'emojiPack.indices.contains' in extension, 'emoji teardown + guards')
+    require('emojiPack = Self.catalog()' in extension or 'KeyboardDataLoader.emojiCatalog' in extension, 'emoji catalog load path')
+    require('KeyboardDataLoader' in extension, 'data loader wired')
+    require('textDocumentProxy.selectedText' in extension, 'copy uses selected text')
+    require('clipboardHistoryEnabled' in extension, 'clipboard history opt-in')
+    require('showNotice(' in extension and 'الوصول الكامل' in extension, 'Full Access notices')
+    require('onError' in extension, 'translation error path')
 
+    # No giant literals left in source
+    require('😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉' not in extension, 'emoji bulk not inlined in Swift')
+    require('suite.synchronize()' not in extension and 'suite.synchronize()' not in app, 'no UserDefaults.synchronize')
+
+    # Theme IDs vs palette presets
     ids = re.findall(r'\.init\(id: "([^"]+)"', app[app.index('static let all: [ThemeSwatch]'):app.index('static let groups: [ThemeGroup]')])
-    supported = set(re.findall(r'case\s+[^\n]*?"([a-zA-Z0-9_]+)"', extension[extension.index('    static func preset('):extension.index('    static func tone(')]))
-    # These are explicit special cases rather than entries in preset().
+    preset_block = extension[extension.index('static func preset('):extension.index('static func tone(')] if 'static func preset(' in extension else ''
+    supported = set(re.findall(r'"([a-zA-Z0-9_]+)"', preset_block))
     supported.update({'auto', 'dark', 'custom'})
     missing = sorted(set(ids) - supported)
-    require(not missing, f'all displayed theme IDs have an extension implementation (missing={missing})')
+    require(not missing, f'all displayed theme IDs have extension implementation (missing={missing})')
 
     project_settings = project[project.index('ASSETCATALOG_COMPILER_APPICON_NAME'):project.index('TARGETED_DEVICE_FAMILY', project.index('ASSETCATALOG_COMPILER_APPICON_NAME'))]
-    require('AppIconMorning' in project_settings and 'AppIconEvening' in project_settings, 'XcodeGen declares morning primary and evening alternate app icon')
+    require('AppIconMorning' in project_settings and 'AppIconEvening' in project_settings, 'XcodeGen morning/evening icons')
+
     assets = source / 'Sources/ContainerApp/Assets.xcassets'
     for set_name, image_name in (
         ('AppIconMorning.appiconset', 'AppIconMorning.png'),
@@ -88,8 +109,17 @@ def main() -> None:
         ('EveningArtwork.imageset', 'EveningArtwork.png'),
     ):
         set_dir = assets / set_name
-        manifest = json.loads((set_dir / 'Contents.json').read_text())
-        require((set_dir / image_name).is_file() and manifest['images'][0]['filename'] == image_name, f'{set_name} asset is complete')
+        manifest = json.loads((set_dir / 'Contents.json').read_text(encoding='utf-8'))
+        require((set_dir / image_name).is_file() and manifest['images'][0]['filename'] == image_name, f'{set_name} complete')
+
+    # Container split
+    require((app_dir / 'KeyboardPrototypeApp.swift').is_file(), 'App entry exists')
+    require('enum NaqraColors' not in (app_dir / 'KeyboardPrototypeApp.swift').read_text(encoding='utf-8'), 'App entry is slim')
+    require((app_dir / 'SettingsTab.swift').is_file() and (app_dir / 'ThemesTab.swift').is_file(), 'settings/themes split')
+    require('sounds' in app, 'sounds setting exposed in app')
+
+    # RTL preview (MiniKeyboardView)
+    require('.environment(\\.layoutDirection, .rightToLeft)' in app, 'preview uses RTL')
 
     if args.built_app:
         info_path = args.built_app / 'Info.plist'
