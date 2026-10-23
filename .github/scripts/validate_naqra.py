@@ -55,7 +55,12 @@ def main() -> None:
     layouts = json.loads((ext_dir / 'Resources/keyboard_layouts.json').read_text(encoding='utf-8'))
     hold = layouts.get('hold_map') or {}
     require(hold.get('ا') == ['أ', 'إ', 'آ'] and 'و' in hold and 'ي' in hold, 'Arabic long-press alternatives in layouts JSON')
-    require(layouts.get('arabic_rows', [None, None, None])[2] == ["ع","ظ","ط","ذ","د","ز","ر","و","ي"], 'Arabic third row matches reference layout')
+    arabic_rows = layouts.get('arabic_rows') or []
+    require(len(arabic_rows) == 3 and [len(row) for row in arabic_rows] == [11, 11, 9], 'Arabic letter rows match keyboard row widths')
+    require(arabic_rows[2] == ["ع","ظ","ط","ذ","د","ز","ر","و","ي"], 'Arabic third row matches reference layout')
+    arabic_shift = layouts.get('arabic_shift_rows') or []
+    require(len(arabic_shift) == len(arabic_rows) and [len(row) for row in arabic_shift] == [len(row) for row in arabic_rows], 'Arabic Shift rows match keyboard row widths')
+    require(arabic_shift != arabic_rows, 'Arabic Shift layout differs from normal Arabic letters')
 
     emoji = json.loads((ext_dir / 'Resources/emoji_catalog.json').read_text(encoding='utf-8'))
     require(isinstance(emoji, list) and len(emoji) >= 8, 'emoji catalog has categories')
@@ -64,7 +69,10 @@ def main() -> None:
     require('func makeBottom' in extension, 'makeBottom present')
     require('greaterThanOrEqualToConstant: 74' in extension or '>= 74' in extension or '74' in extension, 'bottom-row space sizing present')
     require('boardHeight' in extension and '324' in extension, 'keyboard height constant present')
+    loader = (ext_dir / 'KeyboardDataLoader.swift').read_text(encoding='utf-8')
+    controller = (ext_dir / 'KeyboardViewController.swift').read_text(encoding='utf-8')
     require('arabicShiftRows' in extension and 'isShifted ? arabicShiftRows : arabicRows' in extension, 'Arabic Shift layer used')
+    require('rows2("arabic_shift_rows")' in loader and 'layouts().arabicShiftRows' in controller, 'Arabic Shift JSON is loaded by the keyboard')
     require('showNumberRow' in extension and 'showNumberRow' in app, 'number-row setting shared')
     require('numberRow' in extension, 'number row keys defined')
     require('func autocorrectOnSpace' in extension and 'arabicFixes' in extension, 'autocorrect supports Arabic fixes')
@@ -73,8 +81,18 @@ def main() -> None:
 
     sound = (ext_dir / 'TapSoundEngine.swift').read_text(encoding='utf-8')
     require('AudioServicesPlaySystemSound' in sound or 'AVAudioEngine' in sound, 'sound engine present')
+    none_branch = re.search(r'if choice == "none"\s*\{([^}]*)\}', sound)
+    require(none_branch is not None and 'return' in none_branch.group(1) and 'AudioServicesPlaySystemSound' not in none_branch.group(1), 'none sound choice is silent')
+    require('ThemeIO.bool("sounds") != false' in sound, 'sound engine respects disabled sound preference')
 
     require('Button { insertPreview(title) }' in app and 'TextField("اكتب للتجربة…"' in app, 'preview is interactive')
+    preview = (app_dir / 'KeyboardPreviewTab.swift').read_text(encoding='utf-8')
+    settings = (app_dir / 'SettingsTab.swift').read_text(encoding='utf-8')
+    require('ThemeStore.bool("sounds") ?? true' in preview and 'soundChoice != "none"' in preview, 'preview reads saved sound preferences')
+    require('ThemeStore.write("sounds", value: true)' not in preview and 'ThemeStore.write("soundChoice", value: "system")' not in preview, 'preview does not force sound settings')
+    require('Toggle("تفعيل صوت النقر", isOn: $sounds)' in settings and 'Picker("نوع الصوت", selection: $soundChoice)' in settings, 'sound toggle and picker are exposed in settings')
+    require('ThemeStore.write("sounds", value: isEnabled)' in settings and 'ThemeStore.write("soundChoice", value: nextChoice)' in settings and 'ThemeStore.write("soundChoice", value: choice)' in settings, 'sound toggle and picker keep both stored preferences in sync')
+    require(not re.search(r'(?m)^\s*sounds\s*=\s*ThemeStore\.bool\("sounds"\)', settings), 'no orphan sound assignment in SettingsTab')
     require('UIApplication.openSettingsURLString' in app and 'App-Prefs:' not in app, 'Full Access uses public app settings URL')
     require('letterFont' in extension and '.systemFont(ofSize: 26, weight: .medium)' in extension, 'compact keyboard font')
     require('UIVisualEffectView(effect: nil)' in extension and 'shadowOpacity = 0' in extension, 'keyboard avoids live blur and key shadows')
@@ -117,6 +135,7 @@ def main() -> None:
     require('enum NaqraColors' not in (app_dir / 'KeyboardPrototypeApp.swift').read_text(encoding='utf-8'), 'App entry is slim')
     require((app_dir / 'SettingsTab.swift').is_file() and (app_dir / 'ThemesTab.swift').is_file(), 'settings/themes split')
     require('sounds' in app, 'sounds setting exposed in app')
+    require('Undo' not in (source / 'README.md').read_text(encoding='utf-8'), 'README does not claim unimplemented Undo')
 
     # RTL preview (MiniKeyboardView)
     require('.environment(\\.layoutDirection, .rightToLeft)' in app, 'preview uses RTL')

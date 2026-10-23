@@ -6,9 +6,15 @@ enum KeyboardDataLoader {
     private static var layoutsCache: Layouts?
     private static var lexiconCache: [String]?
     private static var emojiCache: [(icon: String, items: [String])]?
+    private static let arabicShiftFallbackRows = [
+        ["َ", "ً", "ُ", "ٌ", "ْ", "ّ", "ٍ", "ِ", "ـ", "«", "»"],
+        ["ئ", "ء", "ؤ", "إ", "أ", "آ", "ة", "ى", "؛", "،", "؟"],
+        ["١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"]
+    ]
 
     struct Layouts {
         let arabicRows: [[String]]
+        let arabicShiftRows: [[String]]
         let englishLower: [[String]]
         let englishUpper: [[String]]
         let arabicSymbolPages: [[[String]]]
@@ -35,6 +41,7 @@ enum KeyboardDataLoader {
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             let fb = Layouts(
                 arabicRows: [["ض","ص","ث","ق","ف","غ","ع","ه","خ","ح","ج"],["ش","س","ي","ب","ل","ا","ت","ن","م","ك","ة"],["ء","ظ","ط","ذ","د","ز","ر","و","ى"]],
+                arabicShiftRows: arabicShiftFallbackRows,
                 englishLower: [["q","w","e","r","t","y","u","i","o","p"],["a","s","d","f","g","h","j","k","l"],["z","x","c","v","b","n","m"]],
                 englishUpper: [["Q","W","E","R","T","Y","U","I","O","P"],["A","S","D","F","G","H","J","K","L"],["Z","X","C","V","B","N","M"]],
                 arabicSymbolPages: [[["1","2","3","4","5","6","7","8","9","0"]]],
@@ -59,6 +66,7 @@ enum KeyboardDataLoader {
         }
         let value = Layouts(
             arabicRows: rows2("arabic_rows"),
+            arabicShiftRows: rows2("arabic_shift_rows").isEmpty ? arabicShiftFallbackRows : rows2("arabic_shift_rows"),
             englishLower: rows2("english_lower"),
             englishUpper: rows2("english_upper"),
             arabicSymbolPages: rows3("arabic_symbol_pages"),
