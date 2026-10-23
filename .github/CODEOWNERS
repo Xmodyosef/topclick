@@ -1,0 +1,8 @@
+/.github/workflows/    @Xmodyosef
+/.github/scripts/      @Xmodyosef
+/.github/CODEOWNERS    @Xmodyosef
+/AGENTS.md             @Xmodyosef
+/project.yml           @Xmodyosef
+**/*.entitlements      @Xmodyosef
+**/Info.plist          @Xmodyosef
+*                      @Xmodyosef
