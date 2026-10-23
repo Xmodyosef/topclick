@@ -10,7 +10,7 @@ struct SettingsTab: View {
     @State private var autocorrect = ThemeStore.bool("autocorrect") ?? true
     @State private var suggestions = ThemeStore.bool("suggestions") ?? true
     @State private var haptics = ThemeStore.bool("haptics") ?? true
-        sounds = ThemeStore.bool("sounds") ?? true
+            @State private var sounds = ThemeStore.bool("sounds") ?? true
     @State private var sounds = ThemeStore.bool("sounds") ?? true
     @State private var hapticLevel = ThemeStore.string("hapticLevel") ?? "medium"
     @State private var trackpad = ThemeStore.bool("trackpad") ?? true
