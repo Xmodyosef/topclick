@@ -1,16 +1,13 @@
 name: Guardrails
-
 on:
   pull_request:
     branches: [main, master]
     types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches-ignore: [main, master, 'agent/**']
-
 permissions:
   contents: read
   pull-requests: write
-
 jobs:
   block-direct-push:
     name: Block direct push to main
@@ -20,7 +17,6 @@ jobs:
       - run: |
           echo "::error::Direct push to ${{ github.ref_name }} BLOCKED."
           exit 1
-
   branch-naming:
     name: Branch naming policy
     runs-on: ubuntu-latest
@@ -28,13 +24,11 @@ jobs:
     steps:
       - run: |
           BR="${{ github.head_ref }}"
-          if [[ ! "$BR" =~ ^agent/[a-z0-9._-]+-[a-z0-9._-]+-[0-9]{8}$ ]] \
-             && [[ ! "$BR" =~ ^(feature|fix|chore|docs|refactor|hotfix)/[a-z0-9._-]+$ ]]; then
+          if [[ ! "$BR" =~ ^agent/[a-z0-9._-]+-[a-z0-9._-]+-[0-9]{8}$ ]] && [[ ! "$BR" =~ ^(feature|fix|chore|docs|refactor|hotfix)/[a-z0-9._-]+$ ]]; then
             echo "::error::Branch '$BR' violates policy."
             exit 1
           fi
           echo "OK: $BR"
-
   secret-scan:
     name: Secret & credential scan
     runs-on: ubuntu-latest
@@ -50,8 +44,6 @@ jobs:
             echo "::error::Potential secret leaked."
             exit 1
           fi
-          echo "OK: no secrets"
-
   identity-guard:
     name: Protect fixed bundle IDs
     runs-on: ubuntu-latest
@@ -66,8 +58,6 @@ jobs:
             echo "::error::Identity bundle IDs locked."
             exit 1
           fi
-          echo "OK: identity intact"
-
   validate-naqra:
     name: validate_naqra.py
     runs-on: ubuntu-latest
@@ -80,10 +70,7 @@ jobs:
       - run: |
           if [ -f .github/scripts/validate_naqra.py ]; then
             python3 .github/scripts/validate_naqra.py personalkeyboard-source
-          else
-            echo "::warning::validate_naqra.py not found — skipping"
           fi
-
   protect-critical:
     name: Protect critical files
     runs-on: ubuntu-latest
@@ -98,8 +85,6 @@ jobs:
             echo "::error::Modifying critical files requires owner approval."
             exit 1
           fi
-          echo "OK: critical files untouched"
-
   guardrails-summary:
     name: Guardrails summary
     runs-on: ubuntu-latest
@@ -107,16 +92,6 @@ jobs:
     if: always() && github.event_name == 'pull_request'
     steps:
       - run: |
-          echo "branch-naming:   ${{ needs.branch-naming.result }}"
-          echo "secret-scan:     ${{ needs.secret-scan.result }}"
-          echo "identity:        ${{ needs.identity-guard.result }}"
-          echo "validate:        ${{ needs.validate-naqra.result }}"
-          echo "protect-critical:${{ needs.protect-critical.result }}"
-          if [[ "${{ needs.branch-naming.result }}" != "success" \
-             || "${{ needs.secret-scan.result }}" != "success" \
-             || "${{ needs.identity-guard.result }}" != "success" \
-             || "${{ needs.protect-critical.result }}" != "success" ]]; then
-            echo "::error::One or more guardrails failed."
+          if [[ "${{ needs.branch-naming.result }}" != "success" || "${{ needs.secret-scan.result }}" != "success" || "${{ needs.identity-guard.result }}" != "success" || "${{ needs.protect-critical.result }}" != "success" ]]; then
             exit 1
           fi
-          echo "ALL GUARDRAILS PASS"
