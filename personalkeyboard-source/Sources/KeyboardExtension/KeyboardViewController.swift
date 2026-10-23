@@ -50,9 +50,9 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         return id == "auto" ? "auto-\(TimeTheme.preferredThemeId())" : id
     }
 
-    // Apple-style Arabic layout: 11 / 11 / 11 keys, kept simple and predictable.
+    // Arabic letter rows contain 11 / 11 / 9 keys, kept simple and predictable.
     var arabicRows: [[String]] { KeyboardDataLoader.layouts().arabicRows }
-    var arabicShiftRows: [[String]] { arabicRows }
+    var arabicShiftRows: [[String]] { KeyboardDataLoader.layouts().arabicShiftRows }
     var englishLower: [[String]] { KeyboardDataLoader.layouts().englishLower }
     var englishUpper: [[String]] { KeyboardDataLoader.layouts().englishUpper }
     var symbolPages: [[[String]]] {
@@ -254,4 +254,3 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         KeyboardDataLoader.emojiCatalog(frequent: loadFrequent())
     }
 }
-

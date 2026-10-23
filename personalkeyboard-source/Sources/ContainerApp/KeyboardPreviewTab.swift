@@ -94,9 +94,9 @@ struct MiniKeyboardView: View {
         self._previewText = previewText
     }
     private func insertPreview(_ title: String) {
-        TapSoundEngine.shared.setEnabled(true)
-        ThemeStore.write("sounds", value: true)
-        ThemeStore.write("soundChoice", value: "system")
+        let soundsEnabled = ThemeStore.bool("sounds") ?? true
+        let soundChoice = ThemeStore.string("soundChoice") ?? "system"
+        TapSoundEngine.shared.setEnabled(soundsEnabled && soundChoice != "none")
         if title == "123" {
             TapSoundEngine.shared.play(.rowMid)
             previewNumberRow.toggle()
@@ -171,4 +171,3 @@ struct MiniKeyboardView: View {
         .buttonStyle(.plain)
     }
 }
-

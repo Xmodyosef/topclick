@@ -10,8 +10,8 @@ struct SettingsTab: View {
     @State private var autocorrect = ThemeStore.bool("autocorrect") ?? true
     @State private var suggestions = ThemeStore.bool("suggestions") ?? true
     @State private var haptics = ThemeStore.bool("haptics") ?? true
-        sounds = ThemeStore.bool("sounds") ?? true
     @State private var sounds = ThemeStore.bool("sounds") ?? true
+    @State private var soundChoice = ThemeStore.string("soundChoice") ?? "system"
     @State private var hapticLevel = ThemeStore.string("hapticLevel") ?? "medium"
     @State private var trackpad = ThemeStore.bool("trackpad") ?? true
     @State private var symbolRows = Int(ThemeStore.string("symbolRows") ?? "3") ?? 3
@@ -39,6 +39,7 @@ struct SettingsTab: View {
                     keyboardCard
                     typingCard
                     feelCard
+                    soundCard
                     privacyCard
                     accessCard
                     if #available(iOS 18.0, *) {
@@ -151,6 +152,33 @@ struct SettingsTab: View {
         }
     }
 
+    private var soundCard: some View {
+        SettingsCard(title: "صوت النقر", subtitle: "اختر صوتًا للنقر أو أوقفه") {
+            Toggle("تفعيل صوت النقر", isOn: $sounds)
+                .onChange(of: sounds) { _, isEnabled in
+                    let nextChoice = isEnabled
+                        ? (soundChoice == "none" ? "system" : soundChoice)
+                        : "none"
+                    soundChoice = nextChoice
+                    ThemeStore.write("sounds", value: isEnabled)
+                    ThemeStore.write("soundChoice", value: nextChoice)
+                }
+
+            Picker("نوع الصوت", selection: $soundChoice) {
+                Text("النظام").tag("system")
+                Text("بدون").tag("none")
+            }
+            .pickerStyle(.menu)
+            .disabled(!sounds)
+            .onChange(of: soundChoice) { _, choice in
+                let isEnabled = choice != "none"
+                sounds = isEnabled
+                ThemeStore.write("soundChoice", value: choice)
+                ThemeStore.write("sounds", value: isEnabled)
+            }
+        }
+    }
+
     private var privacyCard: some View {
         SettingsCard(title: "الخصوصية والحافظة", subtitle: "الحافظة اختيارية؛ لا تُحفظ العناصر الجديدة ما لم تفعّل السجل") {
             Toggle("حفظ سجل الحافظة على هذا الجهاز", isOn: $clipboardHistoryEnabled)
@@ -227,7 +255,18 @@ struct SettingsTab: View {
         autocorrect = ThemeStore.bool("autocorrect") ?? true
         suggestions = ThemeStore.bool("suggestions") ?? true
         haptics = ThemeStore.bool("haptics") ?? true
-        sounds = ThemeStore.bool("sounds") ?? true
+        let knownSoundChoices: Set<String> = ["system", "none"]
+        let storedChoice = ThemeStore.string("soundChoice") ?? "system"
+        let requestedChoice = knownSoundChoices.contains(storedChoice) ? storedChoice : "system"
+        let soundsEnabled = ThemeStore.bool("sounds") ?? (requestedChoice != "none")
+        soundChoice = soundsEnabled && requestedChoice != "none" ? requestedChoice : "none"
+        sounds = soundChoice != "none"
+        if ThemeStore.string("soundChoice") != soundChoice {
+            ThemeStore.write("soundChoice", value: soundChoice)
+        }
+        if ThemeStore.bool("sounds") != sounds {
+            ThemeStore.write("sounds", value: sounds)
+        }
         hapticLevel = ThemeStore.string("hapticLevel") ?? "medium"
         trackpad = ThemeStore.bool("trackpad") ?? true
         symbolRows = min(4, max(1, Int(ThemeStore.string("symbolRows") ?? "3") ?? 3))
@@ -242,4 +281,3 @@ struct SettingsTab: View {
         }
     }
 }
-
