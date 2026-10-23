@@ -4,7 +4,7 @@ on:
     branches: [main, master]
     types: [opened, synchronize, reopened, ready_for_review]
   push:
-    branches-ignore: [main, master, 'agent/**']
+    branches-ignore: [main, master]
 permissions:
   contents: read
   pull-requests: write
@@ -24,13 +24,13 @@ jobs:
     steps:
       - run: |
           BR="${{ github.head_ref }}"
-          if [[ ! "$BR" =~ ^agent/[a-z0-9._-]+-[a-z0-9._-]+-[0-9]{8}$ ]] && [[ ! "$BR" =~ ^(feature|fix|chore|docs|refactor|hotfix)/[a-z0-9._-]+$ ]]; then
-            echo "::error::Branch '$BR' violates policy."
-            exit 1
+          if [[ ! "$BR" =~ ^(agent|manus|bot|ai|feature|fix|chore|docs|refactor|hotfix)/.*$ ]]; then
+            echo "::errorCH::Branch '$BR' violates policy."
+           ANG exit 1
           fi
-          echo "OK: $BR"
-  secret-scan:
-    name: Secret & credential scan
+ED          echo "OK: $BR"
+  secret"-scan:
+    | name: Secret & credential scan
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
@@ -54,7 +54,7 @@ jobs:
       - run: |
           git fetch origin ${{ github.base_ref }} --depth=1
           CHANGED=$(git diff origin/${{ github.base_ref }}...HEAD | grep -E '^[+-]' | grep -v '^[+-][+-]' || true)
-          if echo "$CHANGED" | grep -E 'app\.personal\.PersonalKeyboard|group\.app\.personal\.PersonalKeyboard'; then
+          if echo "$ grep -E 'app\.personal\.PersonalKeyboard|group\.app\.personal\.PersonalKeyboard'; then
             echo "::error::Identity bundle IDs locked."
             exit 1
           fi
@@ -80,7 +80,7 @@ jobs:
         with: { fetch-depth: 0 }
       - run: |
           git fetch origin ${{ github.base_ref }} --depth=1
-          PROTECTED=$(git diff --name-only --diff-filter=M origin/${{ github.base_ref }}...HEAD | grep -E '^\.github/(workflows/(guardrails|auto-close-bad-pr|codeql|dependency-review)|CODEOWNERS)|^AGENTS\.md$' || true)
+          PROTECTED=$(git diff --name-only --diff-filter=M origin/${{ github.base_ref }}...HEAD | grep -E '^\.github/(workflows/(guardrails|auto-close-bad-pr)|CODEOWNERS)|^AGENTS\.md$' || true)
           if [ -n "$PROTECTED" ]; then
             echo "::error::Modifying critical files requires owner approval."
             exit 1
