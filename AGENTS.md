@@ -7,9 +7,9 @@
 ## 1. التفعيل الفوري
 عند استلام رابط GitHub:
 1. استخرج owner/repo/branch
-2. اطبع: `ACTIVATION: <owner>/<repo>`
+2. اطبع: `ACTIVATION: Xmodyosef/topclick`
 3. جرّب بالترتيب: `gh auth status` → `gh repo view` → API curl → raw curl → `git ls-remote`
-4. اطبع: `ACTIVATED via <method> | write=<yes/no>`
+4. اطبع: `ACTIVATED via gh-cli | write=yes`
 5. ابدأ البحث (قسم 2) قبل أي رد.
 
 ---
