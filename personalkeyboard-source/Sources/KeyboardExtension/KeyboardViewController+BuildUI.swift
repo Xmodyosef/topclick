@@ -15,11 +15,7 @@ enum RowLeading { case shift, symbols, letters, none }
 // MARK: - KeyboardViewController + BuildUI
 extension KeyboardViewController {
     func updateHeightForCurrentSize() {
-        guard view.bounds.width > 0 else { return }
-        let compact = view.bounds.width < 500
-        let desiredHeight: CGFloat
-        if page == .emoji { desiredHeight = compact ? 300 : 280 }
-        else { desiredHeight = compact ? boardHeight : 270 }
+        let desiredHeight = computedBoardHeight()
         if heightConstraint == nil {
             let c = view.heightAnchor.constraint(equalToConstant: desiredHeight)
             c.priority = UILayoutPriority(999)
@@ -27,6 +23,40 @@ extension KeyboardViewController {
             heightConstraint = c
         } else if abs((heightConstraint?.constant ?? 0) - desiredHeight) > 0.5 {
             heightConstraint?.constant = desiredHeight
+        }
+    }
+
+    /// Exact board height from real rows — no flex spacer, no overlap.
+    func computedBoardHeight() -> CGFloat {
+        let topPad: CGFloat = 4
+        let bottomPad: CGFloat = 6
+        let spacing: CGFloat = 6
+        switch page {
+        case .emoji:
+            // tabs 36 + pager 180 + bottom 44 + spacings
+            return topPad + 36 + spacing + 180 + spacing + 44 + bottomPad
+        case .symbols:
+            let rowsCount: Int = {
+                if let str = ThemeIO.string("symbolRows"), let n = Int(str) { return max(1, min(n, 4)) }
+                let n = UserDefaults(suiteName: ThemeIO.group)?.integer(forKey: "symbolRows") ?? 0
+                return n > 0 ? max(1, min(n, 4)) : 3
+            }()
+            // rows (46 each, last 44) + bottom 44
+            let body = CGFloat(max(rowsCount - 1, 0)) * 46 + 44
+            return topPad + body + spacing * CGFloat(rowsCount) + 44 + bottomPad
+        case .letters:
+            var rows = 1 // toolbar 34
+            var h: CGFloat = 34
+            if showNumberRow {
+                rows += 1
+                h += 46
+            }
+            // 2 full letter rows + last action row
+            h += 46 + 46 + 44
+            rows += 3
+            h += 44 // bottom
+            rows += 1
+            return topPad + h + spacing * CGFloat(rows - 1) + bottomPad
         }
     }
     func armHaptics() {
@@ -80,7 +110,10 @@ extension KeyboardViewController {
         v.setContentCompressionResistancePriority(.required, for: .vertical)
     }
     func configureRoot() {
+        view.backgroundColor = palette.background
+        view.clipsToBounds = false
         blurView.translatesAutoresizingMaskIntoConstraints = false
+        blurView.isUserInteractionEnabled = false
         view.insertSubview(blurView, at: 0)
         NSLayoutConstraint.activate([
             blurView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -89,18 +122,20 @@ extension KeyboardViewController {
             blurView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         rootStack.axis = .vertical
-        rootStack.spacing = 5
+        rootStack.spacing = 6
         rootStack.distribution = .fill
         rootStack.alignment = .fill
         rootStack.translatesAutoresizingMaskIntoConstraints = false
+        rootStack.isLayoutMarginsRelativeArrangement = false
         view.addSubview(rootStack)
+        // Pin top/leading/trailing only — NEVER pin bottom to height.
+        // Bottom pinning + fixed heightConstraint caused stacked/ghost rows.
         NSLayoutConstraint.activate([
-            rootStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 5),
-            rootStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -5),
-            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 2),
-            rootStack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4)
+            rootStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 4),
+            rootStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -4),
+            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 4)
         ])
-        rootStack.setContentHuggingPriority(.defaultHigh, for: .vertical)
+        rootStack.setContentHuggingPriority(.required, for: .vertical)
         rootStack.setContentCompressionResistancePriority(.required, for: .vertical)
     }
     func rebuild() {
@@ -108,13 +143,17 @@ extension KeyboardViewController {
         emojiPager = nil
         emojiTabs = nil
         palette = NaqraPalette.current()
+        view.clipsToBounds = false
         view.backgroundColor = palette.background
         blurView.effect = nil
         blurView.backgroundColor = palette.background
-        rootStack.arrangedSubviews.forEach { rootStack.removeArrangedSubview($0); $0.removeFromSuperview() }
-        rootStack.spacing = 4
-        let h: CGFloat = page == .letters ? boardHeight : 300
-        heightConstraint?.constant = h
+        // Hard clear — avoid ghost layers from leftover arranged views.
+        rootStack.arrangedSubviews.forEach { v in
+            rootStack.removeArrangedSubview(v)
+            v.removeFromSuperview()
+        }
+        rootStack.spacing = 6
+        heightConstraint?.constant = computedBoardHeight()
         switch page {
         case .letters:
             rootStack.addArrangedSubview(makeToolbar())
@@ -128,7 +167,6 @@ extension KeyboardViewController {
                 if i == rows.count - 1 { rootStack.addArrangedSubview(makeLastLetterRow(row)) }
                 else { rootStack.addArrangedSubview(makeRow(row, rowIdx: i + 1)) }
             }
-            addFlexSpace()
             rootStack.addArrangedSubview(makeBottom())
         case .symbols:
             let rowsCount: Int = {
@@ -147,14 +185,14 @@ extension KeyboardViewController {
                 if i == rows.count - 1 { rootStack.addArrangedSubview(makeSymbolLastRow(row)) }
                 else { rootStack.addArrangedSubview(makeRow(row, rowIdx: i + 1)) }
             }
-            addFlexSpace()
             rootStack.addArrangedSubview(makeBottom())
         case .emoji:
             rootStack.addArrangedSubview(makeEmojiTabs())
             rootStack.addArrangedSubview(makeEmojiPager())
-            addFlexSpace()
             rootStack.addArrangedSubview(makeBottom(emojiOn: true))
         }
+        updateHeightForCurrentSize()
+        view.setNeedsLayout()
     }
     func makeToolbar() -> UIView {
         let s = UIStackView()
@@ -162,6 +200,8 @@ extension KeyboardViewController {
         s.spacing = 6
         s.distribution = .fill
         s.semanticContentAttribute = .forceLeftToRight
+        s.backgroundColor = .clear
+
         let clip = iconKey("doc.on.clipboard", #selector(copyPasteTapped))
         let holdGesture = UILongPressGestureRecognizer(target: self, action: #selector(copyPasteHold(_:)))
         holdGesture.minimumPressDuration = 0.38
@@ -170,20 +210,18 @@ extension KeyboardViewController {
         clip.widthAnchor.constraint(equalToConstant: 36).isActive = true
         s.addArrangedSubview(clip)
 
-        // Suggestions in the middle of the toolbar
+        // Middle: only real suggestions — never empty white pills.
         let showSuggestions = ThemeIO.bool("suggestions") ?? true
-        if showSuggestions {
-            let sugg = suggestions()
-            if !sugg.allSatisfy({ $0.isEmpty }) {
-                let suggRow = makeSuggestionsRow()
-                suggRow.setContentHuggingPriority(.defaultLow, for: .horizontal)
-                s.addArrangedSubview(suggRow)
-            } else {
-                let spacer = UIView()
-                s.addArrangedSubview(spacer)
-            }
+        let words = showSuggestions ? suggestions().filter { !$0.isEmpty } : []
+        if !words.isEmpty {
+            let suggRow = makeSuggestionsRow(words: words)
+            suggRow.setContentHuggingPriority(.defaultLow, for: .horizontal)
+            s.addArrangedSubview(suggRow)
         } else {
             let spacer = UIView()
+            spacer.backgroundColor = .clear
+            spacer.isUserInteractionEnabled = false
+            spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
             s.addArrangedSubview(spacer)
         }
 
@@ -193,7 +231,7 @@ extension KeyboardViewController {
         let hide = iconKey("keyboard.chevron.compact.down", #selector(dismissKeyboardAction))
         hide.widthAnchor.constraint(equalToConstant: 36).isActive = true
         s.addArrangedSubview(hide)
-        s.heightAnchor.constraint(equalToConstant: 32).isActive = true
+        lockHeight(s, 34)
         return s
     }
     func makeRow(_ keys: [String], rowIdx: Int) -> UIView {
@@ -209,11 +247,7 @@ extension KeyboardViewController {
         return s
     }
     func addFlexSpace() {
-        let spacer = UIView()
-        spacer.translatesAutoresizingMaskIntoConstraints = false
-        spacer.setContentHuggingPriority(.init(1), for: .vertical)
-        spacer.setContentCompressionResistancePriority(.init(1), for: .vertical)
-        rootStack.addArrangedSubview(spacer)
+        // Removed: flex spacer + bottom-pinned rootStack caused ghost stacked layers.
     }
     func makeLastLetterRow(_ keys: [String]) -> UIView {
         makeActionRow(keys, leading: language == .arabic ? .symbols : .shift)
@@ -332,17 +366,19 @@ extension KeyboardViewController {
         return row
     }
     func paint(_ b: UIButton, emphasized: Bool = false) {
-        b.backgroundColor = emphasized ? palette.accent.withAlphaComponent(0.72) : palette.key
+        // Fully opaque keys — translucent keys stacked and looked "broken"/ghosted.
+        let keyColor = emphasized ? palette.accent : palette.key.withAlphaComponent(1)
+        b.backgroundColor = keyColor
         b.setTitleColor(emphasized ? .white : palette.text, for: .normal)
         b.tintColor = emphasized ? .white : palette.text
-        b.layer.cornerRadius = 10 // Radius.key
+        b.layer.cornerRadius = 8
         b.layer.cornerCurve = .continuous
-        b.layer.borderWidth = 0.6
-        let line = palette.blurDark ? UIColor.white.withAlphaComponent(0.20) : UIColor.black.withAlphaComponent(0.10)
+        b.layer.borderWidth = palette.blurDark ? 0.5 : 0.8
+        let line = palette.blurDark ? UIColor.white.withAlphaComponent(0.18) : UIColor.black.withAlphaComponent(0.14)
         b.layer.borderColor = line.cgColor
-        // Shadows on every key force extra offscreen compositing in the extension.
         b.layer.shadowOpacity = 0
         b.clipsToBounds = true
+        b.opaque = true
     }
     func iconKey(_ name: String, _ a: Selector) -> UIButton {
         let b = UIButton(type: .system)

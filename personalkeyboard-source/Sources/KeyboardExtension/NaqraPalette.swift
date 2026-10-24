@@ -42,10 +42,26 @@ struct NaqraPalette {
 
     static func solid(_ p: NaqraPalette) -> NaqraPalette {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        guard p.key.getRed(&r, green: &g, blue: &b, alpha: &a) else { return p }
-        let amount: CGFloat = p.blurDark ? 0.05 : 0.08
-        let background = UIColor(red: max(0, r - amount), green: max(0, g - amount), blue: max(0, b - amount), alpha: 1)
-        return .init(background: background, key: p.key.withAlphaComponent(1), text: p.text, accent: p.accent, blurDark: p.blurDark)
+        guard p.key.getRed(&r, green: &g, blue: &b, alpha: &a) else {
+            return .init(background: p.background.withAlphaComponent(1), key: p.key.withAlphaComponent(1), text: p.text, accent: p.accent, blurDark: p.blurDark)
+        }
+        // Background slightly darker than keys so rows don't blend into white slabs.
+        let bgShift: CGFloat = p.blurDark ? 0.06 : 0.12
+        let background = UIColor(
+            red: max(0, r - bgShift),
+            green: max(0, g - bgShift),
+            blue: max(0, b - bgShift),
+            alpha: 1
+        )
+        // Keys fully opaque and a touch lifted on light themes for separation.
+        let keyLift: CGFloat = p.blurDark ? 0 : 0.03
+        let key = UIColor(
+            red: min(1, r + keyLift),
+            green: min(1, g + keyLift),
+            blue: min(1, b + keyLift),
+            alpha: 1
+        )
+        return .init(background: background, key: key, text: p.text, accent: p.accent, blurDark: p.blurDark)
     }
 
     static func preset(_ id: String) -> NaqraPalette {
