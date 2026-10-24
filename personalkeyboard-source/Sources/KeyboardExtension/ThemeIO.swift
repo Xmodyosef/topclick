@@ -6,13 +6,18 @@ enum ThemeIO {
     static var suite: UserDefaults { UserDefaults(suiteName: group) ?? .standard }
 
     static func write(_ key: String, value: Any) {
-        suite.set(value, forKey: key)
-        UserDefaults.standard.set(value, forKey: key)
+        set(key, value: value)
         CFNotificationCenterPostNotification(
             CFNotificationCenterGetDarwinNotifyCenter(),
             CFNotificationName(notificationName as CFString),
             nil, nil, true
         )
+    }
+
+    /// Keyboard-local writes. Does not rebuild the keys.
+    static func set(_ key: String, value: Any) {
+        suite.set(value, forKey: key)
+        UserDefaults.standard.set(value, forKey: key)
     }
 
     static func string(_ key: String) -> String? {

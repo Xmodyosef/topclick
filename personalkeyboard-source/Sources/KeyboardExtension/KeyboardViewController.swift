@@ -24,6 +24,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var spaceIsTrackpad = false
     var lastTrackpadX: CGFloat = 0
     var holdTimer: Timer?
+    var downText = ""
+    var pendingInserted = false
     var holdPopup: UIView?
     var holdChoice = ""
 
@@ -84,7 +86,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        view.clipsToBounds = true
+        view.clipsToBounds = false
         updateHeightForCurrentSize()
         if themeSignature != appliedThemeId {
             appliedThemeId = themeSignature

@@ -15,11 +15,11 @@ final class ClipboardHistory {
 
     func ensurePrivacyDefault() {
         guard ThemeIO.bool("clipboardHistoryEnabled") == nil else { return }
-        ThemeIO.write("clipboardHistoryEnabled", value: false)
-        ThemeIO.write(key, value: "")
+        ThemeIO.set("clipboardHistoryEnabled", value: false)
+        ThemeIO.set(key, value: "")
     }
 
-    func clear() { ThemeIO.write(key, value: "") }
+    func clear() { ThemeIO.set(key, value: "") }
 
     func add(_ text: String) {
         guard ThemeIO.bool("clipboardHistoryEnabled") ?? false, !text.isEmpty else { return }
@@ -27,7 +27,7 @@ final class ClipboardHistory {
         list.removeAll { $0 == text }
         list.insert(text, at: 0)
         if list.count > max { list = Array(list.prefix(max)) }
-        ThemeIO.write(key, value: list.joined(separator: "\u{1F}"))
+        ThemeIO.set(key, value: list.joined(separator: "\u{1F}"))
     }
 }
 

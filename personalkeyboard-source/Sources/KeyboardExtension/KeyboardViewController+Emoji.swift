@@ -138,6 +138,6 @@ extension KeyboardViewController {
         var items = (ThemeIO.string("frequentEmoji") ?? "").split(separator: " ").map(String.init)
         items.removeAll { $0 == item }
         items.insert(item, at: 0)
-        ThemeIO.write("frequentEmoji", value: items.prefix(32).joined(separator: " "))
+        ThemeIO.set("frequentEmoji", value: items.prefix(32).joined(separator: " "))
     }
 }
