@@ -378,7 +378,7 @@ extension KeyboardViewController {
         b.layer.borderColor = line.cgColor
         b.layer.shadowOpacity = 0
         b.clipsToBounds = true
-        b.opaque = true
+        b.isOpaque = true
     }
     func iconKey(_ name: String, _ a: Selector) -> UIButton {
         let b = UIButton(type: .system)
