@@ -104,6 +104,10 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         super.viewWillDisappear(animated)
         deleteTimer?.invalidate()
         deleteTimer = nil
+        holdTimer?.invalidate()
+        holdTimer = nil
+        hideHoldPopup()
+        pendingInserted = false
     }
 
     override func viewDidLayoutSubviews() {

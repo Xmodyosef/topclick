@@ -73,6 +73,8 @@ def main() -> None:
     controller = (ext_dir / 'KeyboardViewController.swift').read_text(encoding='utf-8')
     require('arabicShiftRows' in extension and 'isShifted ? arabicShiftRows : arabicRows' in extension, 'Arabic Shift layer used')
     require('rows2("arabic_shift_rows")' in loader and 'layouts().arabicShiftRows' in controller, 'Arabic Shift JSON is loaded by the keyboard')
+    lifecycle = re.search(r'override func viewWillDisappear\(_ animated: Bool\) \{(.*?)\n    \}', controller, re.S)
+    require(lifecycle is not None and all(token in lifecycle.group(1) for token in ['holdTimer?.invalidate()', 'holdTimer = nil', 'hideHoldPopup()', 'pendingInserted = false']), 'viewWillDisappear cleans long-press state')
     require('showNumberRow' in extension and 'showNumberRow' in app, 'number-row setting shared')
     require('numberRow' in extension, 'number row keys defined')
     require('func autocorrectOnSpace' in extension and 'arabicFixes' in extension, 'autocorrect supports Arabic fixes')
