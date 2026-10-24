@@ -5,6 +5,9 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: macos-15
@@ -74,11 +77,38 @@ jobs:
           test -n "$APP"
           mkdir -p Payload
           cp -R "$APP" Payload/
+          # A real .ipa is just a zip of Payload/*.app with the .ipa extension.
           ditto -c -k --sequesterRsrc --keepParent Payload PersonalKeyboard-unsigned.ipa
           ls -lh PersonalKeyboard-unsigned.ipa
+          file PersonalKeyboard-unsigned.ipa
+          # Keep a stable file name for the release download button.
+          cp PersonalKeyboard-unsigned.ipa "$GITHUB_WORKSPACE/PersonalKeyboard-unsigned.ipa"
 
-      - name: Upload artifact
+      - name: Upload Actions artifact
         uses: actions/upload-artifact@v4
         with:
           name: PersonalKeyboard-unsigned-ipa
-          path: src/personalkeyboard-source/PersonalKeyboard-unsigned.ipa
+          path: PersonalKeyboard-unsigned.ipa
+          if-no-files-found: error
+
+      # GitHub always wraps Actions artifacts in a .zip when you click Download.
+      # Releases attach the .ipa itself, so the browser gets a real IPA file.
+      - name: Publish IPA to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: "نقرة — بناء #${{ github.run_number }}"
+          body: |
+            IPA غير موقّع. نزّل الملف `.ipa` مباشرة من الأسفل (مو zip).
+
+            - **الملف:** `PersonalKeyboard-unsigned.ipa`
+            - **الفرع:** `${{ github.ref_name }}`
+            - **الكوميت:** `${{ github.sha }}`
+            - **البناء:** [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            بعد التنزيل: وقّع التطبيق (Sideloadly / TrollStore / Apple Developer) ثم ثبّته.
+          files: PersonalKeyboard-unsigned.ipa
+          make_latest: true
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

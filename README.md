@@ -66,3 +66,10 @@ python3 .github/scripts/validate_naqra.py personalkeyboard-source
 ```
 
 الإلهام مأخوذ من أنماط عامة في لوحات المفاتيح المفتوحة والتجارية، دون نسخ كود أو أصول مملوكة.
+
+## تنزيل IPA
+
+كل بناء ناجح يرفع ملف **`PersonalKeyboard-unsigned.ipa`** مباشرة إلى [Releases](../../releases).
+
+> تنزيل artifact من Actions يجي دائمًا **zip** — هذا قيد من GitHub. من Releases تنزل الـ IPA نفسه بدون ضغط.
+
