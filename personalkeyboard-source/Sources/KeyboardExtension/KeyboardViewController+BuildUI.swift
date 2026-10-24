@@ -139,7 +139,10 @@ extension KeyboardViewController {
             let pages = symbolPages
             let pageIdx = min(max(symbolPageIndex, 0), max(pages.count - 1, 0))
             let allRows = pages.isEmpty ? [] : pages[pageIdx]
-            let rows = Array(allRows.prefix(rowsCount))
+            var rows = Array(allRows.prefix(rowsCount)).filter { !$0.isEmpty }
+            if rows.isEmpty {
+                rows = language == .arabic ? KeyboardDataLoader.builtinArabicSymbols[0] : KeyboardDataLoader.builtinEnglishSymbols[0]
+            }
             for (i, row) in rows.enumerated() {
                 if i == rows.count - 1 { rootStack.addArrangedSubview(makeSymbolLastRow(row)) }
                 else { rootStack.addArrangedSubview(makeRow(row, rowIdx: i + 1)) }
@@ -216,7 +219,8 @@ extension KeyboardViewController {
         makeActionRow(keys, leading: language == .arabic ? .symbols : .shift)
     }
     func makeSymbolLastRow(_ keys: [String]) -> UIView {
-        makeActionRow(keys, leading: language == .arabic ? .letters : .none)
+        // Back-to-letters stays on the bottom bar, so these keys keep a full width.
+        makeActionRow(keys, leading: .none)
     }
     func makeActionRow(_ keys: [String], leading: RowLeading) -> UIView {
         let wrap = UIStackView()
@@ -270,21 +274,24 @@ extension KeyboardViewController {
         row.alignment = .fill
         row.semanticContentAttribute = .forceLeftToRight
 
-        let symbols: UIButton
-        if page == .emoji {
-            symbols = control("رجوع", #selector(symbolsOrLettersTapped), font: 12)
-            symbols.accessibilityLabel = "رجوع للحروف"
-        } else if language == .arabic {
-            symbols = control("EN", #selector(languageTapped), font: 14)
-            symbols.accessibilityLabel = "تغيير اللغة"
-        } else if page == .symbols {
-            symbols = control("ABC", #selector(symbolsOrLettersTapped), font: 12)
-            symbols.accessibilityLabel = "حروف"
-        } else {
-            symbols = control("123", #selector(symbolsOrLettersTapped), font: 12)
+        var leading: [UIButton] = []
+        if page == .emoji || page == .symbols {
+            let backTitle = page == .emoji ? "رجوع" : (language == .arabic ? "أبج" : "ABC")
+            let back = control(backTitle, #selector(symbolsOrLettersTapped), font: 12)
+            back.accessibilityLabel = "رجوع للحروف"
+            leading.append(back)
+        } else if language == .english {
+            let symbols = control("123", #selector(symbolsOrLettersTapped), font: 12)
             symbols.accessibilityLabel = "رموز"
+            leading.append(symbols)
         }
-        symbols.widthAnchor.constraint(equalToConstant: 44).isActive = true
+        let langTitle = language == .arabic ? "EN" : "ع"
+        let lang = control(langTitle, #selector(languageTapped), font: language == .arabic ? 14 : 16)
+        lang.accessibilityLabel = "تغيير اللغة"
+        leading.append(lang)
+        for button in leading {
+            button.widthAnchor.constraint(equalToConstant: 44).isActive = true
+        }
 
 
         let emoji = UIButton(type: .system)
@@ -310,7 +317,7 @@ extension KeyboardViewController {
         enter.widthAnchor.constraint(equalToConstant: 42).isActive = true
         enter.accessibilityLabel = "إدخال سطر جديد"
 
-        row.addArrangedSubview(symbols)
+        leading.forEach { row.addArrangedSubview($0) }
         row.addArrangedSubview(emoji)
         row.addArrangedSubview(space)
         if emojiOn {

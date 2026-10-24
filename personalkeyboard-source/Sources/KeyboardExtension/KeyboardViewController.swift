@@ -188,7 +188,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
 
     func control(_ t: String, _ a: Selector, font: CGFloat) -> UIButton {
-        let b = UIButton(type: .system)
+        let b = KeyButton(type: .system)
         b.setTitle(t, for: .normal)
         b.titleLabel?.font = .systemFont(ofSize: font, weight: .semibold)
         paint(b)
