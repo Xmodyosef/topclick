@@ -64,18 +64,39 @@ enum KeyboardDataLoader {
         func map(_ key: String) -> [String: [String]] {
             (obj[key] as? [String: [String]]) ?? [:]
         }
+        var arabicSymbols = rows3("arabic_symbol_pages")
+        var englishSymbols = rows3("english_symbol_pages")
+        if arabicSymbols.flatMap({ $0 }).flatMap({ $0 }).count < 8 {
+            arabicSymbols = Self.builtinArabicSymbols
+        }
+        if englishSymbols.flatMap({ $0 }).flatMap({ $0 }).count < 8 {
+            englishSymbols = Self.builtinEnglishSymbols
+        }
         let value = Layouts(
             arabicRows: rows2("arabic_rows"),
             arabicShiftRows: rows2("arabic_shift_rows").isEmpty ? arabicShiftFallbackRows : rows2("arabic_shift_rows"),
             englishLower: rows2("english_lower"),
             englishUpper: rows2("english_upper"),
-            arabicSymbolPages: rows3("arabic_symbol_pages"),
-            englishSymbolPages: rows3("english_symbol_pages"),
+            arabicSymbolPages: arabicSymbols,
+            englishSymbolPages: englishSymbols,
             holdMap: map("hold_map")
         )
         layoutsCache = value
         return value
     }
+
+    static let builtinArabicSymbols: [[[String]]] = [[
+        ["1","2","3","4","5","6","7","8","9","0"],
+        ["-", "/", ":", "؛", "(", ")", "؟", "﷼", "&", "@"],
+        ["َ", "ً", "ُ", "ٌ", "ِ", "ٍ", "ْ", "ّ", "ء", "أ", "إ"],
+        [".", "،", "!", "'", "«", "»", "٪", "…", "•", "ـ"]
+    ]]
+    static let builtinEnglishSymbols: [[[String]]] = [[
+        ["1","2","3","4","5","6","7","8","9","0"],
+        ["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""],
+        [".", ",", "?", "!", "'", "+", "=", "%", "…", "•"],
+        ["[", "]", "{", "}", "#", "*", "_", "~", "^", "\\"]
+    ]]
 
     static func arabicLexicon() -> [String] {
         lock.lock(); defer { lock.unlock() }

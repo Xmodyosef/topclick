@@ -5,7 +5,7 @@ import AudioToolbox
 
 // MARK: - KeyboardViewController + Actions
 extension KeyboardViewController {
-    func persistAccess() { ThemeIO.write("hasFullAccess", value: hasFullAccess) }
+    func persistAccess() { ThemeIO.set("hasFullAccess", value: hasFullAccess) }
     func loadPrefs() {
         persistAccess()
         if page != .emoji { page = .letters }

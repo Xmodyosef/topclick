@@ -3,6 +3,15 @@ import Translation
 import UIKit
 import AudioToolbox
 
+/// A key with a slightly taller hit area, so a light tap still lands.
+final class KeyButton: UIButton {
+    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+        bounds.insetBy(dx: -2, dy: -8).contains(point)
+    }
+}
+
+enum RowLeading { case shift, symbols, letters, none }
+
 // MARK: - KeyboardViewController + BuildUI
 extension KeyboardViewController {
     func updateHeightForCurrentSize() {
@@ -103,6 +112,7 @@ extension KeyboardViewController {
         blurView.effect = nil
         blurView.backgroundColor = palette.background
         rootStack.arrangedSubviews.forEach { rootStack.removeArrangedSubview($0); $0.removeFromSuperview() }
+        rootStack.spacing = 4
         let h: CGFloat = page == .letters ? boardHeight : 300
         heightConstraint?.constant = h
         switch page {
@@ -118,6 +128,7 @@ extension KeyboardViewController {
                 if i == rows.count - 1 { rootStack.addArrangedSubview(makeLastLetterRow(row)) }
                 else { rootStack.addArrangedSubview(makeRow(row, rowIdx: i + 1)) }
             }
+            addFlexSpace()
             rootStack.addArrangedSubview(makeBottom())
         case .symbols:
             let rowsCount: Int = {
@@ -133,10 +144,12 @@ extension KeyboardViewController {
                 if i == rows.count - 1 { rootStack.addArrangedSubview(makeSymbolLastRow(row)) }
                 else { rootStack.addArrangedSubview(makeRow(row, rowIdx: i + 1)) }
             }
+            addFlexSpace()
             rootStack.addArrangedSubview(makeBottom())
         case .emoji:
             rootStack.addArrangedSubview(makeEmojiTabs())
             rootStack.addArrangedSubview(makeEmojiPager())
+            addFlexSpace()
             rootStack.addArrangedSubview(makeBottom(emojiOn: true))
         }
     }
@@ -183,31 +196,51 @@ extension KeyboardViewController {
     func makeRow(_ keys: [String], rowIdx: Int) -> UIView {
         let s = UIStackView()
         s.axis = .horizontal
-        s.spacing = 6
+        s.spacing = 4
         s.distribution = .fillEqually
-        s.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        s.heightAnchor.constraint(equalToConstant: 46).isActive = true
         s.distribution = .fillEqually
         s.semanticContentAttribute = .forceLeftToRight
         keys.forEach { s.addArrangedSubview(charKey($0, rowIdx: rowIdx)) }
-        lockHeight(s, 44)
+        lockHeight(s, 46)
         return s
     }
+    func addFlexSpace() {
+        let spacer = UIView()
+        spacer.translatesAutoresizingMaskIntoConstraints = false
+        spacer.setContentHuggingPriority(.init(1), for: .vertical)
+        spacer.setContentCompressionResistancePriority(.init(1), for: .vertical)
+        rootStack.addArrangedSubview(spacer)
+    }
     func makeLastLetterRow(_ keys: [String]) -> UIView {
-        return makeActionRow(keys, leadingShift: true)
+        makeActionRow(keys, leading: language == .arabic ? .symbols : .shift)
     }
     func makeSymbolLastRow(_ keys: [String]) -> UIView {
-        return makeActionRow(keys, leadingShift: false)
+        makeActionRow(keys, leading: language == .arabic ? .letters : .none)
     }
-    func makeActionRow(_ keys: [String], leadingShift: Bool) -> UIView {
+    func makeActionRow(_ keys: [String], leading: RowLeading) -> UIView {
         let wrap = UIStackView()
         wrap.axis = .horizontal
-        wrap.spacing = 6
+        wrap.spacing = 4
         wrap.semanticContentAttribute = .forceLeftToRight
-        if leadingShift {
+        switch leading {
+        case .shift:
             let shift = iconKey(isShifted ? "shift.fill" : "shift", #selector(shiftTapped))
             shift.widthAnchor.constraint(equalToConstant: 40).isActive = true
             paint(shift, emphasized: isShifted)
             wrap.addArrangedSubview(shift)
+        case .symbols:
+            let symbols = control("١٢٣", #selector(symbolsOrLettersTapped), font: 13)
+            symbols.widthAnchor.constraint(equalToConstant: 46).isActive = true
+            symbols.accessibilityLabel = "رموز"
+            wrap.addArrangedSubview(symbols)
+        case .letters:
+            let letters = control("أبج", #selector(symbolsOrLettersTapped), font: 14)
+            letters.widthAnchor.constraint(equalToConstant: 46).isActive = true
+            letters.accessibilityLabel = "حروف"
+            wrap.addArrangedSubview(letters)
+        case .none:
+            break
         }
         let mid = UIStackView()
         mid.axis = .horizontal
@@ -237,9 +270,21 @@ extension KeyboardViewController {
         row.alignment = .fill
         row.semanticContentAttribute = .forceLeftToRight
 
-        let symbolsTitle = page == .symbols ? "ABC" : (page == .emoji ? "رجوع" : "123")
-        let symbols = control(symbolsTitle, #selector(symbolsOrLettersTapped), font: 12)
-        symbols.widthAnchor.constraint(equalToConstant: 42).isActive = true
+        let symbols: UIButton
+        if page == .emoji {
+            symbols = control("رجوع", #selector(symbolsOrLettersTapped), font: 12)
+            symbols.accessibilityLabel = "رجوع للحروف"
+        } else if language == .arabic {
+            symbols = control("EN", #selector(languageTapped), font: 14)
+            symbols.accessibilityLabel = "تغيير اللغة"
+        } else if page == .symbols {
+            symbols = control("ABC", #selector(symbolsOrLettersTapped), font: 12)
+            symbols.accessibilityLabel = "حروف"
+        } else {
+            symbols = control("123", #selector(symbolsOrLettersTapped), font: 12)
+            symbols.accessibilityLabel = "رموز"
+        }
+        symbols.widthAnchor.constraint(equalToConstant: 44).isActive = true
 
 
         let emoji = UIButton(type: .system)

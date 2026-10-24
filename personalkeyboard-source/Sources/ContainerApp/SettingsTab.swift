@@ -125,7 +125,7 @@ struct SettingsTab: View {
 
     private var typingCard: some View {
         SettingsCard(title: "الكتابة", subtitle: "الكلمات العربية لا تُستبدل تلقائيًا؛ يمكنك اختيار الاقتراح بنفسك") {
-            Toggle("تصحيح تلقائي محافظ للإنجليزية", isOn: $autocorrect)
+            Toggle("تصحيح تلقائي", isOn: $autocorrect)
                 .onChange(of: autocorrect) { _, value in ThemeStore.write("autocorrect", value: value) }
             Toggle("تحريك المؤشر بسحب زر المسافة", isOn: $trackpad)
                 .onChange(of: trackpad) { _, value in ThemeStore.write("trackpad", value: value) }
