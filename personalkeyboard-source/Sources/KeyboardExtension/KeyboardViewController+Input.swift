@@ -6,24 +6,28 @@ import AudioToolbox
 // MARK: - KeyboardViewController + Input
 extension KeyboardViewController {
     func saveLanguage() { ThemeIO.set("lastLanguage", value: language == .english ? "en" : "ar") }
-    func makeSuggestionsRow() -> UIView {
+    func makeSuggestionsRow(words: [String]? = nil) -> UIView {
         let s = UIStackView()
         s.axis = .horizontal
         s.spacing = 4
         s.distribution = .fillEqually
         s.semanticContentAttribute = .forceLeftToRight
+        s.backgroundColor = .clear
         suggestionButtons = []
-        for (i, word) in suggestions().enumerated() {
+        let list = (words ?? suggestions()).filter { !$0.isEmpty }
+        for (i, word) in list.enumerated() {
             let b = UIButton(type: .system)
             b.tag = i
             b.setTitle(word, for: .normal)
-            b.isEnabled = !word.isEmpty
+            b.isEnabled = true
             b.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
             b.titleLabel?.adjustsFontSizeToFitWidth = true
             b.titleLabel?.minimumScaleFactor = 0.7
             b.setTitleColor(palette.text, for: .normal)
-            b.backgroundColor = palette.key.withAlphaComponent(word.isEmpty ? 0.35 : 1)
-            b.layer.cornerRadius = 10 // Radius.key
+            b.backgroundColor = palette.key.withAlphaComponent(1)
+            b.layer.cornerRadius = 8
+            b.layer.cornerCurve = .continuous
+            b.clipsToBounds = true
             b.addTarget(self, action: #selector(suggestionTapped(_:)), for: .touchUpInside)
             suggestionButtons.append(b)
             s.addArrangedSubview(b)
@@ -60,13 +64,19 @@ extension KeyboardViewController {
         return out
     }
     func refreshSuggestions() {
-        let words = suggestions()
-        guard suggestionButtons.count == words.count else { return }
-        for (button, word) in zip(suggestionButtons, words) {
-            button.setTitle(word, for: .normal)
-            button.isEnabled = !word.isEmpty
-            button.backgroundColor = word.isEmpty ? .clear : palette.key
-        }
+        guard page == .letters else { return }
+        let words = suggestions().filter { !$0.isEmpty }
+        let current = suggestionButtons.compactMap { $0.title(for: .normal) }.filter { !$0.isEmpty }
+        // Only rebuild toolbar when the visible suggestion set actually changes shape.
+        if current == words { return }
+        if current.isEmpty && words.isEmpty { return }
+        // Replace just the toolbar (first arranged subview) without stacking ghosts.
+        guard !rootStack.arrangedSubviews.isEmpty else { return }
+        let old = rootStack.arrangedSubviews[0]
+        rootStack.removeArrangedSubview(old)
+        old.removeFromSuperview()
+        let bar = makeToolbar()
+        rootStack.insertArrangedSubview(bar, at: 0)
     }
     @objc func suggestionTapped(_ sender: UIButton) {
         guard let word = sender.title(for: .normal), !word.isEmpty else { return }
