@@ -98,6 +98,8 @@ def main() -> None:
     require('UIApplication.openSettingsURLString' in app and 'App-Prefs:' not in app, 'Full Access uses public app settings URL')
     require('letterFont' in extension and '.systemFont(ofSize: 26, weight: .medium)' in extension, 'compact keyboard font')
     require('UIVisualEffectView(effect: nil)' in extension and 'shadowOpacity = 0' in extension, 'keyboard avoids live blur and key shadows')
+    build_ui = (ext_dir / 'KeyboardViewController+BuildUI.swift').read_text(encoding='utf-8')
+    require('b.isOpaque = true' in build_ui and 'b.opaque = true' not in build_ui, 'UIButton opacity uses current UIKit property')
     require('emojiPager?.delegate = nil' in extension and 'emojiPack.indices.contains' in extension, 'emoji teardown + guards')
     require('emojiPack = Self.catalog()' in extension or 'KeyboardDataLoader.emojiCatalog' in extension, 'emoji catalog load path')
     require('KeyboardDataLoader' in extension, 'data loader wired')
