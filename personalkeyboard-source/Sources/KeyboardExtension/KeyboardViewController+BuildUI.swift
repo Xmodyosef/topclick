@@ -381,31 +381,19 @@ extension KeyboardViewController {
 
         var leading: [UIButton] = []
         if page == .symbols {
-            // Multi-page symbols: 123 ↔ #+ = then letters via أبج/ABC.
-            if symbolPages.count > 1 {
-                // iOS-style cycle: 123 → #+= → #+=/more → …
-                let pageTitle: String
-                switch symbolPageIndex {
-                case 0: pageTitle = "#+="
-                case 1: pageTitle = (symbolPages.count > 2 ? "＃3" : (language == .arabic ? "١٢٣" : "123"))
-                default: pageTitle = language == .arabic ? "١٢٣" : "123"
-                }
-                let pageBtn = control(pageTitle, #selector(symbolPageToggled), font: 11, chrome: .symbols)
-                pageBtn.accessibilityLabel = "صفحة رموز أخرى"
-                leading.append(pageBtn)
-            }
-            let backTitle = language == .arabic ? "أبج" : "ABC"
-            let back = control(backTitle, #selector(symbolsOrLettersTapped), font: 12, chrome: .symbols)
-            back.accessibilityLabel = "رجوع للحروف"
+            // Single symbols page — back to letters only.
+            let backTitle = language == .arabic ? "حروف" : "ABC"
+            let back = control(backTitle, #selector(symbolsOrLettersTapped), font: 13, chrome: .symbols)
+            back.accessibilityLabel = "العودة إلى لوحة الحروف"
             leading.append(back)
         } else if page == .emoji {
-            let back = control("رجوع", #selector(symbolsOrLettersTapped), font: 12, chrome: .symbols)
-            back.accessibilityLabel = "رجوع للحروف"
+            let back = control(language == .arabic ? "حروف" : "ABC", #selector(symbolsOrLettersTapped), font: 13, chrome: .symbols)
+            back.accessibilityLabel = "العودة إلى لوحة الحروف"
             leading.append(back)
         } else {
-            // Letters page: symbols entry (Shift lives on the last letter row).
-            let symbols = control(language == .arabic ? "١٢٣" : "123", #selector(symbolsOrLettersTapped), font: 12, chrome: .symbols)
-            symbols.accessibilityLabel = "رموز"
+            // Letters → single symbols page.
+            let symbols = control(language == .arabic ? "رموز" : "#+=", #selector(symbolsOrLettersTapped), font: 13, chrome: .symbols)
+            symbols.accessibilityLabel = "لوحة الرموز والأرقام"
             leading.append(symbols)
         }
         let langTitle = language == .arabic ? "EN" : "ع"
