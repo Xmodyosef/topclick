@@ -390,37 +390,184 @@ extension KeyboardViewController {
         case .began:
             clipboardLongPressInProgress = true
             guard hasFullAccess else {
-                showNotice("لصق الحافظة يحتاج تفعيل الوصول الكامل للوحة")
+                showNotice("الحافظة تحتاج تفعيل الوصول الكامل للوحة")
                 return
             }
-            let items = ClipboardHistory.shared.items
-            guard !items.isEmpty else {
-                pasteNow()
+            // Toggle: long-press again closes the in-keyboard panel.
+            if isClipboardPanelVisible {
+                hideClipboardPanel()
                 return
             }
-            let sheet = UIAlertController(title: "الحافظة المحفوظة", message: "تُخزّن محليًا على هذا الجهاز", preferredStyle: .actionSheet)
-            for item in items.prefix(8) {
-                let title = item.count > 40 ? String(item.prefix(40)) + "…" : item
-                sheet.addAction(UIAlertAction(title: title, style: .default) { [weak self] _ in
-                    self?.textDocumentProxy.insertText(item)
-                })
-            }
-            sheet.addAction(UIAlertAction(title: "مسح السجل", style: .destructive) { _ in
-                ClipboardHistory.shared.clear()
-            })
-            sheet.addAction(UIAlertAction(title: "إلغاء", style: .cancel))
-            if let pop = sheet.popoverPresentationController {
-                pop.sourceView = view
-                pop.sourceRect = CGRect(x: view.bounds.midX, y: 40, width: 1, height: 1)
-            }
-            present(sheet, animated: true)
+            showClipboardPanel()
         case .ended, .cancelled, .failed:
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
                 self?.clipboardLongPressInProgress = false
             }
         default:
             break
         }
     }
+
+    /// In-keyboard clipboard strip (system alerts are unreliable inside keyboard extensions).
+    func showClipboardPanel() {
+        hideClipboardPanel()
+        hideHoldPopup()
+
+        let panel = UIView()
+        panel.translatesAutoresizingMaskIntoConstraints = false
+        panel.backgroundColor = UIColor.black.withAlphaComponent(0.90)
+        panel.layer.cornerRadius = 12
+        panel.layer.cornerCurve = .continuous
+        panel.clipsToBounds = true
+
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 6
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.isLayoutMarginsRelativeArrangement = true
+        stack.layoutMargins = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
+        panel.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: panel.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: panel.trailingAnchor),
+            stack.topAnchor.constraint(equalTo: panel.topAnchor),
+            stack.bottomAnchor.constraint(equalTo: panel.bottomAnchor)
+        ])
+
+        // Header: title + paste live + clear + close
+        let header = UIStackView()
+        header.axis = .horizontal
+        header.spacing = 6
+        header.alignment = .center
+
+        let title = UILabel()
+        title.text = "الحافظة"
+        title.textColor = .white
+        title.font = .systemFont(ofSize: 13, weight: .semibold)
+        title.setContentHuggingPriority(.defaultLow, for: .horizontal)
+
+        let pasteLive = makeClipboardActionButton(title: "لصق", action: #selector(clipboardPasteLiveTapped))
+        let clearBtn = makeClipboardActionButton(title: "مسح", action: #selector(clipboardClearTapped), destructive: true)
+        let closeBtn = makeClipboardActionButton(title: "إغلاق", action: #selector(clipboardCloseTapped))
+
+        header.addArrangedSubview(title)
+        header.addArrangedSubview(pasteLive)
+        header.addArrangedSubview(clearBtn)
+        header.addArrangedSubview(closeBtn)
+        stack.addArrangedSubview(header)
+
+        let historyEnabled = ThemeIO.bool("clipboardHistoryEnabled") ?? false
+        let items = ClipboardHistory.shared.items
+
+        if !historyEnabled {
+            let hint = UILabel()
+            hint.text = "فعّل سجل الحافظة من إعدادات نقرة لحفظ العناصر"
+            hint.textColor = UIColor.white.withAlphaComponent(0.72)
+            hint.font = .systemFont(ofSize: 11)
+            hint.numberOfLines = 2
+            stack.addArrangedSubview(hint)
+        } else if items.isEmpty {
+            let hint = UILabel()
+            hint.text = "لا عناصر محفوظة — انسخ نصًا محددًا أو الصق من الحافظة الحية"
+            hint.textColor = UIColor.white.withAlphaComponent(0.72)
+            hint.font = .systemFont(ofSize: 11)
+            hint.numberOfLines = 2
+            stack.addArrangedSubview(hint)
+        } else {
+            let scroller = UIScrollView()
+            scroller.showsVerticalScrollIndicator = true
+            scroller.alwaysBounceVertical = true
+            scroller.translatesAutoresizingMaskIntoConstraints = false
+            lockHeight(scroller, 132)
+
+            let list = UIStackView()
+            list.axis = .vertical
+            list.spacing = 4
+            list.translatesAutoresizingMaskIntoConstraints = false
+            scroller.addSubview(list)
+            NSLayoutConstraint.activate([
+                list.leadingAnchor.constraint(equalTo: scroller.contentLayoutGuide.leadingAnchor),
+                list.trailingAnchor.constraint(equalTo: scroller.contentLayoutGuide.trailingAnchor),
+                list.topAnchor.constraint(equalTo: scroller.contentLayoutGuide.topAnchor),
+                list.bottomAnchor.constraint(equalTo: scroller.contentLayoutGuide.bottomAnchor),
+                list.widthAnchor.constraint(equalTo: scroller.frameLayoutGuide.widthAnchor)
+            ])
+
+            for (index, item) in items.prefix(12).enumerated() {
+                let row = UIButton(type: .system)
+                let preview = item.count > 56 ? String(item.prefix(56)) + "…" : item
+                row.setTitle(preview, for: .normal)
+                row.setTitleColor(.white, for: .normal)
+                row.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
+                row.titleLabel?.lineBreakMode = .byTruncatingTail
+                row.contentHorizontalAlignment = .leading
+                row.backgroundColor = UIColor.white.withAlphaComponent(0.10)
+                row.layer.cornerRadius = 8
+                row.layer.cornerCurve = .continuous
+                row.tag = index
+                row.contentEdgeInsets = UIEdgeInsets(top: 8, left: 10, bottom: 8, right: 10)
+                row.addTarget(self, action: #selector(clipboardItemTapped(_:)), for: .touchUpInside)
+                row.heightAnchor.constraint(greaterThanOrEqualToConstant: 36).isActive = true
+                list.addArrangedSubview(row)
+            }
+            stack.addArrangedSubview(scroller)
+        }
+
+        view.addSubview(panel)
+        NSLayoutConstraint.activate([
+            panel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 6),
+            panel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -6),
+            panel.topAnchor.constraint(equalTo: view.topAnchor, constant: 6),
+            panel.bottomAnchor.constraint(lessThanOrEqualTo: view.bottomAnchor, constant: -6)
+        ])
+        clipboardPanel = panel
+        isClipboardPanelVisible = true
+        tapHaptic(.action)
+    }
+
+    func hideClipboardPanel() {
+        clipboardPanel?.removeFromSuperview()
+        clipboardPanel = nil
+        isClipboardPanelVisible = false
+    }
+
+    func makeClipboardActionButton(title: String, action: Selector, destructive: Bool = false) -> UIButton {
+        let b = UIButton(type: .system)
+        b.setTitle(title, for: .normal)
+        b.titleLabel?.font = .systemFont(ofSize: 12, weight: .semibold)
+        b.setTitleColor(destructive ? UIColor(red: 1, green: 0.45, blue: 0.45, alpha: 1) : .white, for: .normal)
+        b.backgroundColor = UIColor.white.withAlphaComponent(0.14)
+        b.layer.cornerRadius = 8
+        b.layer.cornerCurve = .continuous
+        b.contentEdgeInsets = UIEdgeInsets(top: 6, left: 10, bottom: 6, right: 10)
+        b.addTarget(self, action: action, for: .touchUpInside)
+        return b
+    }
+
+    @objc func clipboardItemTapped(_ sender: UIButton) {
+        let items = ClipboardHistory.shared.items
+        guard items.indices.contains(sender.tag) else { return }
+        let text = items[sender.tag]
+        textDocumentProxy.insertText(text)
+        playSystemClick(.rowMid)
+        tapHaptic()
+        hideClipboardPanel()
+    }
+
+    @objc func clipboardPasteLiveTapped() {
+        pasteNow()
+        hideClipboardPanel()
+    }
+
+    @objc func clipboardClearTapped() {
+        ClipboardHistory.shared.clear()
+        showClipboardPanel() // refresh empty state
+        showNotice("تم مسح سجل الحافظة")
+    }
+
+    @objc func clipboardCloseTapped() {
+        hideClipboardPanel()
+    }
+
     @objc func dismissKeyboardAction() { dismissKeyboard() }
 }
