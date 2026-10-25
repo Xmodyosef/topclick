@@ -112,23 +112,10 @@ extension KeyboardViewController {
     @objc func emojiTab(_ sender: UIButton) {
         guard emojiPack.indices.contains(sender.tag) else { return }
         emojiCategoryIndex = sender.tag
-        refreshEmojiTabs()
+        refreshTabs()
         emojiCollection?.setContentOffset(.zero, animated: false)
         emojiCollection?.reloadData()
     }
-
-    func refreshEmojiTabs() {
-        guard let s = emojiTabs else { return }
-        for (i, v) in s.arrangedSubviews.enumerated() {
-            guard let b = v as? UIButton else { continue }
-            b.backgroundColor = i == emojiCategoryIndex
-                ? palette.accent.withAlphaComponent(0.55)
-                : palette.key.withAlphaComponent(0.55)
-        }
-    }
-
-    /// Keep name used by older call sites (tab highlight).
-    func refreshTabs() { refreshEmojiTabs() }
 
     @objc func emojiTapped() {
         if page == .emoji {
