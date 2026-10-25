@@ -393,7 +393,7 @@ extension KeyboardViewController {
                 showNotice("الحافظة تحتاج تفعيل الوصول الكامل للوحة")
                 return
             }
-            // Toggle: long-press again closes the in-keyboard panel.
+            // Long-press opens history panel; press again to close. Short tap pastes with toast.
             if isClipboardPanelVisible {
                 hideClipboardPanel()
                 return
@@ -550,13 +550,14 @@ extension KeyboardViewController {
         let text = items[sender.tag]
         textDocumentProxy.insertText(text)
         playSystemClick(.rowMid)
+        showNotice("تم اللصق")
         tapHaptic()
-        hideClipboardPanel()
+        // Keep the history panel open so successive pastes stay one tap away.
     }
 
     @objc func clipboardPasteLiveTapped() {
         pasteNow()
-        hideClipboardPanel()
+        // Keep panel open after live paste (toast already shown by pasteNow).
     }
 
     @objc func clipboardClearTapped() {

@@ -8,6 +8,8 @@ import AudioToolbox
 struct ContentView: View {
     var body: some View {
         TabView {
+            SetupTab()
+                .tabItem { Label("التفعيل", systemImage: "keyboard") }
             ThemesTab()
                 .tabItem { Label("الثيمات", systemImage: "paintpalette.fill") }
             SettingsTab()
