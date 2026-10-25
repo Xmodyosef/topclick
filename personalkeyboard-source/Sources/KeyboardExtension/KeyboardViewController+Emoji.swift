@@ -43,7 +43,7 @@ extension KeyboardViewController {
         pager.delegate = self
         pager.translatesAutoresizingMaskIntoConstraints = false
         emojiPager = pager
-        lockHeight(pager, 180)
+        lockHeight(pager, emojiPagerHeight())
         let host = UIView()
         host.translatesAutoresizingMaskIntoConstraints = false
         pager.addSubview(host)
@@ -112,15 +112,14 @@ extension KeyboardViewController {
         playSystemClick(.emoji)
         rememberEmoji(item)
         tapHaptic()
-        DispatchQueue.main.async { [weak self] in
-            guard let self, self.page == .emoji else { return }
-            self.emojiPack = Self.catalog()
-            self.rebuild()
-        }
+        // Do not rebuild the whole emoji surface on every tap — keeps the full grid responsive
+        // and avoids extension memory spikes. Frequent list applies next time emoji opens.
     }
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let w = floor(collectionView.bounds.width / 8)
-        return CGSize(width: max(w, 32), height: 32)
+        let cols: CGFloat = 8
+        let w = floor(collectionView.bounds.width / cols)
+        let side = max(w, 36)
+        return CGSize(width: side, height: side)
     }
     @objc func emojiTab(_ sender: UIButton) {
         guard emojiPack.indices.contains(sender.tag) else { return }

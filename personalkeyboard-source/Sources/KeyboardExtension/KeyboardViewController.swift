@@ -187,7 +187,18 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
 
     func alts(for key: String) -> [String] {
-        return holdMap[key] ?? []
+        holdMap[key] ?? []
+    }
+
+    /// Long-press menu: base key first, then alternates (no duplicates).
+    func holdChoices(for key: String) -> [String] {
+        let extras = alts(for: key)
+        guard !extras.isEmpty else { return [] }
+        var out: [String] = [key]
+        for item in extras where item != key && !out.contains(item) {
+            out.append(item)
+        }
+        return out
     }
 
 
