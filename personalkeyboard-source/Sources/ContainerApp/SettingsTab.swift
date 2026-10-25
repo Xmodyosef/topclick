@@ -35,13 +35,13 @@ struct SettingsTab: View {
                     }
                     .padding(.top, NaqraSpacing.sm)
 
+                    accessCard
                     iconCard
                     keyboardCard
                     typingCard
                     feelCard
                     soundCard
                     privacyCard
-                    accessCard
                     if #available(iOS 18.0, *) {
                         TranslationPrepCard()
                     } else {
@@ -200,24 +200,38 @@ struct SettingsTab: View {
     }
 
     private var accessCard: some View {
-        SettingsCard(title: "تفعيل لوحة نقرة", subtitle: hasFullAccess ? "آخر حالة رصدتها اللوحة: الوصول الكامل مفعّل" : "آخر حالة رصدتها اللوحة: الوصول الكامل غير مفعّل") {
+        SettingsCard(
+            title: "تفعيل لوحة نقرة",
+            subtitle: hasFullAccess
+                ? "الوصول الكامل مفعّل — النسخ والترجمة والحافظة جاهزة."
+                : "فعّل اللوحة يدويًا مرة واحدة (iOS لا يسمح بالتفعيل التلقائي)."
+        ) {
+            HStack(spacing: 10) {
+                Image(systemName: hasFullAccess ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+                    .foregroundStyle(hasFullAccess ? Color.green : NaqraColors.accent)
+                Text(hasFullAccess ? "جاهز" : "يحتاج تفعيل")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(NaqraColors.textPrimary)
+                Spacer()
+            }
             VStack(alignment: .leading, spacing: 8) {
                 instruction(1, "الإعدادات ← عام ← لوحة المفاتيح")
-                instruction(2, "لوحات المفاتيح ← نقرة")
-                instruction(3, "فعّل السماح بالوصول الكامل للنسخ والترجمة")
+                instruction(2, "لوحات المفاتيح ← إضافة لوحة ← نقرة")
+                instruction(3, "فعّل «السماح بالوصول الكامل» داخل نقرة")
+                instruction(4, "في أي تطبيق: اضغط 🌐 للتبديل إلى نقرة")
             }
             Button {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
                     UIApplication.shared.open(url)
                 }
             } label: {
-                Label("فتح إعدادات لوحات المفاتيح", systemImage: "arrow.up.forward.app")
+                Label("فتح إعدادات النظام", systemImage: "gear")
                     .font(.system(size: 13, weight: .semibold))
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .tint(NaqraColors.accent)
-            Text("يفتح iOS إعدادات التطبيق؛ التفعيل النهائي يدويًا من عام ← لوحة المفاتيح، ولا يسمح iOS لأي تطبيق بالتفعيل تلقائيًا.")
+            Text("زر «فتح الإعدادات» يفتح صفحة التطبيق؛ التفعيل النهائي من عام ← لوحة المفاتيح.")
                 .font(.system(size: 11))
                 .foregroundStyle(NaqraColors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
