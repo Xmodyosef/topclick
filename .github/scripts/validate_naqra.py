@@ -147,6 +147,10 @@ def main() -> None:
 
     # App shell after preview removal
     require('ThemesTab()' in (app_dir / 'ContentView.swift').read_text(encoding='utf-8'), 'ThemesTab is primary tab')
+    require('SetupTab()' in (app_dir / 'ContentView.swift').read_text(encoding='utf-8'), 'Setup activation tab present')
+    require((app_dir / 'SetupTab.swift').is_file() and 'فعّل لوحة' in (app_dir / 'SetupTab.swift').read_text(encoding='utf-8'), 'SetupTab activation guide')
+    require('ThemeBoardCanvas' in app and 'numberRow' in (app_dir / 'ThemesTab.swift').read_text(encoding='utf-8'), 'themes tab has full 4-row board canvas')
+    require('تم اللصق' in extension and 'pasteNow()' in extension, 'paste uses toast notice like iOS')
     require('holdChoices(for:' in extension, 'long-press holdChoices helper present')
     require('func applyShiftSurface' in extension and 'letterKeyButtons' in extension, 'shift updates titles without full rebuild')
     require('shiftTapped' in extension and 'applyShiftSurface()' in extension, 'shiftTapped uses applyShiftSurface')
