@@ -32,6 +32,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     let translationModel = TranslationBridgeModel()
     var translationHost: UIHostingController<TranslationBridgeView>?
     var emojiPager: UIScrollView?
+    weak var emojiCollection: UICollectionView?
     var emojiTabs: UIStackView?
     var suggestionButtons: [UIButton] = []
     var appliedThemeId = ""
@@ -223,7 +224,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     }
 
 
-    enum KeyChrome { case letter, control, language, shift, enter, danger }
+    enum KeyChrome { case letter, control, symbols, emoji, language, shift, enter, danger }
 
     func control(_ t: String, _ a: Selector, font: CGFloat, chrome: KeyChrome = .control) -> UIButton {
         let b = KeyButton(type: .system)
@@ -266,15 +267,23 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
 
 
+    @objc func symbolPageToggled() {
+        guard page == .symbols, symbolPages.count > 1 else { return }
+        symbolPageIndex = (symbolPageIndex + 1) % symbolPages.count
+        rebuild()
+        tapHaptic(.action)
+    }
+
     @objc func symbolsOrLettersTapped() {
         if page == .symbols {
             page = .letters
+            symbolPageIndex = 0
         } else if page == .emoji {
             page = .letters
         } else {
             page = .symbols
+            symbolPageIndex = 0
         }
-        symbolPageIndex = 0
         rebuild()
     }
 

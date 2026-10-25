@@ -129,10 +129,30 @@ struct NaqraPalette {
     }
 
     static func tone(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat, dark: Bool, amber: Bool = false) -> NaqraPalette {
-        let text: UIColor = dark ? (amber ? UIColor(red: 0.96, green: 0.78, blue: 0.42, alpha: 1) : UIColor(white: 0.94, alpha: 1)) : UIColor(red: 0.22, green: 0.16, blue: 0.10, alpha: 1)
-        let accent: UIColor = dark ? UIColor(red: 0.82, green: 0.58, blue: 0.22, alpha: 1) : UIColor(red: 0.72, green: 0.48, blue: 0.22, alpha: 1)
-        let amount: CGFloat = dark ? 0.05 : 0.08
-        let key = UIColor(red: r, green: g, blue: b, alpha: dark ? 0.88 : 0.90)
+        // Text color derived from the key hue so themes are visibly different (not one shared amber).
+        let base = UIColor(red: r, green: g, blue: b, alpha: 1)
+        var h: CGFloat = 0, s: CGFloat = 0, br: CGFloat = 0, a: CGFloat = 0
+        let ok = base.getHue(&h, saturation: &s, brightness: &br, alpha: &a)
+        let accent: UIColor
+        if amber {
+            accent = UIColor(red: 0.96, green: 0.72, blue: 0.28, alpha: 1)
+        } else if ok {
+            let ns = min(0.75, max(0.35, s + 0.25))
+            let nb = dark ? min(0.95, max(0.55, br + 0.35)) : min(0.65, max(0.40, br * 0.75))
+            accent = UIColor(hue: h, saturation: ns, brightness: nb, alpha: 1)
+        } else {
+            accent = dark ? UIColor(red: 0.55, green: 0.70, blue: 1.0, alpha: 1) : UIColor(red: 0.30, green: 0.50, blue: 0.85, alpha: 1)
+        }
+        let text: UIColor
+        if dark {
+            text = amber
+                ? UIColor(red: 0.98, green: 0.86, blue: 0.55, alpha: 1)
+                : UIColor(white: 0.96, alpha: 1)
+        } else {
+            text = UIColor(red: max(0, r - 0.55), green: max(0, g - 0.55), blue: max(0, b - 0.50), alpha: 1)
+        }
+        let amount: CGFloat = dark ? 0.07 : 0.10
+        let key = UIColor(red: r, green: g, blue: b, alpha: 1)
         let background = UIColor(red: max(0, r - amount), green: max(0, g - amount), blue: max(0, b - amount), alpha: 1)
         return .init(background: background, key: key, text: text, accent: accent, blurDark: dark)
     }
