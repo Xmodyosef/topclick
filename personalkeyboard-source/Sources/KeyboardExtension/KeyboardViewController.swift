@@ -199,7 +199,9 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     func refreshTabs() {
         guard let tabs = emojiTabs else { return }
         for (i, view) in tabs.arrangedSubviews.enumerated() {
-            view.backgroundColor = i == emojiCategoryIndex ? UIColor.white.withAlphaComponent(0.22) : .clear
+            view.backgroundColor = i == emojiCategoryIndex
+                ? palette.accent.withAlphaComponent(0.55)
+                : palette.key.withAlphaComponent(0.55)
         }
     }
 
