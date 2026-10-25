@@ -7,7 +7,6 @@ import AudioToolbox
 
 struct ThemesTab: View {
     @State private var themeID = ThemeStore.themeID
-    @State private var previewText = ""
 
     var body: some View {
         NavigationStack {
@@ -23,13 +22,18 @@ struct ThemesTab: View {
                     }
                     .padding(.top, NaqraSpacing.sm)
 
-                    SettingsCard(title: "معاينة فعلية", subtitle: "اضغط المفاتيح واكتب قبل تفعيل اللوحة") {
-                        TextField("اكتب للتجربة…", text: $previewText)
-                            .textFieldStyle(.roundedBorder)
-                            .environment(\.layoutDirection, .rightToLeft)
-                        MiniKeyboardView(themeID: themeID, previewText: $previewText)
+                    SettingsCard(title: "الثيم النشط", subtitle: "يظهر فورًا داخل لوحة نقرة بعد التفعيل") {
+                        HStack {
+                            Label(ThemeCatalog.swatch(for: themeID).title, systemImage: "paintpalette.fill")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(NaqraColors.textPrimary)
+                            Spacer()
+                            Circle()
+                                .fill(ThemeCatalog.swatch(for: themeID).key)
+                                .frame(width: 22, height: 22)
+                                .overlay(Circle().stroke(ThemeCatalog.swatch(for: themeID).accent, lineWidth: 2))
+                        }
                     }
-                    themeOptionsCard
 
                     ForEach(ThemeCatalog.groups) { group in
                         VStack(alignment: .leading, spacing: NaqraSpacing.sm) {
@@ -60,13 +64,6 @@ struct ThemesTab: View {
         }
     }
 
-    private var themeOptionsCard: some View {
-        SettingsCard(title: "صوت الكيبورد", subtitle: "صوت النظام يعمل تلقائيًا مع كل ثيم") {
-            Label("الصوت الافتراضي مفعّل", systemImage: "speaker.wave.2.fill")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(NaqraColors.textSecondary)
-        }
-    }
     private func themeTile(_ theme: ThemeSwatch) -> some View {
         Button {
             themeID = theme.id
@@ -114,4 +111,3 @@ struct ThemesTab: View {
         .accessibilityAddTraits(themeID == theme.id ? .isSelected : [])
     }
 }
-

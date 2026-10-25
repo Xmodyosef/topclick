@@ -14,7 +14,7 @@ struct SettingsTab: View {
     @State private var soundChoice = ThemeStore.string("soundChoice") ?? "system"
     @State private var hapticLevel = ThemeStore.string("hapticLevel") ?? "medium"
     @State private var trackpad = ThemeStore.bool("trackpad") ?? true
-    @State private var symbolRows = Int(ThemeStore.string("symbolRows") ?? "3") ?? 3
+    @State private var symbolRows = Int(ThemeStore.string("symbolRows") ?? "4") ?? 4
     @State private var clipboardHistoryEnabled = ThemeStore.bool("clipboardHistoryEnabled") ?? false
     @State private var iconMode = ThemeStore.string("iconMode") ?? "auto"
     @State private var hasFullAccess = ThemeStore.bool("hasFullAccess") ?? false

@@ -117,7 +117,7 @@ extension KeyboardViewController {
         let sound: TapSoundEngine.Sound = row == 0 ? .rowTop : (row == 1 ? .rowMid : .rowBot)
         playSystemClick(sound)
         tapHaptic()
-        guard !alts(for: key).isEmpty else { return }
+        guard holdChoices(for: key).count > 1 else { return }
         let timer = Timer(timeInterval: 0.32, repeats: false) { [weak self] _ in
             self?.showHoldPopup(from: sender)
         }
@@ -174,8 +174,8 @@ extension KeyboardViewController {
     }
     func showHoldPopup(from button: UIButton) {
         guard let key = button.title(for: .normal) else { return }
-        let items = alts(for: key)
-        guard !items.isEmpty else { return }
+        let items = holdChoices(for: key)
+        guard items.count > 1 else { return }
         if pendingInserted {
             textDocumentProxy.deleteBackward()
             pendingInserted = false
@@ -191,6 +191,7 @@ extension KeyboardViewController {
         bar.layer.cornerCurve = .continuous
         bar.isLayoutMarginsRelativeArrangement = true
         bar.layoutMargins = UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6)
+        // First item is the base key — release without sliding keeps the original character.
         holdChoice = items[0]
         for (i, item) in items.enumerated() {
             let b = UIButton(type: .system)

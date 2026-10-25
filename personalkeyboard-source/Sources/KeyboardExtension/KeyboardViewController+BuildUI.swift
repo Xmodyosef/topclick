@@ -26,38 +26,23 @@ extension KeyboardViewController {
         }
     }
 
-    /// Exact board height from real rows — no flex spacer, no overlap.
+    /// Unified board height: letters / symbols / emoji all pin to `boardHeight` (324).
+    /// Content is top-stacked; empty space (if any) stays at the bottom — no flex ghost layers.
     func computedBoardHeight() -> CGFloat {
-        let topPad: CGFloat = 4
-        let bottomPad: CGFloat = 6
-        let spacing: CGFloat = 6
-        switch page {
-        case .emoji:
-            // tabs 36 + pager 180 + bottom 44 + spacings
-            return topPad + 36 + spacing + 180 + spacing + 44 + bottomPad
-        case .symbols:
-            let rowsCount: Int = {
-                if let str = ThemeIO.string("symbolRows"), let n = Int(str) { return max(1, min(n, 4)) }
-                let n = UserDefaults(suiteName: ThemeIO.group)?.integer(forKey: "symbolRows") ?? 0
-                return n > 0 ? max(1, min(n, 4)) : 3
-            }()
-            // rows (46 each, last 44) + bottom 44
-            let body = CGFloat(max(rowsCount - 1, 0)) * 46 + 44
-            return topPad + body + spacing * CGFloat(rowsCount) + 44 + bottomPad
-        case .letters:
-            var rows = 1 // toolbar 34
-            var h: CGFloat = 34
-            if showNumberRow {
-                rows += 1
-                h += 46
-            }
-            // 2 full letter rows + last action row
-            h += 46 + 46 + 44
-            rows += 3
-            h += 44 // bottom
-            rows += 1
-            return topPad + h + spacing * CGFloat(rows - 1) + bottomPad
-        }
+        boardHeight
+    }
+
+    /// How many symbol rows to show (1…4). Default 4 so the symbols page fills like letters.
+    func symbolRowsCount() -> Int {
+        if let str = ThemeIO.string("symbolRows"), let n = Int(str) { return max(1, min(n, 4)) }
+        let n = UserDefaults(suiteName: ThemeIO.group)?.integer(forKey: "symbolRows") ?? 0
+        return n > 0 ? max(1, min(n, 4)) : 4
+    }
+
+    /// Emoji grid height inside the fixed 324 board (tabs + bottom + pads reserved).
+    func emojiPagerHeight() -> CGFloat {
+        // 324 − topPad4 − tabs36 − sp6 − sp6 − bottom44 − bottomPad6 = 222
+        return max(200, boardHeight - 102)
     }
     func armHaptics() {
         guard hapticsOn else { return }
@@ -169,11 +154,7 @@ extension KeyboardViewController {
             }
             rootStack.addArrangedSubview(makeBottom())
         case .symbols:
-            let rowsCount: Int = {
-                if let str = ThemeIO.string("symbolRows"), let n = Int(str) { return max(1, min(n, 4)) }
-                let n = UserDefaults(suiteName: ThemeIO.group)?.integer(forKey: "symbolRows") ?? 0
-                return n > 0 ? max(1, min(n, 4)) : 3
-            }()
+            let rowsCount = symbolRowsCount()
             let pages = symbolPages
             let pageIdx = min(max(symbolPageIndex, 0), max(pages.count - 1, 0))
             let allRows = pages.isEmpty ? [] : pages[pageIdx]

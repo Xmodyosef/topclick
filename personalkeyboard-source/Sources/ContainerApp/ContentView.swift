@@ -8,8 +8,6 @@ import AudioToolbox
 struct ContentView: View {
     var body: some View {
         TabView {
-            KeyboardPreviewTab()
-                .tabItem { Label("معاينة", systemImage: "keyboard") }
             ThemesTab()
                 .tabItem { Label("الثيمات", systemImage: "paintpalette.fill") }
             SettingsTab()
@@ -20,4 +18,3 @@ struct ContentView: View {
         .toolbarBackground(.ultraThinMaterial, for: .tabBar)
     }
 }
-

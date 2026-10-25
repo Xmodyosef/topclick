@@ -54,10 +54,12 @@ def main() -> None:
 
     layouts = json.loads((ext_dir / 'Resources/keyboard_layouts.json').read_text(encoding='utf-8'))
     hold = layouts.get('hold_map') or {}
-    require(hold.get('ا') == ['أ', 'إ', 'آ'] and 'و' in hold and 'ي' in hold, 'Arabic long-press alternatives in layouts JSON')
+    require(isinstance(hold.get('ا'), list) and set(['أ','إ','آ']).issubset(hold.get('ا') or []), 'Arabic long-press for alef in layouts JSON')
+    require('و' in hold and 'ي' in hold and 'a' in hold and 'e' in hold, 'Arabic+English long-press maps present')
+    require(isinstance(hold.get('a'), list) and len(hold.get('a') or []) >= 3, 'English long-press diacritics for a')
     arabic_rows = layouts.get('arabic_rows') or []
     require(len(arabic_rows) == 3 and [len(row) for row in arabic_rows] == [11, 11, 9], 'Arabic letter rows match keyboard row widths')
-    require(arabic_rows[2] == ["ع","ظ","ط","ذ","د","ز","ر","و","ي"], 'Arabic third row matches reference layout')
+    require(arabic_rows[2] == ["ء","ظ","ط","ذ","د","ز","ر","و","ى"], 'Arabic third row matches reference layout')
     arabic_shift = layouts.get('arabic_shift_rows') or []
     require(len(arabic_shift) == len(arabic_rows) and [len(row) for row in arabic_shift] == [len(row) for row in arabic_rows], 'Arabic Shift rows match keyboard row widths')
     require(arabic_shift != arabic_rows, 'Arabic Shift layout differs from normal Arabic letters')
@@ -87,11 +89,10 @@ def main() -> None:
     require(none_branch is not None and 'return' in none_branch.group(1) and 'AudioServicesPlaySystemSound' not in none_branch.group(1), 'none sound choice is silent')
     require('ThemeIO.bool("sounds") != false' in sound, 'sound engine respects disabled sound preference')
 
-    require('Button { insertPreview(title) }' in app and 'TextField("اكتب للتجربة…"' in app, 'preview is interactive')
-    preview = (app_dir / 'KeyboardPreviewTab.swift').read_text(encoding='utf-8')
     settings = (app_dir / 'SettingsTab.swift').read_text(encoding='utf-8')
-    require('ThemeStore.bool("sounds") ?? true' in preview and 'soundChoice != "none"' in preview, 'preview reads saved sound preferences')
-    require('ThemeStore.write("sounds", value: true)' not in preview and 'ThemeStore.write("soundChoice", value: "system")' not in preview, 'preview does not force sound settings')
+    require(not (app_dir / 'KeyboardPreviewTab.swift').exists(), 'KeyboardPreviewTab removed')
+    require('KeyboardPreviewTab' not in app and 'MiniKeyboardView' not in app, 'app no longer embeds keyboard preview')
+    require('معاينة' not in (app_dir / 'ContentView.swift').read_text(encoding='utf-8'), 'ContentView has no preview tab')
     require('Toggle("تفعيل صوت النقر", isOn: $sounds)' in settings and 'Picker("نوع الصوت", selection: $soundChoice)' in settings, 'sound toggle and picker are exposed in settings')
     require('ThemeStore.write("sounds", value: isEnabled)' in settings and 'ThemeStore.write("soundChoice", value: nextChoice)' in settings and 'ThemeStore.write("soundChoice", value: choice)' in settings, 'sound toggle and picker keep both stored preferences in sync')
     require(not re.search(r'(?m)^\s*sounds\s*=\s*ThemeStore\.bool\("sounds"\)', settings), 'no orphan sound assignment in SettingsTab')
@@ -141,8 +142,11 @@ def main() -> None:
     require('sounds' in app, 'sounds setting exposed in app')
     require('Undo' not in (source / 'README.md').read_text(encoding='utf-8'), 'README does not claim unimplemented Undo')
 
-    # RTL preview (MiniKeyboardView)
-    require('.environment(\\.layoutDirection, .rightToLeft)' in app, 'preview uses RTL')
+    # App shell after preview removal
+    require('ThemesTab()' in (app_dir / 'ContentView.swift').read_text(encoding='utf-8'), 'ThemesTab is primary tab')
+    require('holdChoices(for:' in extension, 'long-press holdChoices helper present')
+    require('emojiPagerHeight()' in extension and 'symbolRowsCount()' in extension, 'unified height helpers present')
+    require('boardHeight' in extension and 'func computedBoardHeight()' in extension, 'all pages use boardHeight 324')
 
     if args.built_app:
         info_path = args.built_app / 'Info.plist'
