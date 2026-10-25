@@ -40,7 +40,9 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var clipboardLongPressInProgress = false
     weak var clipboardPanel: UIView?
     var isClipboardPanelVisible = false
-
+    /// Letter-key buttons on the letters page (for in-place shift without rebuild).
+    var letterKeyButtons: [[UIButton]] = []
+    weak var shiftKeyButton: UIButton?
 
     var letterFont: UIFont {
         // One compact, predictable font keeps Arabic and English aligned.

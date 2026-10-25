@@ -73,7 +73,7 @@ def main() -> None:
     require('boardHeight' in extension and '324' in extension, 'keyboard height constant present')
     loader = (ext_dir / 'KeyboardDataLoader.swift').read_text(encoding='utf-8')
     controller = (ext_dir / 'KeyboardViewController.swift').read_text(encoding='utf-8')
-    require('arabicShiftRows' in extension and 'isShifted ? arabicShiftRows : arabicRows' in extension, 'Arabic Shift layer used')
+    require('arabicShiftRows' in extension and ('isShifted ? arabicShiftRows : arabicRows' in extension or 'activeLetterLayout' in extension), 'Arabic Shift layer used')
     require('rows2("arabic_shift_rows")' in loader and 'layouts().arabicShiftRows' in controller, 'Arabic Shift JSON is loaded by the keyboard')
     lifecycle = re.search(r'override func viewWillDisappear\(_ animated: Bool\) \{(.*?)\n    \}', controller, re.S)
     require(lifecycle is not None and all(token in lifecycle.group(1) for token in ['holdTimer?.invalidate()', 'holdTimer = nil', 'hideHoldPopup()', 'pendingInserted = false']), 'viewWillDisappear cleans long-press state')
@@ -148,6 +148,8 @@ def main() -> None:
     # App shell after preview removal
     require('ThemesTab()' in (app_dir / 'ContentView.swift').read_text(encoding='utf-8'), 'ThemesTab is primary tab')
     require('holdChoices(for:' in extension, 'long-press holdChoices helper present')
+    require('func applyShiftSurface' in extension and 'letterKeyButtons' in extension, 'shift updates titles without full rebuild')
+    require('shiftTapped' in extension and 'applyShiftSurface()' in extension, 'shiftTapped uses applyShiftSurface')
     require('emojiPagerHeight()' in extension and 'symbolRowsCount()' in extension, 'unified height helpers present')
     require('boardHeight' in extension and 'func computedBoardHeight()' in extension, 'all pages use boardHeight 324')
 

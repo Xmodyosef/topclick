@@ -128,6 +128,8 @@ extension KeyboardViewController {
         emojiPager?.delegate = nil
         emojiPager = nil
         emojiTabs = nil
+        letterKeyButtons = []
+        shiftKeyButton = nil
         palette = NaqraPalette.current()
         view.clipsToBounds = false
         view.backgroundColor = palette.background
@@ -146,12 +148,10 @@ extension KeyboardViewController {
             if showNumberRow {
                 rootStack.addArrangedSubview(makeRow(numberRow, rowIdx: 0))
             }
-            let rows = language == .arabic
-                ? (isShifted ? arabicShiftRows : arabicRows)
-                : (isShifted ? englishUpper : englishLower)
+            let rows = activeLetterLayout()
             for (i, row) in rows.enumerated() {
                 if i == rows.count - 1 { rootStack.addArrangedSubview(makeLastLetterRow(row)) }
-                else { rootStack.addArrangedSubview(makeRow(row, rowIdx: i + 1)) }
+                else { rootStack.addArrangedSubview(makeRow(row, rowIdx: i + 1, trackAsLetters: true)) }
             }
             rootStack.addArrangedSubview(makeBottom())
         case .symbols:
@@ -176,6 +176,47 @@ extension KeyboardViewController {
         updateHeightForCurrentSize()
         view.setNeedsLayout()
     }
+
+    /// Letter layouts for the current language/shift state.
+    func activeLetterLayout() -> [[String]] {
+        language == .arabic
+            ? (isShifted ? arabicShiftRows : arabicRows)
+            : (isShifted ? englishUpper : englishLower)
+    }
+
+    /// Toggle shift by rewriting titles on existing keys — no full stack rebuild.
+    /// Falls back to `rebuild()` if the tracked key grid does not match the layout.
+    @discardableResult
+    func applyShiftSurface() -> Bool {
+        guard page == .letters else {
+            rebuild()
+            return false
+        }
+        let rows = activeLetterLayout()
+        guard letterKeyButtons.count == rows.count else {
+            rebuild()
+            return false
+        }
+        for (rowIndex, titles) in rows.enumerated() {
+            let buttons = letterKeyButtons[rowIndex]
+            guard buttons.count == titles.count else {
+                rebuild()
+                return false
+            }
+            for (col, title) in titles.enumerated() {
+                buttons[col].setTitle(title, for: .normal)
+            }
+        }
+        if let shift = shiftKeyButton {
+            let name = isShifted ? "shift.fill" : "shift"
+            let symbol = UIImage(systemName: name, withConfiguration: iconConfig)
+                ?? UIImage(systemName: "shift", withConfiguration: iconConfig)
+            shift.setImage(symbol, for: .normal)
+            paint(shift, emphasized: isShifted)
+        }
+        return true
+    }
+
     func makeToolbar() -> UIView {
         let s = UIStackView()
         s.axis = .horizontal
@@ -216,7 +257,7 @@ extension KeyboardViewController {
         lockHeight(s, 34)
         return s
     }
-    func makeRow(_ keys: [String], rowIdx: Int) -> UIView {
+    func makeRow(_ keys: [String], rowIdx: Int, trackAsLetters: Bool = false) -> UIView {
         let s = UIStackView()
         s.axis = .horizontal
         s.spacing = 4
@@ -224,7 +265,13 @@ extension KeyboardViewController {
         s.heightAnchor.constraint(equalToConstant: 46).isActive = true
         s.distribution = .fillEqually
         s.semanticContentAttribute = .forceLeftToRight
-        keys.forEach { s.addArrangedSubview(charKey($0, rowIdx: rowIdx)) }
+        var rowButtons: [UIButton] = []
+        for key in keys {
+            let button = charKey(key, rowIdx: rowIdx)
+            s.addArrangedSubview(button)
+            if trackAsLetters { rowButtons.append(button) }
+        }
+        if trackAsLetters { letterKeyButtons.append(rowButtons) }
         lockHeight(s, 46)
         return s
     }
@@ -232,7 +279,9 @@ extension KeyboardViewController {
         // Removed: flex spacer + bottom-pinned rootStack caused ghost stacked layers.
     }
     func makeLastLetterRow(_ keys: [String]) -> UIView {
-        makeActionRow(keys, leading: language == .arabic ? .symbols : .shift)
+        // Shift on the last letter row for both languages so Arabic diacritic layer
+        // is reachable without a full rebuild (applyShiftSurface).
+        makeActionRow(keys, leading: .shift)
     }
     func makeSymbolLastRow(_ keys: [String]) -> UIView {
         // Back-to-letters stays on the bottom bar, so these keys keep a full width.
@@ -248,6 +297,7 @@ extension KeyboardViewController {
             let shift = iconKey(isShifted ? "shift.fill" : "shift", #selector(shiftTapped))
             shift.widthAnchor.constraint(equalToConstant: 40).isActive = true
             paint(shift, emphasized: isShifted)
+            shiftKeyButton = shift
             wrap.addArrangedSubview(shift)
         case .symbols:
             let symbols = control("١٢٣", #selector(symbolsOrLettersTapped), font: 13)
@@ -267,7 +317,16 @@ extension KeyboardViewController {
         mid.spacing = 6
         mid.distribution = .fillEqually
         mid.semanticContentAttribute = .forceLeftToRight
-        keys.forEach { mid.addArrangedSubview(charKey($0, rowIdx: 2)) }
+        var midButtons: [UIButton] = []
+        for key in keys {
+            let button = charKey(key, rowIdx: 2)
+            mid.addArrangedSubview(button)
+            midButtons.append(button)
+        }
+        // Letters last row only — track for in-place shift (not symbol last row).
+        if page == .letters {
+            letterKeyButtons.append(midButtons)
+        }
         wrap.addArrangedSubview(mid)
         wrap.addArrangedSubview(makeDeleteKey())
         lockHeight(wrap, 44)
@@ -296,8 +355,9 @@ extension KeyboardViewController {
             let back = control(backTitle, #selector(symbolsOrLettersTapped), font: 12)
             back.accessibilityLabel = "رجوع للحروف"
             leading.append(back)
-        } else if language == .english {
-            let symbols = control("123", #selector(symbolsOrLettersTapped), font: 12)
+        } else {
+            // Letters page: symbols entry for both languages (Shift lives on the last letter row).
+            let symbols = control(language == .arabic ? "١٢٣" : "123", #selector(symbolsOrLettersTapped), font: 12)
             symbols.accessibilityLabel = "رموز"
             leading.append(symbols)
         }
