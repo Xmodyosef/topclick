@@ -127,6 +127,9 @@ extension KeyboardViewController {
         hideClipboardPanel()
         emojiPager?.delegate = nil
         emojiPager = nil
+        emojiCollection?.dataSource = nil
+        emojiCollection?.delegate = nil
+        emojiCollection = nil
         emojiTabs = nil
         letterKeyButtons = []
         shiftKeyButton = nil
@@ -169,6 +172,9 @@ extension KeyboardViewController {
             }
             rootStack.addArrangedSubview(makeBottom())
         case .emoji:
+            if emojiPack.isEmpty {
+                emojiPack = Self.catalog()
+            }
             rootStack.addArrangedSubview(makeEmojiTabs())
             rootStack.addArrangedSubview(makeEmojiPager())
             rootStack.addArrangedSubview(makeBottom(emojiOn: true))
@@ -350,14 +356,25 @@ extension KeyboardViewController {
         row.semanticContentAttribute = .forceLeftToRight
 
         var leading: [UIButton] = []
-        if page == .emoji || page == .symbols {
-            let backTitle = page == .emoji ? "رجوع" : (language == .arabic ? "أبج" : "ABC")
-            let back = control(backTitle, #selector(symbolsOrLettersTapped), font: 12, chrome: .control)
+        if page == .symbols {
+            // Multi-page symbols: 123 ↔ #+ = then letters via أبج/ABC.
+            if symbolPages.count > 1 {
+                let pageTitle = symbolPageIndex == 0 ? "#+=" : (language == .arabic ? "١٢٣" : "123")
+                let pageBtn = control(pageTitle, #selector(symbolPageToggled), font: 11, chrome: .symbols)
+                pageBtn.accessibilityLabel = "صفحة رموز أخرى"
+                leading.append(pageBtn)
+            }
+            let backTitle = language == .arabic ? "أبج" : "ABC"
+            let back = control(backTitle, #selector(symbolsOrLettersTapped), font: 12, chrome: .symbols)
+            back.accessibilityLabel = "رجوع للحروف"
+            leading.append(back)
+        } else if page == .emoji {
+            let back = control("رجوع", #selector(symbolsOrLettersTapped), font: 12, chrome: .symbols)
             back.accessibilityLabel = "رجوع للحروف"
             leading.append(back)
         } else {
-            // Letters page: symbols entry for both languages (Shift lives on the last letter row).
-            let symbols = control(language == .arabic ? "١٢٣" : "123", #selector(symbolsOrLettersTapped), font: 12, chrome: .control)
+            // Letters page: symbols entry (Shift lives on the last letter row).
+            let symbols = control(language == .arabic ? "١٢٣" : "123", #selector(symbolsOrLettersTapped), font: 12, chrome: .symbols)
             symbols.accessibilityLabel = "رموز"
             leading.append(symbols)
         }
@@ -373,7 +390,7 @@ extension KeyboardViewController {
         let emoji = UIButton(type: .system)
         emoji.setTitle("😊", for: .normal)
         emoji.titleLabel?.font = .systemFont(ofSize: 19)
-        paint(emoji, chrome: .control)
+        paint(emoji, chrome: .emoji)
         emoji.addTarget(self, action: #selector(emojiTapped), for: .touchUpInside)
         emoji.widthAnchor.constraint(equalToConstant: 32).isActive = true
         emoji.accessibilityLabel = "لوحة الرموز التعبيرية"
@@ -408,7 +425,7 @@ extension KeyboardViewController {
         return row
     }
     func paint(_ b: UIButton, chrome: KeyChrome = .letter, emphasized: Bool = false) {
-        // Role-colored keys: letters vs shift/lang/enter must not look identical.
+        // Role-colored keys: letters vs shift/lang/symbols/emoji/enter/delete.
         let bg: UIColor
         let fg: UIColor
         switch chrome {
@@ -416,38 +433,48 @@ extension KeyboardViewController {
             bg = palette.key.withAlphaComponent(1)
             fg = palette.text
         case .control:
-            // Symbols / period / space-adjacent: slightly muted vs letters
             bg = mix(palette.key, palette.background, t: 0.28)
             fg = palette.text.withAlphaComponent(0.92)
+        case .symbols:
+            // ١٢٣ / #+= / أبج — cooler accent mix so they differ from letters
+            bg = mix(palette.key, palette.accent, t: 0.42)
+            fg = palette.blurDark ? UIColor.white : palette.text
+        case .emoji:
+            bg = mix(palette.key, palette.accent, t: 0.30)
+            fg = palette.text
         case .language:
-            // Language switch stands out with accent wash
-            bg = mix(palette.key, palette.accent, t: 0.38)
+            bg = mix(palette.key, palette.accent, t: 0.50)
             fg = palette.blurDark ? UIColor.white : palette.text
         case .shift:
             if emphasized {
                 bg = palette.accent
                 fg = .white
             } else {
-                bg = mix(palette.key, palette.accent, t: 0.22)
+                bg = mix(palette.key, palette.accent, t: 0.28)
                 fg = palette.text
             }
         case .enter:
             bg = palette.accent
             fg = .white
         case .danger:
-            bg = mix(palette.key, UIColor.systemRed, t: 0.35)
-            fg = palette.text
+            // Delete: clearly reddish vs letter keys
+            bg = mix(palette.key, UIColor(red: 0.85, green: 0.25, blue: 0.28, alpha: 1), t: 0.48)
+            fg = palette.blurDark ? UIColor.white : palette.text
         }
         b.backgroundColor = bg
         b.setTitleColor(fg, for: .normal)
         b.tintColor = fg
         b.layer.cornerRadius = 8
         b.layer.cornerCurve = .continuous
-        b.layer.borderWidth = (chrome == .language || chrome == .shift || chrome == .enter) ? 1.0 : (palette.blurDark ? 0.5 : 0.8)
+        b.layer.borderWidth = ([KeyChrome.language, .shift, .enter, .symbols, .emoji, .danger].contains(chrome)) ? 1.0 : (palette.blurDark ? 0.5 : 0.8)
         let line: UIColor
         switch chrome {
-        case .language, .enter:
+        case .language, .enter, .symbols:
             line = palette.accent.withAlphaComponent(0.55)
+        case .emoji:
+            line = palette.accent.withAlphaComponent(0.35)
+        case .danger:
+            line = UIColor.systemRed.withAlphaComponent(0.40)
         case .shift where emphasized:
             line = UIColor.white.withAlphaComponent(0.25)
         default:

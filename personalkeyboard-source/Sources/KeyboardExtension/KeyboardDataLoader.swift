@@ -66,10 +66,11 @@ enum KeyboardDataLoader {
         }
         var arabicSymbols = rows3("arabic_symbol_pages")
         var englishSymbols = rows3("english_symbol_pages")
-        if arabicSymbols.flatMap({ $0 }).flatMap({ $0 }).count < 8 {
+        // Prefer bundled multi-page layouts; fall back when JSON missing/thin.
+        if arabicSymbols.isEmpty || arabicSymbols.flatMap({ $0 }).flatMap({ $0 }).count < 20 {
             arabicSymbols = Self.builtinArabicSymbols
         }
-        if englishSymbols.flatMap({ $0 }).flatMap({ $0 }).count < 8 {
+        if englishSymbols.isEmpty || englishSymbols.flatMap({ $0 }).flatMap({ $0 }).count < 20 {
             englishSymbols = Self.builtinEnglishSymbols
         }
         let value = Layouts(
@@ -85,18 +86,34 @@ enum KeyboardDataLoader {
         return value
     }
 
-    static let builtinArabicSymbols: [[[String]]] = [[
-        ["1","2","3","4","5","6","7","8","9","0"],
-        ["-", "/", ":", "؛", "(", ")", "؟", "﷼", "&", "@"],
-        ["َ", "ً", "ُ", "ٌ", "ِ", "ٍ", "ْ", "ّ", "ء", "أ", "إ"],
-        [".", "،", "!", "'", "«", "»", "٪", "…", "•", "ـ"]
-    ]]
-    static let builtinEnglishSymbols: [[[String]]] = [[
-        ["1","2","3","4","5","6","7","8","9","0"],
-        ["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""],
-        [".", ",", "?", "!", "'", "+", "=", "%", "…", "•"],
-        ["[", "]", "{", "}", "#", "*", "_", "~", "^", "\\"]
-    ]]
+    static let builtinArabicSymbols: [[[String]]] = [
+        [
+            ["1","2","3","4","5","6","7","8","9","0"],
+            ["-", "/", ":", "؛", "(", ")", "؟", "﷼", "&", "@"],
+            ["َ", "ً", "ُ", "ٌ", "ِ", "ٍ", "ْ", "ّ", "ء", "أ"],
+            [".", "،", "!", "'", "«", "»", "٪", "…", "•", "ـ"]
+        ],
+        [
+            ["[", "]", "{", "}", "#", "%", "^", "*", "+", "="],
+            ["_", "\\", "|", "~", "<", ">", "€", "£", "¥", "•"],
+            ["°", "′", "″", "※", "§", "¶", "†", "‡", "‰", "∞"],
+            ["¿", "¡", "«", "»", "‹", "›", "–", "—", "…", "·"]
+        ]
+    ]
+    static let builtinEnglishSymbols: [[[String]]] = [
+        [
+            ["1","2","3","4","5","6","7","8","9","0"],
+            ["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""],
+            [".", ",", "?", "!", "'", "\"", "+", "=", "%", "…"],
+            ["_", "-", "/", "\\", "|", "~", "^", "*", "#", "@"]
+        ],
+        [
+            ["[", "]", "{", "}", "#", "%", "^", "*", "+", "="],
+            ["_", "\\", "|", "~", "<", ">", "€", "£", "¥", "•"],
+            ["°", "′", "″", "§", "¶", "†", "‡", "‰", "∞", "≈"],
+            ["¿", "¡", "«", "»", "‹", "›", "–", "—", "…", "·"]
+        ]
+    ]
 
     static func arabicLexicon() -> [String] {
         lock.lock(); defer { lock.unlock() }
@@ -108,6 +125,11 @@ enum KeyboardDataLoader {
         }
         lexiconCache = ["السلام","عليكم","الله","صباح","الخير"]
         return lexiconCache!
+    }
+
+    static func clearEmojiCache() {
+        lock.lock(); defer { lock.unlock() }
+        emojiCache = nil
     }
 
     static func emojiCatalog(frequent: [String] = []) -> [(icon: String, items: [String])] {

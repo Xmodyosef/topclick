@@ -14,7 +14,7 @@ struct ThemesTab: View {
                         Text("اختر إحساس لوحتك")
                             .font(.system(size: 23, weight: .bold, design: .rounded))
                             .foregroundStyle(NaqraColors.textPrimary)
-                        Text("لوحة كاملة 4 صفوف — Shift ولغة بلون مختلف. اختر ثيمًا فيُطبَّق على اللوحة فورًا.")
+                        Text("لوحة 4 صفوف. اختر ثيمًا → أغلق الكيبورد وافتحه من جديد إن لم يتحدّث فورًا. Shift/لغة/رموز/إيموجي/حذف بألوان مختلفة.")
                             .font(.system(size: 13))
                             .foregroundStyle(NaqraColors.textSecondary)
                     }
@@ -57,9 +57,11 @@ struct ThemesTab: View {
     private func themeTile(_ theme: ThemeSwatch) -> some View {
         Button {
             themeID = theme.id
-            // Dual-write + Darwin notify so the live keyboard rebuilds palette.
+            // App Group + standard + Darwin (ThemeStore.write). Also stamp appliedAt.
             ThemeStore.write("themeId", value: theme.id)
             ThemeStore.write("themeAppliedAt", value: Date().timeIntervalSince1970)
+            // Ensure UserDefaults suite flush for suspended keyboard extension.
+            UserDefaults(suiteName: ThemeStore.suiteName)?.set(theme.id, forKey: "themeId")
         } label: {
             VStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)

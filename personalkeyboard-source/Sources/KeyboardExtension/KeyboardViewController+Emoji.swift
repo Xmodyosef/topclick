@@ -5,6 +5,8 @@ import AudioToolbox
 
 // MARK: - KeyboardViewController + Emoji
 extension KeyboardViewController {
+    /// One grid only (current category). Multiple CollectionViews exhaust keyboard-extension memory
+    /// and silently drop categories — that is why emoji looked "incomplete".
     func makeEmojiTabs() -> UIView {
         let wrap = UIStackView()
         wrap.axis = .horizontal
@@ -19,9 +21,11 @@ extension KeyboardViewController {
         scroller.addSubview(s)
         emojiTabs = s
         for (i, pack) in emojiPack.enumerated() {
-            let b = control(pack.icon, #selector(emojiTab(_:)), font: 18)
+            let b = control(pack.icon, #selector(emojiTab(_:)), font: 18, chrome: .emoji)
             b.tag = i
-            b.backgroundColor = i == emojiCategoryIndex ? UIColor.white.withAlphaComponent(0.22) : .clear
+            b.backgroundColor = i == emojiCategoryIndex
+                ? palette.accent.withAlphaComponent(0.55)
+                : palette.key.withAlphaComponent(0.55)
             b.widthAnchor.constraint(equalToConstant: 38).isActive = true
             s.addArrangedSubview(b)
         }
@@ -36,103 +40,110 @@ extension KeyboardViewController {
         lockHeight(wrap, 32)
         return wrap
     }
+
     func makeEmojiPager() -> UIView {
-        let pager = UIScrollView()
-        pager.isPagingEnabled = true
-        pager.showsHorizontalScrollIndicator = false
-        pager.delegate = self
-        pager.translatesAutoresizingMaskIntoConstraints = false
-        emojiPager = pager
-        lockHeight(pager, emojiPagerHeight())
         let host = UIView()
         host.translatesAutoresizingMaskIntoConstraints = false
-        pager.addSubview(host)
+        lockHeight(host, emojiPagerHeight())
+
+        let layout = UICollectionViewFlowLayout()
+        layout.minimumInteritemSpacing = 0
+        layout.minimumLineSpacing = 0
+        layout.sectionInset = .zero
+        let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        cv.backgroundColor = .clear
+        cv.dataSource = self
+        cv.delegate = self
+        cv.tag = 0
+        cv.alwaysBounceVertical = true
+        cv.register(EmojiCell.self, forCellWithReuseIdentifier: "e")
+        cv.translatesAutoresizingMaskIntoConstraints = false
+        host.addSubview(cv)
         NSLayoutConstraint.activate([
-            host.topAnchor.constraint(equalTo: pager.contentLayoutGuide.topAnchor),
-            host.bottomAnchor.constraint(equalTo: pager.contentLayoutGuide.bottomAnchor),
-            host.leadingAnchor.constraint(equalTo: pager.contentLayoutGuide.leadingAnchor),
-            host.trailingAnchor.constraint(equalTo: pager.contentLayoutGuide.trailingAnchor),
-            host.heightAnchor.constraint(equalTo: pager.frameLayoutGuide.heightAnchor)
+            cv.topAnchor.constraint(equalTo: host.topAnchor),
+            cv.bottomAnchor.constraint(equalTo: host.bottomAnchor),
+            cv.leadingAnchor.constraint(equalTo: host.leadingAnchor),
+            cv.trailingAnchor.constraint(equalTo: host.trailingAnchor)
         ])
-        var previous: UIView?
-        for i in 0..<emojiPack.count {
-            let layout = UICollectionViewFlowLayout()
-            layout.minimumInteritemSpacing = 0
-            layout.minimumLineSpacing = 0
-            layout.sectionInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
-            let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
-            cv.backgroundColor = .clear
-            cv.dataSource = self
-            cv.delegate = self
-            cv.tag = i
-            cv.register(EmojiCell.self, forCellWithReuseIdentifier: "e")
-            cv.translatesAutoresizingMaskIntoConstraints = false
-            host.addSubview(cv)
-            NSLayoutConstraint.activate([
-                cv.topAnchor.constraint(equalTo: host.topAnchor),
-                cv.bottomAnchor.constraint(equalTo: host.bottomAnchor),
-                cv.widthAnchor.constraint(equalTo: pager.frameLayoutGuide.widthAnchor),
-                cv.heightAnchor.constraint(equalTo: host.heightAnchor)
-            ])
-            if let previous { cv.leadingAnchor.constraint(equalTo: previous.trailingAnchor).isActive = true }
-            else { cv.leadingAnchor.constraint(equalTo: host.leadingAnchor).isActive = true }
-            if i == emojiPack.count - 1 { cv.trailingAnchor.constraint(equalTo: host.trailingAnchor).isActive = true }
-            previous = cv
-        }
-        return pager
+        emojiCollection = cv
+        emojiPager = nil
+        return host
     }
+
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        guard scrollView === emojiPager, scrollView.bounds.width > 0 else { return }
-        let idx = Int(round(scrollView.contentOffset.x / scrollView.bounds.width))
-        guard !emojiPack.isEmpty else { return }
-        emojiCategoryIndex = min(max(idx, 0), emojiPack.count - 1)
-        refreshTabs()
+        // Reserved for future horizontal emoji paging; single grid needs no index sync.
     }
+
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        guard emojiPack.indices.contains(collectionView.tag) else { return 0 }
-        return emojiPack[collectionView.tag].items.count
+        guard emojiPack.indices.contains(emojiCategoryIndex) else { return 0 }
+        return emojiPack[emojiCategoryIndex].items.count
     }
+
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "e", for: indexPath) as! EmojiCell
-        guard emojiPack.indices.contains(collectionView.tag),
-              emojiPack[collectionView.tag].items.indices.contains(indexPath.item) else {
+        guard emojiPack.indices.contains(emojiCategoryIndex),
+              emojiPack[emojiCategoryIndex].items.indices.contains(indexPath.item) else {
             cell.label.text = ""
             cell.paint(palette)
             return cell
         }
-        cell.label.text = emojiPack[collectionView.tag].items[indexPath.item]
+        cell.label.text = emojiPack[emojiCategoryIndex].items[indexPath.item]
         cell.paint(palette)
         return cell
     }
+
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        guard emojiPack.indices.contains(collectionView.tag),
-              emojiPack[collectionView.tag].items.indices.contains(indexPath.item) else { return }
-        let item = emojiPack[collectionView.tag].items[indexPath.item]
+        guard emojiPack.indices.contains(emojiCategoryIndex),
+              emojiPack[emojiCategoryIndex].items.indices.contains(indexPath.item) else { return }
+        let item = emojiPack[emojiCategoryIndex].items[indexPath.item]
         textDocumentProxy.insertText(item)
         playSystemClick(.emoji)
         rememberEmoji(item)
         tapHaptic()
-        // Do not rebuild the whole emoji surface on every tap — keeps the full grid responsive
-        // and avoids extension memory spikes. Frequent list applies next time emoji opens.
     }
+
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let cols: CGFloat = 8
         let w = floor(collectionView.bounds.width / cols)
-        let side = max(w, 36)
+        let side = max(w, 34)
         return CGSize(width: side, height: side)
     }
+
     @objc func emojiTab(_ sender: UIButton) {
         guard emojiPack.indices.contains(sender.tag) else { return }
         emojiCategoryIndex = sender.tag
-        refreshTabs()
-        guard let pager = emojiPager else { return }
-        pager.setContentOffset(CGPoint(x: CGFloat(sender.tag) * pager.bounds.width, y: 0), animated: true)
+        refreshEmojiTabs()
+        emojiCollection?.setContentOffset(.zero, animated: false)
+        emojiCollection?.reloadData()
     }
+
+    func refreshEmojiTabs() {
+        guard let s = emojiTabs else { return }
+        for (i, v) in s.arrangedSubviews.enumerated() {
+            guard let b = v as? UIButton else { continue }
+            b.backgroundColor = i == emojiCategoryIndex
+                ? palette.accent.withAlphaComponent(0.55)
+                : palette.key.withAlphaComponent(0.55)
+        }
+    }
+
+    /// Keep name used by older call sites (tab highlight).
+    func refreshTabs() { refreshEmojiTabs() }
+
     @objc func emojiTapped() {
-        page = (page == .emoji) ? .letters : .emoji
+        if page == .emoji {
+            page = .letters
+        } else {
+            page = .emoji
+            // Reload catalog every open so JSON/frequent stay complete.
+            KeyboardDataLoader.clearEmojiCache()
+            emojiPack = Self.catalog()
+            emojiCategoryIndex = min(emojiCategoryIndex, max(emojiPack.count - 1, 0))
+        }
         rebuild()
         tapHaptic()
     }
+
     func rememberEmoji(_ item: String) {
         var items = (ThemeIO.string("frequentEmoji") ?? "").split(separator: " ").map(String.init)
         items.removeAll { $0 == item }
