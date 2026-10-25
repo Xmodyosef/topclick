@@ -239,8 +239,8 @@ extension KeyboardViewController {
         clip.widthAnchor.constraint(equalToConstant: 36).isActive = true
         s.addArrangedSubview(clip)
 
-        // Middle: only real suggestions — never empty white pills.
-        let showSuggestions = ThemeIO.bool("suggestions") ?? true
+        // Suggestions only when enabled AND non-empty — no blank white middle strip.
+        let showSuggestions = ThemeIO.bool("suggestions") ?? false
         let words = showSuggestions ? suggestions().filter { !$0.isEmpty } : []
         if !words.isEmpty {
             let suggRow = makeSuggestionsRow(words: words)
@@ -251,12 +251,17 @@ extension KeyboardViewController {
             spacer.backgroundColor = .clear
             spacer.isUserInteractionEnabled = false
             spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+            spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
             s.addArrangedSubview(spacer)
         }
 
-        let tr = iconKey("translate", #selector(translateTapped))
-        tr.widthAnchor.constraint(equalToConstant: 36).isActive = true
-        s.addArrangedSubview(tr)
+        // Translate: keep only when iOS 18+ (otherwise the button only shows "needs iOS 18").
+        if #available(iOS 18.0, *) {
+            let tr = iconKey("translate", #selector(translateTapped))
+            tr.widthAnchor.constraint(equalToConstant: 36).isActive = true
+            tr.accessibilityLabel = "ترجمة"
+            s.addArrangedSubview(tr)
+        }
         let hide = iconKey("keyboard.chevron.compact.down", #selector(dismissKeyboardAction))
         hide.widthAnchor.constraint(equalToConstant: 36).isActive = true
         s.addArrangedSubview(hide)

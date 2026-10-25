@@ -37,7 +37,8 @@ jobs:
           test -f "$ASSETS/AppIconMorning.appiconset/AppIconMorning.png"
           test -f "$ASSETS/AppIconEvening.appiconset/AppIconEvening.png"
           test -f "$ASSETS/MorningArtwork.imageset/MorningArtwork.png"
-          test -f "$ASSETS/EveningArtwork.imageset/EveningArtwork.png"
+          # EveningArtwork decorative image intentionally removed
+          test -f "$ASSETS/AppIconEvening.appiconset/AppIconEvening.png"
           echo "Morning and evening icon assets are present"
 
       - name: Install xcodegen

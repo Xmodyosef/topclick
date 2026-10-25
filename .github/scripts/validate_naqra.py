@@ -133,11 +133,12 @@ def main() -> None:
         ('AppIconMorning.appiconset', 'AppIconMorning.png'),
         ('AppIconEvening.appiconset', 'AppIconEvening.png'),
         ('MorningArtwork.imageset', 'MorningArtwork.png'),
-        ('EveningArtwork.imageset', 'EveningArtwork.png'),
     ):
         set_dir = assets / set_name
         manifest = json.loads((set_dir / 'Contents.json').read_text(encoding='utf-8'))
         require((set_dir / image_name).is_file() and manifest['images'][0]['filename'] == image_name, f'{set_name} complete')
+    # Decorative EveningArtwork removed by design (user request).
+    require(not (assets / 'EveningArtwork.imageset').exists(), 'EveningArtwork decorative set removed')
 
     # Container split
     require((app_dir / 'KeyboardPrototypeApp.swift').is_file(), 'App entry exists')
