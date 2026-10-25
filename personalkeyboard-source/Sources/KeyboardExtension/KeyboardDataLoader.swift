@@ -44,8 +44,8 @@ enum KeyboardDataLoader {
                 arabicShiftRows: arabicShiftFallbackRows,
                 englishLower: [["q","w","e","r","t","y","u","i","o","p"],["a","s","d","f","g","h","j","k","l"],["z","x","c","v","b","n","m"]],
                 englishUpper: [["Q","W","E","R","T","Y","U","I","O","P"],["A","S","D","F","G","H","J","K","L"],["Z","X","C","V","B","N","M"]],
-                arabicSymbolPages: [[["1","2","3","4","5","6","7","8","9","0"]]],
-                englishSymbolPages: [[["1","2","3","4","5","6","7","8","9","0"]]],
+                arabicSymbolPages: builtinArabicSymbols,
+                englishSymbolPages: builtinEnglishSymbols,
                 holdMap: [
                     "ا": ["أ","إ","آ"], "و": ["ؤ"], "ي": ["ئ","ى"], "ه": ["ة"],
                     "ل": ["لا","لأ","لإ","لآ"], "س": ["ش"], "ص": ["ض"], "ط": ["ظ"],
@@ -66,7 +66,7 @@ enum KeyboardDataLoader {
         }
         var arabicSymbols = rows3("arabic_symbol_pages")
         var englishSymbols = rows3("english_symbol_pages")
-        // Prefer bundled multi-page layouts; fall back when JSON missing/thin.
+        // Prefer bundled layouts; fall back when JSON missing/thin.
         if arabicSymbols.isEmpty || arabicSymbols.flatMap({ $0 }).flatMap({ $0 }).count < 20 {
             arabicSymbols = Self.builtinArabicSymbols
         }
@@ -86,20 +86,70 @@ enum KeyboardDataLoader {
         return value
     }
 
+    /// Single uncrowded symbols page (4×10) — Arabic.
     static let builtinArabicSymbols: [[[String]]] = [
         [
-            ["1","2","3","4","5","6","7","8","9","0"],
-            ["-","/",":","؛","(",")","﷼","&","@","\""],
-            [".","،","؟","!","'","\"","+","=","٪","*"],
-            ["َ","ً","ُ","ٌ","ِ","ٍ","ْ","ّ","ء","أ"],
-        ],
-    ]
-    static let builtinEnglishSymbols: [[[String]]] = [
-        [
-            ["1","2","3","4","5","6","7","8","9","0"],
-            ["-","/",":",";","(",")","$","&","@","\""],
-            [".",",","?","!","'","\"","#","%","*","+"],
-            ["[","]","{","}","=","_","\\","|","~","^"],
-        ],
+            ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+            ["-", "/", ":", "؛", "(", ")", "﷼", "&", "@", "\""],
+            [".", "،", "؟", "!", "'", "\"", "+", "=", "٪", "*"],
+            ["َ", "ً", "ُ", "ٌ", "ِ", "ٍ", "ْ", "ّ", "ء", "أ"]
+        ]
     ]
 
+    /// Single uncrowded symbols page (4×10) — English.
+    static let builtinEnglishSymbols: [[[String]]] = [
+        [
+            ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+            ["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""],
+            [".", ",", "?", "!", "'", "\"", "#", "%", "*", "+"],
+            ["[", "]", "{", "}", "=", "_", "\\", "|", "~", "^"]
+        ]
+    ]
+
+    static func arabicLexicon() -> [String] {
+        lock.lock(); defer { lock.unlock() }
+        if let lexiconCache { return lexiconCache }
+        if let data = data(named: "arabic_lexicon"),
+           let words = try? JSONSerialization.jsonObject(with: data) as? [String] {
+            lexiconCache = words
+            return words
+        }
+        lexiconCache = ["السلام", "عليكم", "الله", "صباح", "الخير"]
+        return lexiconCache!
+    }
+
+    static func clearEmojiCache() {
+        lock.lock(); defer { lock.unlock() }
+        emojiCache = nil
+    }
+
+    static func emojiCatalog(frequent: [String] = []) -> [(icon: String, items: [String])] {
+        lock.lock(); defer { lock.unlock() }
+        if emojiCache == nil {
+            if let data = data(named: "emoji_catalog"),
+               let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                emojiCache = arr.compactMap { row in
+                    guard let icon = row["icon"] as? String,
+                          let items = row["items"] as? [String] else { return nil }
+                    return (icon, items)
+                }
+            } else {
+                // Dense fallback if JSON missing from bundle.
+                emojiCache = [
+                    ("😀", ["😀", "😂", "🥰", "😍", "😊", "😅", "😭", "😡", "🤔", "😎", "🤩", "😴", "😷", "🤯", "🫡"]),
+                    ("⬛", ["⬛", "⬜", "⚫", "⚪", "🔴", "🔵", "🟢", "🟡", "⭐", "✨", "❤️", "🖤", "🤍", "💜", "💙"]),
+                    ("👋", ["👋", "👍", "👎", "👏", "🙏", "💪", "✌️", "🤞", "🤝", "🖐️"])
+                ]
+            }
+        }
+        guard var packs = emojiCache, !packs.isEmpty else { return emojiCache ?? [] }
+        // Merge frequent into first category without mutating the cache permanently for empty frequent.
+        if !frequent.isEmpty {
+            var seen = Set<String>()
+            let merged = (Array(frequent.prefix(24)) + packs[0].items).filter { seen.insert($0).inserted }
+            packs[0] = (packs[0].icon, merged)
+            return packs
+        }
+        return packs
+    }
+}
