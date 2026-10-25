@@ -89,71 +89,17 @@ enum KeyboardDataLoader {
     static let builtinArabicSymbols: [[[String]]] = [
         [
             ["1","2","3","4","5","6","7","8","9","0"],
-            ["-", "/", ":", "؛", "(", ")", "؟", "﷼", "&", "@"],
-            ["َ", "ً", "ُ", "ٌ", "ِ", "ٍ", "ْ", "ّ", "ء", "أ"],
-            [".", "،", "!", "'", "«", "»", "٪", "…", "•", "ـ"]
+            ["-","/",":","؛","(",")","﷼","&","@","\""],
+            [".","،","؟","!","'","\"","+","=","٪","*"],
+            ["َ","ً","ُ","ٌ","ِ","ٍ","ْ","ّ","ء","أ"],
         ],
-        [
-            ["[", "]", "{", "}", "#", "%", "^", "*", "+", "="],
-            ["_", "\\", "|", "~", "<", ">", "€", "£", "¥", "•"],
-            ["°", "′", "″", "※", "§", "¶", "†", "‡", "‰", "∞"],
-            ["¿", "¡", "«", "»", "‹", "›", "–", "—", "…", "·"]
-        ]
     ]
     static let builtinEnglishSymbols: [[[String]]] = [
         [
             ["1","2","3","4","5","6","7","8","9","0"],
-            ["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""],
-            [".", ",", "?", "!", "'", "\"", "+", "=", "%", "…"],
-            ["_", "-", "/", "\\", "|", "~", "^", "*", "#", "@"]
+            ["-","/",":",";","(",")","$","&","@","\""],
+            [".",",","?","!","'","\"","#","%","*","+"],
+            ["[","]","{","}","=","_","\\","|","~","^"],
         ],
-        [
-            ["[", "]", "{", "}", "#", "%", "^", "*", "+", "="],
-            ["_", "\\", "|", "~", "<", ">", "€", "£", "¥", "•"],
-            ["°", "′", "″", "§", "¶", "†", "‡", "‰", "∞", "≈"],
-            ["¿", "¡", "«", "»", "‹", "›", "–", "—", "…", "·"]
-        ]
     ]
 
-    static func arabicLexicon() -> [String] {
-        lock.lock(); defer { lock.unlock() }
-        if let lexiconCache { return lexiconCache }
-        if let data = data(named: "arabic_lexicon"),
-           let words = try? JSONSerialization.jsonObject(with: data) as? [String] {
-            lexiconCache = words
-            return words
-        }
-        lexiconCache = ["السلام","عليكم","الله","صباح","الخير"]
-        return lexiconCache!
-    }
-
-    static func clearEmojiCache() {
-        lock.lock(); defer { lock.unlock() }
-        emojiCache = nil
-    }
-
-    static func emojiCatalog(frequent: [String] = []) -> [(icon: String, items: [String])] {
-        lock.lock(); defer { lock.unlock() }
-        if emojiCache == nil {
-            if let data = data(named: "emoji_catalog"),
-               let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-                emojiCache = arr.compactMap { row in
-                    guard let icon = row["icon"] as? String,
-                          let items = row["items"] as? [String] else { return nil }
-                    return (icon, items)
-                }
-            } else {
-                emojiCache = [("😀", ["😀","😂","❤️","👍","🔥","🙏"])]
-            }
-        }
-        guard var packs = emojiCache, !packs.isEmpty else { return emojiCache ?? [] }
-        // Merge frequent into first category without mutating the cache permanently for empty frequent.
-        if !frequent.isEmpty {
-            var seen = Set<String>()
-            let merged = (Array(frequent.prefix(24)) + packs[0].items).filter { seen.insert($0).inserted }
-            packs[0] = (packs[0].icon, merged)
-            return packs
-        }
-        return packs
-    }
-}

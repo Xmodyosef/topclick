@@ -159,12 +159,15 @@ def main() -> None:
     require('chrome: .symbols' in extension and 'chrome: .emoji' in extension, 'symbols/emoji keys use distinct chrome')
     require('func symbolPageToggled' in extension, 'symbols multi-page toggle')
     require('emojiCollection' in extension and 'clearEmojiCache' in extension, 'single emoji grid + cache reload')
-    require(len(layouts.get('arabic_symbol_pages') or []) >= 2, 'arabic symbols has >=2 pages')
-    require(len(layouts.get('english_symbol_pages') or []) >= 2, 'english symbols has >=2 pages')
+    require(len(layouts.get('arabic_symbol_pages') or []) == 1, 'arabic symbols single uncrowded page')
+    require(len(layouts.get('english_symbol_pages') or []) == 1, 'english symbols single uncrowded page')
 
     require('shiftTapped' in extension and 'applyShiftSurface()' in extension, 'shiftTapped uses applyShiftSurface')
     require('emojiPagerHeight()' in extension and 'symbolRowsCount()' in extension, 'unified height helpers present')
     require('boardHeight' in extension and 'func computedBoardHeight()' in extension, 'all pages use boardHeight 324')
+    require('padRowKeys' in extension, 'symbol row gap fillers')
+    require('constant: 12' in extension, 'board slightly lowered top inset')
+    require('holdMap[lower]' in extension or 'lowercased()' in extension, 'shift-aware long-press')
 
     if args.built_app:
         info_path = args.built_app / 'Info.plist'
