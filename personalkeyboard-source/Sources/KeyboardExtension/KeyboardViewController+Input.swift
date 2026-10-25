@@ -415,10 +415,12 @@ extension KeyboardViewController {
 
         let panel = UIView()
         panel.translatesAutoresizingMaskIntoConstraints = false
-        panel.backgroundColor = UIColor.black.withAlphaComponent(0.90)
+        // Solid dark glass — always readable over any keyboard theme.
+        panel.backgroundColor = UIColor(white: 0.07, alpha: 0.94)
         panel.layer.cornerRadius = 12
         panel.layer.cornerCurve = .continuous
         panel.clipsToBounds = true
+        panel.accessibilityViewIsModal = true
 
         let stack = UIStackView()
         stack.axis = .vertical
@@ -445,16 +447,43 @@ extension KeyboardViewController {
         title.textColor = .white
         title.font = .systemFont(ofSize: 13, weight: .semibold)
         title.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        title.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         let pasteLive = makeClipboardActionButton(title: "لصق", action: #selector(clipboardPasteLiveTapped))
+        pasteLive.accessibilityLabel = "لصق من الحافظة الحية"
         let clearBtn = makeClipboardActionButton(title: "مسح", action: #selector(clipboardClearTapped), destructive: true)
+        clearBtn.accessibilityLabel = "مسح سجل الحافظة"
         let closeBtn = makeClipboardActionButton(title: "إغلاق", action: #selector(clipboardCloseTapped))
+        closeBtn.accessibilityLabel = "إغلاق لوحة الحافظة"
 
         header.addArrangedSubview(title)
         header.addArrangedSubview(pasteLive)
         header.addArrangedSubview(clearBtn)
         header.addArrangedSubview(closeBtn)
         stack.addArrangedSubview(header)
+
+        // Always show a one-line live pasteboard preview when Full Access is on.
+        if hasFullAccess, let live = UIPasteboard.general.string, !live.isEmpty {
+            let livePreview = live.count > 64 ? String(live.prefix(64)) + "…" : live
+            let liveBtn = UIButton(type: .system)
+            var liveCfg = UIButton.Configuration.plain()
+            liveCfg.title = "حية: \(livePreview)"
+            liveCfg.baseForegroundColor = UIColor(red: 0.55, green: 0.82, blue: 1.0, alpha: 1)
+            liveCfg.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+                var out = incoming
+                out.font = .systemFont(ofSize: 12, weight: .medium)
+                return out
+            }
+            liveCfg.contentInsets = NSDirectionalEdgeInsets(top: 7, leading: 10, bottom: 7, trailing: 10)
+            liveCfg.background.backgroundColor = UIColor.white.withAlphaComponent(0.08)
+            liveCfg.background.cornerRadius = 8
+            liveBtn.configuration = liveCfg
+            liveBtn.contentHorizontalAlignment = .leading
+            liveBtn.accessibilityLabel = "لصق محتوى الحافظة الحية"
+            liveBtn.addTarget(self, action: #selector(clipboardPasteLiveTapped), for: .touchUpInside)
+            liveBtn.heightAnchor.constraint(greaterThanOrEqualToConstant: 34).isActive = true
+            stack.addArrangedSubview(liveBtn)
+        }
 
         let historyEnabled = ThemeIO.bool("clipboardHistoryEnabled") ?? false
         let items = ClipboardHistory.shared.items
@@ -496,16 +525,21 @@ extension KeyboardViewController {
             for (index, item) in items.prefix(12).enumerated() {
                 let row = UIButton(type: .system)
                 let preview = item.count > 56 ? String(item.prefix(56)) + "…" : item
-                row.setTitle(preview, for: .normal)
-                row.setTitleColor(.white, for: .normal)
-                row.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
-                row.titleLabel?.lineBreakMode = .byTruncatingTail
+                var rowCfg = UIButton.Configuration.plain()
+                rowCfg.title = preview
+                rowCfg.baseForegroundColor = .white
+                rowCfg.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+                    var out = incoming
+                    out.font = .systemFont(ofSize: 13, weight: .medium)
+                    return out
+                }
+                rowCfg.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 10)
+                rowCfg.background.backgroundColor = UIColor.white.withAlphaComponent(0.10)
+                rowCfg.background.cornerRadius = 8
+                row.configuration = rowCfg
                 row.contentHorizontalAlignment = .leading
-                row.backgroundColor = UIColor.white.withAlphaComponent(0.10)
-                row.layer.cornerRadius = 8
-                row.layer.cornerCurve = .continuous
                 row.tag = index
-                row.contentEdgeInsets = UIEdgeInsets(top: 8, left: 10, bottom: 8, right: 10)
+                row.accessibilityLabel = "لصق عنصر محفوظ"
                 row.addTarget(self, action: #selector(clipboardItemTapped(_:)), for: .touchUpInside)
                 row.heightAnchor.constraint(greaterThanOrEqualToConstant: 36).isActive = true
                 list.addArrangedSubview(row)
@@ -520,6 +554,11 @@ extension KeyboardViewController {
             panel.topAnchor.constraint(equalTo: view.topAnchor, constant: 6),
             panel.bottomAnchor.constraint(lessThanOrEqualTo: view.bottomAnchor, constant: -6)
         ])
+        // Cap height so the panel never covers the whole board on small phones.
+        let maxH = panel.heightAnchor.constraint(lessThanOrEqualTo: view.heightAnchor, multiplier: 0.72)
+        maxH.priority = .required
+        maxH.isActive = true
+
         clipboardPanel = panel
         isClipboardPanelVisible = true
         tapHaptic(.action)
@@ -533,13 +572,19 @@ extension KeyboardViewController {
 
     func makeClipboardActionButton(title: String, action: Selector, destructive: Bool = false) -> UIButton {
         let b = UIButton(type: .system)
-        b.setTitle(title, for: .normal)
-        b.titleLabel?.font = .systemFont(ofSize: 12, weight: .semibold)
-        b.setTitleColor(destructive ? UIColor(red: 1, green: 0.45, blue: 0.45, alpha: 1) : .white, for: .normal)
-        b.backgroundColor = UIColor.white.withAlphaComponent(0.14)
-        b.layer.cornerRadius = 8
-        b.layer.cornerCurve = .continuous
-        b.contentEdgeInsets = UIEdgeInsets(top: 6, left: 10, bottom: 6, right: 10)
+        let color = destructive ? UIColor(red: 1, green: 0.45, blue: 0.45, alpha: 1) : UIColor.white
+        var cfg = UIButton.Configuration.plain()
+        cfg.title = title
+        cfg.baseForegroundColor = color
+        cfg.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var out = incoming
+            out.font = .systemFont(ofSize: 12, weight: .semibold)
+            return out
+        }
+        cfg.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 10, bottom: 6, trailing: 10)
+        cfg.background.backgroundColor = UIColor.white.withAlphaComponent(0.14)
+        cfg.background.cornerRadius = 8
+        b.configuration = cfg
         b.addTarget(self, action: action, for: .touchUpInside)
         return b
     }

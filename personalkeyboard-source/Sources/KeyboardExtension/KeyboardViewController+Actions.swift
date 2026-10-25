@@ -77,6 +77,7 @@ extension KeyboardViewController {
         }
         UIPasteboard.general.string = text
         ClipboardHistory.shared.add(text)
+        showNotice("تم النسخ")
         tapHaptic()
     }
     func pasteNow() {
