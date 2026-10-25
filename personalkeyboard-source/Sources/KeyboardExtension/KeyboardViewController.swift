@@ -38,6 +38,10 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var noticeLabel: UILabel?
     var pendingTranslationText = ""
     var clipboardLongPressInProgress = false
+    /// Letter-key buttons on the letters page (for in-place shift without rebuild).
+    var letterKeyButtons: [[UIButton]] = []
+    weak var shiftKeyButton: UIButton?
+
 
     var letterFont: UIFont {
         // One compact, predictable font keeps Arabic and English aligned.

@@ -150,7 +150,7 @@ extension KeyboardViewController {
         pendingInserted = false
         if page == .letters, language == .english, isShifted {
             isShifted = false
-            rebuild()
+            applyShiftSurface()
         }
     }
     @objc func charCancel(_ sender: UIButton) {
@@ -231,7 +231,8 @@ extension KeyboardViewController {
     }
     @objc func shiftTapped() {
         isShifted.toggle()
-        rebuild()
+        // In-place title swap — avoids ghost rebuild cost/flicker on every Shift.
+        applyShiftSurface()
         tapHaptic(.action)
     }
     @objc func deleteTouchDown() {
