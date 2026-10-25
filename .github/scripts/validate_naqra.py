@@ -109,6 +109,7 @@ def main() -> None:
     require('func showClipboardPanel' in extension, 'clipboard uses in-keyboard panel')
     require('UIAlertController(' not in extension and 'UIAlertAction(' not in extension, 'no UIAlert presentation in keyboard extension')
     require('hideClipboardPanel' in extension and 'clipboardPasteLiveTapped' in extension, 'clipboard panel paste/close wiring')
+    require('UIPasteboard.general.string' in extension and 'showClipboardPanel' in extension, 'clipboard panel can surface live pasteboard')
     require('showNotice(' in extension and 'الوصول الكامل' in extension, 'Full Access notices')
     require('onError' in extension, 'translation error path')
 
