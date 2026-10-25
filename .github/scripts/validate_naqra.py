@@ -158,10 +158,6 @@ def main() -> None:
     require('chrome: .symbols' in extension and 'chrome: .emoji' in extension, 'symbols/emoji keys use distinct chrome')
     require('func symbolPageToggled' in extension, 'symbols multi-page toggle')
     require('emojiCollection' in extension and 'clearEmojiCache' in extension, 'single emoji grid + cache reload')
-    layouts_json = Path(root, 'Sources/KeyboardExtension/Resources/keyboard_layouts.json').read_text(encoding='utf-8')
-    require('"arabic_symbol_pages"' in layouts_json, 'layouts json present')
-    import json as _json
-    layouts = _json.loads(layouts_json)
     require(len(layouts.get('arabic_symbol_pages') or []) >= 2, 'arabic symbols has >=2 pages')
     require(len(layouts.get('english_symbol_pages') or []) >= 2, 'english symbols has >=2 pages')
 
