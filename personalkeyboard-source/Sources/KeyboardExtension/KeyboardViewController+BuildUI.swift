@@ -212,7 +212,7 @@ extension KeyboardViewController {
             let symbol = UIImage(systemName: name, withConfiguration: iconConfig)
                 ?? UIImage(systemName: "shift", withConfiguration: iconConfig)
             shift.setImage(symbol, for: .normal)
-            paint(shift, emphasized: isShifted)
+            paint(shift, chrome: .shift, emphasized: isShifted)
         }
         return true
     }
@@ -296,16 +296,16 @@ extension KeyboardViewController {
         case .shift:
             let shift = iconKey(isShifted ? "shift.fill" : "shift", #selector(shiftTapped))
             shift.widthAnchor.constraint(equalToConstant: 40).isActive = true
-            paint(shift, emphasized: isShifted)
+            paint(shift, chrome: .shift, emphasized: isShifted)
             shiftKeyButton = shift
             wrap.addArrangedSubview(shift)
         case .symbols:
-            let symbols = control("١٢٣", #selector(symbolsOrLettersTapped), font: 13)
+            let symbols = control("١٢٣", #selector(symbolsOrLettersTapped), font: 13, chrome: .control)
             symbols.widthAnchor.constraint(equalToConstant: 46).isActive = true
             symbols.accessibilityLabel = "رموز"
             wrap.addArrangedSubview(symbols)
         case .letters:
-            let letters = control("أبج", #selector(symbolsOrLettersTapped), font: 14)
+            let letters = control("أبج", #selector(symbolsOrLettersTapped), font: 14, chrome: .control)
             letters.widthAnchor.constraint(equalToConstant: 46).isActive = true
             letters.accessibilityLabel = "حروف"
             wrap.addArrangedSubview(letters)
@@ -352,17 +352,17 @@ extension KeyboardViewController {
         var leading: [UIButton] = []
         if page == .emoji || page == .symbols {
             let backTitle = page == .emoji ? "رجوع" : (language == .arabic ? "أبج" : "ABC")
-            let back = control(backTitle, #selector(symbolsOrLettersTapped), font: 12)
+            let back = control(backTitle, #selector(symbolsOrLettersTapped), font: 12, chrome: .control)
             back.accessibilityLabel = "رجوع للحروف"
             leading.append(back)
         } else {
             // Letters page: symbols entry for both languages (Shift lives on the last letter row).
-            let symbols = control(language == .arabic ? "١٢٣" : "123", #selector(symbolsOrLettersTapped), font: 12)
+            let symbols = control(language == .arabic ? "١٢٣" : "123", #selector(symbolsOrLettersTapped), font: 12, chrome: .control)
             symbols.accessibilityLabel = "رموز"
             leading.append(symbols)
         }
         let langTitle = language == .arabic ? "EN" : "ع"
-        let lang = control(langTitle, #selector(languageTapped), font: language == .arabic ? 14 : 16)
+        let lang = control(langTitle, #selector(languageTapped), font: language == .arabic ? 14 : 16, chrome: .language)
         lang.accessibilityLabel = "تغيير اللغة"
         leading.append(lang)
         for button in leading {
@@ -373,7 +373,7 @@ extension KeyboardViewController {
         let emoji = UIButton(type: .system)
         emoji.setTitle("😊", for: .normal)
         emoji.titleLabel?.font = .systemFont(ofSize: 19)
-        paint(emoji)
+        paint(emoji, chrome: .control)
         emoji.addTarget(self, action: #selector(emojiTapped), for: .touchUpInside)
         emoji.widthAnchor.constraint(equalToConstant: 32).isActive = true
         emoji.accessibilityLabel = "لوحة الرموز التعبيرية"
@@ -407,27 +407,89 @@ extension KeyboardViewController {
         lockHeight(row, 44)
         return row
     }
-    func paint(_ b: UIButton, emphasized: Bool = false) {
-        // Fully opaque keys — translucent keys stacked and looked "broken"/ghosted.
-        let keyColor = emphasized ? palette.accent : palette.key.withAlphaComponent(1)
-        b.backgroundColor = keyColor
-        b.setTitleColor(emphasized ? .white : palette.text, for: .normal)
-        b.tintColor = emphasized ? .white : palette.text
+    func paint(_ b: UIButton, chrome: KeyChrome = .letter, emphasized: Bool = false) {
+        // Role-colored keys: letters vs shift/lang/enter must not look identical.
+        let bg: UIColor
+        let fg: UIColor
+        switch chrome {
+        case .letter:
+            bg = palette.key.withAlphaComponent(1)
+            fg = palette.text
+        case .control:
+            // Symbols / period / space-adjacent: slightly muted vs letters
+            bg = mix(palette.key, palette.background, t: 0.28)
+            fg = palette.text.withAlphaComponent(0.92)
+        case .language:
+            // Language switch stands out with accent wash
+            bg = mix(palette.key, palette.accent, t: 0.38)
+            fg = palette.blurDark ? UIColor.white : palette.text
+        case .shift:
+            if emphasized {
+                bg = palette.accent
+                fg = .white
+            } else {
+                bg = mix(palette.key, palette.accent, t: 0.22)
+                fg = palette.text
+            }
+        case .enter:
+            bg = palette.accent
+            fg = .white
+        case .danger:
+            bg = mix(palette.key, UIColor.systemRed, t: 0.35)
+            fg = palette.text
+        }
+        b.backgroundColor = bg
+        b.setTitleColor(fg, for: .normal)
+        b.tintColor = fg
         b.layer.cornerRadius = 8
         b.layer.cornerCurve = .continuous
-        b.layer.borderWidth = palette.blurDark ? 0.5 : 0.8
-        let line = palette.blurDark ? UIColor.white.withAlphaComponent(0.18) : UIColor.black.withAlphaComponent(0.14)
+        b.layer.borderWidth = (chrome == .language || chrome == .shift || chrome == .enter) ? 1.0 : (palette.blurDark ? 0.5 : 0.8)
+        let line: UIColor
+        switch chrome {
+        case .language, .enter:
+            line = palette.accent.withAlphaComponent(0.55)
+        case .shift where emphasized:
+            line = UIColor.white.withAlphaComponent(0.25)
+        default:
+            line = palette.blurDark ? UIColor.white.withAlphaComponent(0.16) : UIColor.black.withAlphaComponent(0.12)
+        }
         b.layer.borderColor = line.cgColor
         b.layer.shadowOpacity = 0
         b.clipsToBounds = true
         b.isOpaque = true
     }
-    func iconKey(_ name: String, _ a: Selector) -> UIButton {
+
+    /// Linear mix of two colors (t = amount of `b`).
+    func mix(_ a: UIColor, _ b: UIColor, t: CGFloat) -> UIColor {
+        var ar: CGFloat = 0, ag: CGFloat = 0, ab: CGFloat = 0, aa: CGFloat = 0
+        var br: CGFloat = 0, bg: CGFloat = 0, bb: CGFloat = 0, ba: CGFloat = 0
+        a.getRed(&ar, green: &ag, blue: &ab, alpha: &aa)
+        b.getRed(&br, green: &bg, blue: &bb, alpha: &ba)
+        let u = min(1, max(0, t))
+        return UIColor(
+            red: ar * (1 - u) + br * u,
+            green: ag * (1 - u) + bg * u,
+            blue: ab * (1 - u) + bb * u,
+            alpha: 1
+        )
+    }
+
+    func iconKey(_ name: String, _ a: Selector, chrome: KeyChrome = .control) -> UIButton {
         let b = UIButton(type: .system)
         let symbol = UIImage(systemName: name, withConfiguration: iconConfig)
             ?? UIImage(systemName: fallbackSymbol(name), withConfiguration: iconConfig)
         b.setImage(symbol, for: .normal)
-        paint(b, emphasized: name.contains("shift.fill") && isShifted)
+        let resolved: KeyChrome
+        if name.contains("shift") {
+            resolved = .shift
+        } else if name.contains("arrow.down") {
+            resolved = .enter
+        } else if name.contains("delete") {
+            resolved = .danger
+        } else {
+            resolved = chrome
+        }
+        paint(b, chrome: resolved, emphasized: name.contains("shift.fill") && isShifted)
         b.addTarget(self, action: a, for: .touchUpInside)
         return b
     }

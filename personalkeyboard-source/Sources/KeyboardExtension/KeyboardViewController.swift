@@ -93,11 +93,26 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         super.viewWillAppear(animated)
         view.clipsToBounds = false
         updateHeightForCurrentSize()
-        if themeSignature != appliedThemeId {
-            appliedThemeId = themeSignature
-            palette = NaqraPalette.current()
+        // Always re-read App Group theme — Darwin notify can be missed while extension was suspended.
+        let sig = themeSignature
+        let next = NaqraPalette.current()
+        if sig != appliedThemeId || !paletteMatches(next) {
+            appliedThemeId = sig
+            palette = next
             rebuild()
         }
+    }
+
+    func paletteMatches(_ other: NaqraPalette) -> Bool {
+        func components(_ c: UIColor) -> [CGFloat] {
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            c.getRed(&r, green: &g, blue: &b, alpha: &a)
+            return [r, g, b, a]
+        }
+        guard palette.blurDark == other.blurDark else { return false }
+        let k = zip(components(palette.key), components(other.key)).allSatisfy { abs($0 - $1) < 0.02 }
+        let a = zip(components(palette.accent), components(other.accent)).allSatisfy { abs($0 - $1) < 0.02 }
+        return k && a
     }
 
     override func textDidChange(_ textInput: UITextInput?) {
@@ -208,11 +223,13 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     }
 
 
-    func control(_ t: String, _ a: Selector, font: CGFloat) -> UIButton {
+    enum KeyChrome { case letter, control, language, shift, enter, danger }
+
+    func control(_ t: String, _ a: Selector, font: CGFloat, chrome: KeyChrome = .control) -> UIButton {
         let b = KeyButton(type: .system)
         b.setTitle(t, for: .normal)
         b.titleLabel?.font = .systemFont(ofSize: font, weight: .semibold)
-        paint(b)
+        paint(b, chrome: chrome)
         b.addTarget(self, action: a, for: .touchUpInside)
         return b
     }
