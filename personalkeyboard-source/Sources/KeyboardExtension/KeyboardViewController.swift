@@ -211,10 +211,22 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
 
     func alts(for key: String) -> [String] {
-        holdMap[key] ?? []
+        if let direct = holdMap[key], !direct.isEmpty { return direct }
+        // English shift: map "A" → hold of "a"
+        if key.count == 1, let ch = key.unicodeScalars.first, CharacterSet.uppercaseLetters.contains(ch) {
+            let lower = key.lowercased()
+            if let v = holdMap[lower], !v.isEmpty {
+                return v.map { $0.uppercased() }
+            }
+        }
+        if key.count == 1, let ch = key.unicodeScalars.first, CharacterSet.lowercaseLetters.contains(ch) {
+            let upper = key.uppercased()
+            if let v = holdMap[upper], !v.isEmpty { return v }
+        }
+        return []
     }
 
-    /// Long-press menu: base key first, then alternates (no duplicates).
+    /// Long-press menu: base key first, then alternates (no duplicates). iOS-style.
     func holdChoices(for key: String) -> [String] {
         let extras = alts(for: key)
         guard !extras.isEmpty else { return [] }

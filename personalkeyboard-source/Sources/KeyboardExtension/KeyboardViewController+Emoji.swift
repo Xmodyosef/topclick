@@ -103,9 +103,10 @@ extension KeyboardViewController {
     }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let cols: CGFloat = 8
-        let w = floor(collectionView.bounds.width / cols)
-        let side = max(w, 34)
+        // iOS-like dense grid (8–9 columns); never leave sparse holes.
+        let width = max(collectionView.bounds.width, collectionView.superview?.bounds.width ?? 0, UIScreen.main.bounds.width - 16)
+        let cols: CGFloat = width >= 390 ? 9 : 8
+        let side = max(floor(width / cols), 32)
         return CGSize(width: side, height: side)
     }
 
@@ -114,6 +115,7 @@ extension KeyboardViewController {
         emojiCategoryIndex = sender.tag
         refreshTabs()
         emojiCollection?.setContentOffset(.zero, animated: false)
+        emojiCollection?.collectionViewLayout.invalidateLayout()
         emojiCollection?.reloadData()
     }
 

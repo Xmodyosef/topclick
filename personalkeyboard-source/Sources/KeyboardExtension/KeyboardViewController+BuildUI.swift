@@ -34,15 +34,14 @@ extension KeyboardViewController {
 
     /// How many symbol rows to show (1…4). Default 4 so the symbols page fills like letters.
     func symbolRowsCount() -> Int {
-        if let str = ThemeIO.string("symbolRows"), let n = Int(str) { return max(1, min(n, 4)) }
-        let n = UserDefaults(suiteName: ThemeIO.group)?.integer(forKey: "symbolRows") ?? 0
-        return n > 0 ? max(1, min(n, 4)) : 4
+        // Always 4 rows so symbols fill the 324 board like the letters page (iOS-style).
+        return 4
     }
 
     /// Emoji grid height inside the fixed 324 board (tabs + bottom + pads reserved).
     func emojiPagerHeight() -> CGFloat {
-        // 324 − topPad4 − tabs36 − sp6 − sp6 − bottom44 − bottomPad6 = 222
-        return max(200, boardHeight - 102)
+        // 324 − topPad12 − tabs32 − sp6 − sp6 − bottom44 ≈ 224
+        return max(210, boardHeight - 100)
     }
     func armHaptics() {
         guard hapticsOn else { return }
@@ -118,7 +117,7 @@ extension KeyboardViewController {
         NSLayoutConstraint.activate([
             rootStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 4),
             rootStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -4),
-            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 4)
+            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 12)
         ])
         rootStack.setContentHuggingPriority(.required, for: .vertical)
         rootStack.setContentCompressionResistancePriority(.required, for: .vertical)
@@ -268,6 +267,20 @@ extension KeyboardViewController {
         lockHeight(s, 34)
         return s
     }
+    /// Fill short rows so the board never shows empty gaps (iOS-dense).
+    /// Uses black/white geometric glyphs that still insert on tap.
+    func padRowKeys(_ keys: [String], target: Int = 10) -> [String] {
+        guard keys.count < target, !keys.isEmpty else { return keys }
+        let fillers = ["⬜", "⬛", "◽", "◾", "○", "●"]
+        var out = keys
+        var i = 0
+        while out.count < target {
+            out.append(fillers[i % fillers.count])
+            i += 1
+        }
+        return out
+    }
+
     func makeRow(_ keys: [String], rowIdx: Int, trackAsLetters: Bool = false) -> UIView {
         let s = UIStackView()
         s.axis = .horizontal
@@ -276,8 +289,9 @@ extension KeyboardViewController {
         s.heightAnchor.constraint(equalToConstant: 46).isActive = true
         s.distribution = .fillEqually
         s.semanticContentAttribute = .forceLeftToRight
+        let displayKeys = (page == .symbols && !trackAsLetters) ? padRowKeys(keys, target: 10) : keys
         var rowButtons: [UIButton] = []
-        for key in keys {
+        for key in displayKeys {
             let button = charKey(key, rowIdx: rowIdx)
             s.addArrangedSubview(button)
             if trackAsLetters { rowButtons.append(button) }
@@ -328,8 +342,9 @@ extension KeyboardViewController {
         mid.spacing = 6
         mid.distribution = .fillEqually
         mid.semanticContentAttribute = .forceLeftToRight
+        let midKeys = page == .symbols ? padRowKeys(keys, target: 8) : keys
         var midButtons: [UIButton] = []
-        for key in keys {
+        for key in midKeys {
             let button = charKey(key, rowIdx: 2)
             mid.addArrangedSubview(button)
             midButtons.append(button)
@@ -364,7 +379,13 @@ extension KeyboardViewController {
         if page == .symbols {
             // Multi-page symbols: 123 ↔ #+ = then letters via أبج/ABC.
             if symbolPages.count > 1 {
-                let pageTitle = symbolPageIndex == 0 ? "#+=" : (language == .arabic ? "١٢٣" : "123")
+                // iOS-style cycle: 123 → #+= → #+=/more → …
+                let pageTitle: String
+                switch symbolPageIndex {
+                case 0: pageTitle = "#+="
+                case 1: pageTitle = (symbolPages.count > 2 ? "＃3" : (language == .arabic ? "١٢٣" : "123"))
+                default: pageTitle = language == .arabic ? "١٢٣" : "123"
+                }
                 let pageBtn = control(pageTitle, #selector(symbolPageToggled), font: 11, chrome: .symbols)
                 pageBtn.accessibilityLabel = "صفحة رموز أخرى"
                 leading.append(pageBtn)
