@@ -289,7 +289,11 @@ extension KeyboardViewController {
         s.heightAnchor.constraint(equalToConstant: 46).isActive = true
         s.distribution = .fillEqually
         s.semanticContentAttribute = .forceLeftToRight
-        let displayKeys = (page == .symbols && !trackAsLetters) ? padRowKeys(keys, target: 10) : keys
+        // Symbols: keep exactly the designed keys (10×4) — no filler clutter when layout is complete.
+        let displayKeys = keys
+        if page == .symbols {
+            s.spacing = 5  // slightly airier than letters (4)
+        }
         var rowButtons: [UIButton] = []
         for key in displayKeys {
             let button = charKey(key, rowIdx: rowIdx)
@@ -342,7 +346,7 @@ extension KeyboardViewController {
         mid.spacing = 6
         mid.distribution = .fillEqually
         mid.semanticContentAttribute = .forceLeftToRight
-        let midKeys = page == .symbols ? padRowKeys(keys, target: 8) : keys
+        let midKeys = keys
         var midButtons: [UIButton] = []
         for key in midKeys {
             let button = charKey(key, rowIdx: 2)

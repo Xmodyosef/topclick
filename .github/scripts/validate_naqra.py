@@ -159,8 +159,8 @@ def main() -> None:
     require('chrome: .symbols' in extension and 'chrome: .emoji' in extension, 'symbols/emoji keys use distinct chrome')
     require('func symbolPageToggled' in extension, 'symbols multi-page toggle')
     require('emojiCollection' in extension and 'clearEmojiCache' in extension, 'single emoji grid + cache reload')
-    require(len(layouts.get('arabic_symbol_pages') or []) >= 3, 'arabic symbols has >=3 pages')
-    require(len(layouts.get('english_symbol_pages') or []) >= 3, 'english symbols has >=3 pages')
+    require(len(layouts.get('arabic_symbol_pages') or []) == 1, 'arabic symbols single uncrowded page')
+    require(len(layouts.get('english_symbol_pages') or []) == 1, 'english symbols single uncrowded page')
 
     require('shiftTapped' in extension and 'applyShiftSurface()' in extension, 'shiftTapped uses applyShiftSurface')
     require('emojiPagerHeight()' in extension and 'symbolRowsCount()' in extension, 'unified height helpers present')
