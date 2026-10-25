@@ -124,6 +124,7 @@ extension KeyboardViewController {
         rootStack.setContentCompressionResistancePriority(.required, for: .vertical)
     }
     func rebuild() {
+        hideClipboardPanel()
         emojiPager?.delegate = nil
         emojiPager = nil
         emojiTabs = nil

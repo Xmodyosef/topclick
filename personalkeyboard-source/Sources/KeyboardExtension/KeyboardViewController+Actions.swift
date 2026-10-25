@@ -50,7 +50,20 @@ extension KeyboardViewController {
     }
     @objc func copyPasteTapped() {
         guard !clipboardLongPressInProgress else { return }
-        copyNow()
+        // If text is selected → copy. Otherwise open the in-keyboard clipboard panel (or paste live).
+        if let selected = textDocumentProxy.selectedText, !selected.isEmpty {
+            copyNow()
+            return
+        }
+        guard hasFullAccess else {
+            showNotice("الحافظة تحتاج تفعيل الوصول الكامل للوحة")
+            return
+        }
+        if isClipboardPanelVisible {
+            hideClipboardPanel()
+        } else {
+            showClipboardPanel()
+        }
     }
     func copyNow() {
         guard hasFullAccess else {
