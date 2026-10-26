@@ -30,3 +30,8 @@ GitHub Actions → IPA غير موقّع → ESign
 - الأيقونات من SF Symbols
 - ثيمات [Catppuccin](https://github.com/catppuccin/catppuccin) (MIT)
 - ثيم [Dracula](https://github.com/dracula/dracula-theme) (MIT)
+
+
+## التحميل
+
+الإصدار الوحيد: [v1.0.0](https://github.com/Xmodyosef/topclick/releases/tag/v1.0.0)
