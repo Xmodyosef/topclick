@@ -48,8 +48,13 @@ final class TapSoundEngine {
 
     func play(_ sound: Sound, variation: Float = 0) {
         guard isEnabled, ThemeIO.bool("sounds") != false else { return }
-        let choice = ThemeIO.string("soundChoice") ?? "system"
+        // Active pack id only — install state is app-owned; extension just plays.
+        var choice = ThemeIO.string("soundChoice") ?? "system"
         if choice == "none" { return }
+        // Unknown / not yet unlocked engine profile → safe system click
+        if choice != "system", customFrequencies[choice] == nil {
+            choice = "system"
+        }
         if choice == "system" {
             DispatchQueue.main.async { AudioServicesPlaySystemSound(1104) }
             return
