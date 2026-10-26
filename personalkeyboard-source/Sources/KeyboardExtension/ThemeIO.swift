@@ -14,19 +14,21 @@ enum ThemeIO {
         )
     }
 
-    /// Keyboard-local writes. Does not rebuild the keys.
+    /// Dual-write: UserDefaults.standard first (in-app storage), then App Group if available (#2).
+    /// Sideload builds often lack App Group — standard keeps themes/sounds inside the app.
     static func set(_ key: String, value: Any) {
-        suite.set(value, forKey: key)
         UserDefaults.standard.set(value, forKey: key)
+        suite.set(value, forKey: key)
     }
 
     static func string(_ key: String) -> String? {
-        suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
+        // Prefer standard (app-local) then group — themes live in-app when group is missing.
+        UserDefaults.standard.string(forKey: key) ?? suite.string(forKey: key)
     }
 
     static func bool(_ key: String) -> Bool? {
-        if suite.object(forKey: key) != nil { return suite.bool(forKey: key) }
         if UserDefaults.standard.object(forKey: key) != nil { return UserDefaults.standard.bool(forKey: key) }
+        if suite.object(forKey: key) != nil { return suite.bool(forKey: key) }
         return nil
     }
 }

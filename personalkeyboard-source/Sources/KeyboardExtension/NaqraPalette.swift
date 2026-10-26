@@ -224,3 +224,17 @@ struct NaqraPalette {
     }
 }
 
+
+extension NaqraPalette {
+    /// Optional per-control colors (#3). When unset, all special keys share `accent` (#1).
+    enum SpecialKey: String, CaseIterable {
+        case shift, language, enter, delete, emoji, symbols
+    }
+
+    func color(for special: SpecialKey) -> UIColor {
+        if let custom = NaqraPalette.storedColor("specialKey.\(special.rawValue)") {
+            return custom
+        }
+        return accent
+    }
+}

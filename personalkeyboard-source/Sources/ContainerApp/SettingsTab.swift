@@ -58,7 +58,7 @@ struct SettingsTab: View {
 
     /// Icon switcher only — no decorative second artwork image.
     private var iconCard: some View {
-        SettingsCard(title: "أيقونة التطبيق", subtitle: "صباح = صورتك · مساء = نفس الصورة بلون مسائي") {
+        SettingsCard(title: "أيقونة التطبيق", subtitle: "صباح = لون سكري/كريمي · مساء = نفس الصورة بلون مسائي") {
             // صورة واحدة فقط (صباح). المساء = نفس الأيقونة بفلتر لون — بدون صورة ثانية زائدة.
             HStack(spacing: 10) {
                 iconChip(asset: "MorningArtwork", title: "صباح", eveningTint: false)
@@ -110,8 +110,12 @@ struct SettingsTab: View {
                     ThemeStore.write("sounds", value: isEnabled)
                     ThemeStore.write("soundChoice", value: nextChoice)
                 }
-            Picker("نوع الصوت", selection: $soundChoice) {
+            Picker("مكتبة الأصوات", selection: $soundChoice) {
                 Text("النظام").tag("system")
+                Text("كريمي").tag("creamy")
+                Text("ثوكي").tag("thocky")
+                Text("ناعم").tag("soft")
+                Text("آلة كاتبة").tag("typewriter")
                 Text("بدون").tag("none")
             }
             .pickerStyle(.menu)
@@ -121,7 +125,11 @@ struct SettingsTab: View {
                 sounds = isEnabled
                 ThemeStore.write("soundChoice", value: choice)
                 ThemeStore.write("sounds", value: isEnabled)
+                if isEnabled { AudioServicesPlaySystemSound(1104) }
             }
+            Text("الأصوات مخزّنة داخل التطبيق (ليست App Group) ويمكن تبديلها من هنا أو من الثيمات.")
+                .font(.system(size: 11))
+                .foregroundStyle(NaqraColors.textSecondary)
             Toggle("إظهار صف الأرقام", isOn: $showNumberRow)
                 .onChange(of: showNumberRow) { _, value in ThemeStore.write("showNumberRow", value: value) }
             Toggle("حفظ سجل الحافظة", isOn: $clipboardHistoryEnabled)
@@ -223,7 +231,7 @@ struct SettingsTab: View {
     private func reload() {
         showNumberRow = ThemeStore.bool("showNumberRow") ?? true
         haptics = ThemeStore.bool("haptics") ?? true
-        let knownSoundChoices: Set<String> = ["system", "none"]
+        let knownSoundChoices: Set<String> = ["system", "none", "creamy", "thocky", "soft", "typewriter"]
         let storedChoice = ThemeStore.string("soundChoice") ?? "system"
         let requestedChoice = knownSoundChoices.contains(storedChoice) ? storedChoice : "system"
         let soundsEnabled = ThemeStore.bool("sounds") ?? (requestedChoice != "none")

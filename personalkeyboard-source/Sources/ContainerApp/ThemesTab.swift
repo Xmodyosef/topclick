@@ -5,6 +5,9 @@ import UIKit
 
 struct ThemesTab: View {
     @State private var themeID = ThemeStore.themeID
+    @State private var sounds = ThemeStore.bool("sounds") ?? true
+    @State private var soundChoice = ThemeStore.string("soundChoice") ?? "system"
+    @State private var showNumberRow = ThemeStore.bool("showNumberRow") ?? true
 
     var body: some View {
         NavigationStack {
@@ -14,7 +17,7 @@ struct ThemesTab: View {
                         Text("اختر إحساس لوحتك")
                             .font(.system(size: 23, weight: .bold, design: .rounded))
                             .foregroundStyle(NaqraColors.textPrimary)
-                        Text("لوحة 4 صفوف. اختر ثيمًا → أغلق الكيبورد وافتحه من جديد إن لم يتحدّث فورًا. Shift/لغة/رموز/إيموجي/حذف بألوان مختلفة.")
+                        Text("معاينة حية بجانب كل ثيم. الأزرار الأساسية (لغة/رموز/إدخال/حذف/إيموجي) بلون موحّد. العربية بلا شيفت — البدائل بالضغط المطوّل.")
                             .font(.system(size: 13))
                             .foregroundStyle(NaqraColors.textSecondary)
                     }
@@ -22,7 +25,35 @@ struct ThemesTab: View {
 
                     // Live full board (4 rows) — not a separate "preview tab"
                     SettingsCard(title: "الثيم على اللوحة", subtitle: "\(ThemeCatalog.swatch(for: themeID).title) · يُطبَّق فورًا داخل لوحة المفاتيح") {
-                        ThemeBoardCanvas(theme: ThemeCatalog.swatch(for: themeID))
+                        ThemeBoardCanvas(theme: ThemeCatalog.swatch(for: themeID), showNumbers: showNumberRow)
+                    }
+
+                    SettingsCard(title: "صوت النقرة · صف الأرقام", subtitle: "نفس مكان الثيمات — أنيق ومباشر") {
+                        Toggle("تفعيل صوت النقر", isOn: $sounds)
+                            .onChange(of: sounds) { _, isEnabled in
+                                let next = isEnabled ? (soundChoice == "none" ? "system" : soundChoice) : "none"
+                                soundChoice = next
+                                ThemeStore.write("sounds", value: isEnabled)
+                                ThemeStore.write("soundChoice", value: next)
+                            }
+                        Picker("مكتبة الأصوات", selection: $soundChoice) {
+                            Text("النظام").tag("system")
+                            Text("كريمي").tag("creamy")
+                            Text("ثوكي").tag("thocky")
+                            Text("ناعم").tag("soft")
+                            Text("آلة كاتبة").tag("typewriter")
+                            Text("بدون").tag("none")
+                        }
+                        .pickerStyle(.menu)
+                        .disabled(!sounds)
+                        .onChange(of: soundChoice) { _, choice in
+                            let isEnabled = choice != "none"
+                            sounds = isEnabled
+                            ThemeStore.write("soundChoice", value: choice)
+                            ThemeStore.write("sounds", value: isEnabled)
+                        }
+                        Toggle("إظهار صف الأرقام", isOn: $showNumberRow)
+                            .onChange(of: showNumberRow) { _, value in ThemeStore.write("showNumberRow", value: value) }
                     }
 
                     ForEach(ThemeCatalog.groups) { group in
@@ -112,6 +143,7 @@ struct ThemesTab: View {
 
 struct ThemeBoardCanvas: View {
     let theme: ThemeSwatch
+    var showNumbers: Bool = true
 
     private let numberRow = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
     private let row1 = ["ض", "ص", "ث", "ق", "ف", "غ", "ع", "ه", "خ", "ح", "ج"]
@@ -120,20 +152,22 @@ struct ThemeBoardCanvas: View {
 
     var body: some View {
         VStack(spacing: 5) {
-            keyRow(numberRow, height: 28, font: 11)
+            if showNumbers {
+                keyRow(numberRow, height: 28, font: 11)
+            }
             keyRow(row1, height: 32, font: 13)
             keyRow(row2, height: 32, font: 13)
+            // Arabic preview: no Shift — delete only (#12)
             HStack(spacing: 4) {
-                controlKey("⇧", width: 34, kind: .shift)
                 keyRow(row3, height: 32, font: 13)
-                controlKey("⌫", width: 40, kind: .normal)
+                controlKey("⌫", width: 40, kind: .unified)
             }
             HStack(spacing: 4) {
-                controlKey("١٢٣", width: 40, kind: .normal)
-                controlKey("EN", width: 36, kind: .language)
+                controlKey("١٢٣", width: 40, kind: .unified)
+                controlKey("EN", width: 36, kind: .unified)
                 spaceKey
-                controlKey("😊", width: 32, kind: .normal)
-                controlKey("⏎", width: 40, kind: .enter)
+                controlKey("😊", width: 32, kind: .unified)
+                controlKey("⏎", width: 40, kind: .unified)
             }
         }
         .padding(8)
@@ -165,23 +199,10 @@ struct ThemeBoardCanvas: View {
         }
     }
 
-    private func controlKey(_ title: String, width: CGFloat, kind: ControlKind = .normal) -> some View {
-        let bg: Color
-        let fg: Color
-        switch kind {
-        case .normal:
-            bg = theme.key.opacity(0.75)
-            fg = theme.ink.opacity(0.9)
-        case .language:
-            bg = theme.accent.opacity(0.85)
-            fg = theme.ink
-        case .shift:
-            bg = theme.accent.opacity(0.55)
-            fg = theme.ink
-        case .enter:
-            bg = theme.accent
-            fg = Color.white.opacity(0.95)
-        }
+    private func controlKey(_ title: String, width: CGFloat, kind: ControlKind = .unified) -> some View {
+        // Unified action color for shift/lang/symbols/enter/delete/emoji (#1)
+        let bg = theme.accent
+        let fg = Color.white.opacity(0.95)
         return Text(title)
             .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(fg)
@@ -189,11 +210,11 @@ struct ThemeBoardCanvas: View {
             .background(bg, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .stroke(theme.accent.opacity(kind == .normal ? 0.15 : 0.45), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.28), lineWidth: 1)
             )
     }
 
-    private enum ControlKind { case normal, language, shift, enter }
+    private enum ControlKind { case unified }
 
     private var spaceKey: some View {
         Text("مسافة")

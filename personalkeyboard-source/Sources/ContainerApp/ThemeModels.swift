@@ -132,8 +132,9 @@ enum ThemeStore {
     static var suite: UserDefaults { UserDefaults(suiteName: suiteName) ?? .standard }
 
     static func write(_ key: String, value: Any) {
-        suite.set(value, forKey: key)
+        // App-local first, then App Group (#2 themes/sounds inside app for sideload).
         UserDefaults.standard.set(value, forKey: key)
+        suite.set(value, forKey: key)
         CFNotificationCenterPostNotification(
             CFNotificationCenterGetDarwinNotifyCenter(),
             CFNotificationName(notificationName as CFString),
@@ -142,7 +143,7 @@ enum ThemeStore {
     }
 
     static func string(_ key: String) -> String? {
-        return suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
+        return UserDefaults.standard.string(forKey: key) ?? suite.string(forKey: key)
     }
 
     static var themeID: String {
@@ -158,14 +159,14 @@ enum ThemeStore {
     }
 
     static func bool(_ key: String) -> Bool? {
-        if suite.object(forKey: key) != nil { return suite.bool(forKey: key) }
         if UserDefaults.standard.object(forKey: key) != nil { return UserDefaults.standard.bool(forKey: key) }
+        if suite.object(forKey: key) != nil { return suite.bool(forKey: key) }
         return nil
     }
 
     static func int(_ key: String) -> Int? {
-        if suite.object(forKey: key) != nil { return suite.integer(forKey: key) }
         if UserDefaults.standard.object(forKey: key) != nil { return UserDefaults.standard.integer(forKey: key) }
+        if suite.object(forKey: key) != nil { return suite.integer(forKey: key) }
         return nil
     }
 
