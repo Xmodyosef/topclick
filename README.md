@@ -26,6 +26,7 @@
 - الحد الأدنى: iOS 17
 - التوقيع: IPA غير موقّع لـ ESign وFeather
 - الخصوصية: لا شهادات أو مفاتيح داخل المستودع
+- **لا يوجد GitHub Actions workflows** — البناء يدوي
 
 ## ما يميزها
 
@@ -40,12 +41,16 @@
 - زر إعدادات للوصول الكامل
 - بدون زر كرة ظاهر داخل اللوحة
 
-## البناء
+## البناء (يدوي — بدون Actions)
 
-1. افتح **Actions**.
-2. شغّل **Build PersonalKeyboard IPA**.
-3. نزّل artifact باسم `PersonalKeyboard-unsigned-ipa`.
-4. وقّعه عبر ESign أو Feather.
+```bash
+python3 .github/scripts/validate_naqra.py personalkeyboard-source
+cd personalkeyboard-source
+brew install xcodegen && xcodegen generate
+xcodebuild -project PersonalKeyboard.xcodeproj -scheme PersonalKeyboard \
+  -configuration Release -sdk iphoneos -derivedDataPath build \
+  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+```
 
 > لا يمكن تشغيل النسخ والترجمة وبعض الأصوات قبل تفعيل **Full Access** من إعدادات iOS.
 
@@ -69,9 +74,8 @@ python3 .github/scripts/validate_naqra.py personalkeyboard-source
 
 ## تنزيل IPA
 
-كل بناء ناجح يرفع ملف **`PersonalKeyboard-unsigned.ipa`** مباشرة إلى [Releases](../../releases).
-
-> تنزيل artifact من Actions يجي دائمًا **zip** — هذا قيد من GitHub. من Releases تنزل الـ IPA نفسه بدون ضغط.
+إصدار واحد فقط: **[v1.0.0](../../releases/tag/v1.0.0)**  
+نزّل الـ IPA ثم وقّعه (Sideloadly / TrollStore / ESign / Feather).
 
 
 
