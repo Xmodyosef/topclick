@@ -73,3 +73,8 @@ python3 .github/scripts/validate_naqra.py personalkeyboard-source
 
 > تنزيل artifact من Actions يجي دائمًا **zip** — هذا قيد من GitHub. من Releases تنزل الـ IPA نفسه بدون ضغط.
 
+
+
+## Release
+
+Only release: [v1.0.0](https://github.com/Xmodyosef/topclick/releases/tag/v1.0.0)
