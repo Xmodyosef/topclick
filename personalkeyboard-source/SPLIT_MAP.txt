@@ -106,3 +106,16 @@ KeyboardViewController+Clipboard.swift -> clipboard panel
 KeyboardViewController+Paint.swift  -> paint/mix/iconKey
 PackStores.swift (ContainerApp)     -> ThemePackStore + SoundPackStore (independent install)
 ThemesTab                           -> per-pack download then free switch
+
+# Placement rules (team)
+# ContainerApp:
+#   PackStores.swift     — install + apply for themes/sounds (ONLY place that writes installed*)
+#   ThemesTab.swift      — pack tiles / download UX
+#   ThemeBoardCanvas.swift — live board preview only
+#   ThemeModels.swift    — ThemeCatalog + ThemeStore prefs
+#   SettingsTab.swift    — master toggles (mute, number row, haptics); NO pack picker
+# KeyboardExtension:
+#   ThemeIO.swift        — dual-write/read active prefs only
+#   NaqraPalette.swift   — real keyboard colors from themeId
+#   TapSoundEngine.swift — play from soundChoice (no install lists)
+#   +Hold / +Clipboard / +Paint / +Input / +BuildUI — behavior splits

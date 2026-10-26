@@ -103,31 +103,24 @@ struct SettingsTab: View {
 
     private var keyboardCard: some View {
         SettingsCard(title: "إعدادات اللوحة", subtitle: "خيارات تنعكس على لوحة المفاتيح") {
+            // Master mute only — pack picker lives in Themes tab (single owner).
             Toggle("تفعيل صوت النقر", isOn: $sounds)
                 .onChange(of: sounds) { _, isEnabled in
-                    let nextChoice = isEnabled ? (soundChoice == "none" ? "system" : soundChoice) : "none"
-                    soundChoice = nextChoice
-                    ThemeStore.write("sounds", value: isEnabled)
-                    ThemeStore.write("soundChoice", value: nextChoice)
+                    SoundPackStore.setEnabled(isEnabled)
+                    soundChoice = ThemeStore.string(ContentPackKeys.soundChoice) ?? "system"
+                    sounds = soundChoice != "none"
+                    if sounds { AudioServicesPlaySystemSound(1104) }
                 }
-            Picker("نوع الصوت", selection: $soundChoice) {
-                Text("النظام").tag("system")
-                Text("كريمي").tag("creamy")
-                Text("ثوكي").tag("thocky")
-                Text("ناعم").tag("soft")
-                Text("آلة كاتبة").tag("typewriter")
-                Text("بدون").tag("none")
+            HStack {
+                Text("الحزمة الحالية")
+                    .font(.system(size: 13))
+                    .foregroundStyle(NaqraColors.textPrimary)
+                Spacer()
+                Text(SoundPackStore.title(for: soundChoice))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(NaqraColors.accent)
             }
-            .pickerStyle(.menu)
-            .disabled(!sounds)
-            .onChange(of: soundChoice) { _, choice in
-                let isEnabled = choice != "none"
-                sounds = isEnabled
-                ThemeStore.write("soundChoice", value: choice)
-                ThemeStore.write("sounds", value: isEnabled)
-                if isEnabled { AudioServicesPlaySystemSound(1104) }
-            }
-            Text("الأصوات مخزّنة داخل التطبيق (ليست App Group) ويمكن تبديلها من هنا أو من الثيمات.")
+            Text("اختيار وتحميل حزم الصوت من تبويب «الثيمات» — كل حزمة لوحدها ولا تُحذف عند التبديل.")
                 .font(.system(size: 11))
                 .foregroundStyle(NaqraColors.textSecondary)
             Toggle("إظهار صف الأرقام", isOn: $showNumberRow)
@@ -231,9 +224,8 @@ struct SettingsTab: View {
     private func reload() {
         showNumberRow = ThemeStore.bool("showNumberRow") ?? true
         haptics = ThemeStore.bool("haptics") ?? true
-        let knownSoundChoices: Set<String> = ["system", "none", "creamy", "thocky", "soft", "typewriter"]
-        let storedChoice = ThemeStore.string("soundChoice") ?? "system"
-        let requestedChoice = knownSoundChoices.contains(storedChoice) ? storedChoice : "system"
+        let storedChoice = ThemeStore.string(ContentPackKeys.soundChoice) ?? "system"
+        let requestedChoice = SoundPackStore.knownIDs.contains(storedChoice) ? storedChoice : "system"
         let soundsEnabled = ThemeStore.bool("sounds") ?? (requestedChoice != "none")
         soundChoice = soundsEnabled && requestedChoice != "none" ? requestedChoice : "none"
         sounds = soundChoice != "none"
