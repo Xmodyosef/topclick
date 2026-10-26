@@ -23,7 +23,7 @@ def main() -> None:
     with info_path.open("rb") as handle:
         info = plistlib.load(handle)
     require(info.get("CFBundleIdentifier") == APP_BUNDLE, "built application bundle ID unchanged")
-    require(info.get("CFBundleShortVersionString") == "0.2", "built app version is 0.2")
+    require(info.get("CFBundleShortVersionString") == "0.2.3", "built app version is 0.2.3")
 
     icon_dictionaries = [info.get("CFBundleIcons", {}), info.get("CFBundleIcons~ipad", {})]
     alternates = {}
