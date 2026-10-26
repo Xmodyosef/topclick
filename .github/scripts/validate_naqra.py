@@ -177,7 +177,7 @@ def main() -> None:
         alternates = icons.get('CFBundleAlternateIcons', {})
         require('AppIconEvening' in alternates, 'built Info.plist includes AppIconEvening alternate icon')
         require(info.get('CFBundleIdentifier') == APP_BUNDLE, 'built application bundle ID remains unchanged')
-        require(info.get('CFBundleShortVersionString') == '0.2', 'built app version is 0.2')
+        require(info.get('CFBundleShortVersionString') == '0.2.3', 'built app version is 0.2.3')
 
     print('All Naqra regression checks passed.')
 
