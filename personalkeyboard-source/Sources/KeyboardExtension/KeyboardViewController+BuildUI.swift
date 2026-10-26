@@ -38,6 +38,20 @@ extension KeyboardViewController {
         return 4
     }
 
+    /// Prefer: up to 3 symbol rows + faces row (emoji smileys) as last — #11 without overflow.
+    func packedSymbolRows(from allRows: [[String]]) -> [[String]] {
+        let nonEmpty = allRows.filter { !$0.isEmpty }
+        guard !nonEmpty.isEmpty else { return [] }
+        let facesLike: ([String]) -> Bool = { row in
+            row.contains(where: { $0.unicodeScalars.first.map { $0.value >= 0x1F600 && $0.value <= 0x1F64F } ?? false })
+        }
+        if let faces = nonEmpty.last, facesLike(faces), nonEmpty.count >= 2 {
+            let content = Array(nonEmpty.dropLast().prefix(3))
+            return content + [faces]
+        }
+        return Array(nonEmpty.prefix(symbolRowsCount()))
+    }
+
     /// Emoji grid height inside the fixed 324 board (tabs + bottom + pads reserved).
     func emojiPagerHeight() -> CGFloat {
         // 324 − topPad12 − tabs32 − sp6 − sp6 − bottom44 ≈ 224
@@ -117,7 +131,7 @@ extension KeyboardViewController {
         NSLayoutConstraint.activate([
             rootStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 4),
             rootStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -4),
-            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 10)
+            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 12)
         ])
         rootStack.setContentHuggingPriority(.required, for: .vertical)
         rootStack.setContentCompressionResistancePriority(.required, for: .vertical)
@@ -157,11 +171,10 @@ extension KeyboardViewController {
             }
             rootStack.addArrangedSubview(makeBottom())
         case .symbols:
-            let rowsCount = symbolRowsCount()
             let pages = symbolPages
             let pageIdx = min(max(symbolPageIndex, 0), max(pages.count - 1, 0))
             let allRows = pages.isEmpty ? [] : pages[pageIdx]
-            var rows = Array(allRows.prefix(rowsCount)).filter { !$0.isEmpty }
+            var rows = packedSymbolRows(from: allRows)
             if rows.isEmpty {
                 rows = language == .arabic ? KeyboardDataLoader.builtinArabicSymbols[0] : KeyboardDataLoader.builtinEnglishSymbols[0]
             }
@@ -184,9 +197,12 @@ extension KeyboardViewController {
 
     /// Letter layouts for the current language/shift state.
     func activeLetterLayout() -> [[String]] {
-        language == .arabic
-            ? (isShifted ? arabicShiftRows : arabicRows)
-            : (isShifted ? englishUpper : englishLower)
+        // Arabic: Shift key removed — always base rows; diacritics via long-press (#12/#13).
+        // English: Shift toggles upper/lower in-place.
+        if language == .arabic {
+            return arabicRows
+        }
+        return isShifted ? englishUpper : englishLower
     }
 
     /// Toggle shift by rewriting titles on existing keys — no full stack rebuild.
@@ -484,6 +500,12 @@ extension KeyboardViewController {
         b.layer.shadowOpacity = 0
         b.clipsToBounds = true
         b.isOpaque = true
+        b.isAccessibilityElement = true
+        b.accessibilityTraits = .button
+        if (b.accessibilityLabel == nil || b.accessibilityLabel?.isEmpty == true),
+           let title = b.title(for: .normal), !title.isEmpty {
+            b.accessibilityLabel = title
+        }
         _ = emphasized
     }
 

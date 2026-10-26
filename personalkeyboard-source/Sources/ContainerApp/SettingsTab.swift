@@ -110,7 +110,7 @@ struct SettingsTab: View {
                     ThemeStore.write("sounds", value: isEnabled)
                     ThemeStore.write("soundChoice", value: nextChoice)
                 }
-            Picker("مكتبة الأصوات", selection: $soundChoice) {
+            Picker("نوع الصوت", selection: $soundChoice) {
                 Text("النظام").tag("system")
                 Text("كريمي").tag("creamy")
                 Text("ثوكي").tag("thocky")

@@ -56,6 +56,11 @@ struct ThemesTab: View {
                             .onChange(of: showNumberRow) { _, value in ThemeStore.write("showNumberRow", value: value) }
                     }
 
+
+                    SettingsCard(title: "ألوان الأزرار الأساسية", subtitle: "ستة خانات اختيارية — فارغ = لون accent موحّد") {
+                        specialKeyColorRow
+                    }
+
                     ForEach(ThemeCatalog.groups) { group in
                         VStack(alignment: .leading, spacing: NaqraSpacing.sm) {
                             Text(group.title)
@@ -82,6 +87,58 @@ struct ThemesTab: View {
             .navigationTitle("الثيمات")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear { themeID = ThemeStore.themeID }
+        }
+    }
+
+
+    private var specialKeyColorRow: some View {
+        let keys: [(String, String)] = [
+            ("shift", "شيفت"), ("language", "لغة"), ("enter", "إدخال"),
+            ("delete", "حذف"), ("emoji", "إيموجي"), ("symbols", "رموز")
+        ]
+        let presets: [(String, Color)] = [
+            ("موحّد", NaqraColors.accent),
+            ("أزرق", Color(red: 0.28, green: 0.52, blue: 0.90)),
+            ("أخضر", Color(red: 0.18, green: 0.65, blue: 0.42)),
+            ("برتقالي", Color(red: 0.95, green: 0.55, blue: 0.20)),
+            ("وردي", Color(red: 0.90, green: 0.35, blue: 0.55)),
+            ("رمادي", Color(red: 0.45, green: 0.48, blue: 0.52))
+        ]
+        return VStack(alignment: .leading, spacing: 8) {
+            ForEach(keys, id: \.0) { key, title in
+                HStack(spacing: 6) {
+                    Text(title)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(NaqraColors.textPrimary)
+                        .frame(width: 48, alignment: .leading)
+                    ForEach(Array(presets.enumerated()), id: \.offset) { _, preset in
+                        let name = preset.0
+                        let color = preset.1
+                        Button {
+                            if name == "موحّد" {
+                                UserDefaults.standard.removeObject(forKey: "specialKey.\(key)")
+                                ThemeStore.write("specialKey.\(key)", value: "")
+                            } else {
+                                // store as r,g,b,a for NaqraPalette.storedColor
+                                let ui = UIColor(color)
+                                var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+                                ui.getRed(&r, green: &g, blue: &b, alpha: &a)
+                                ThemeStore.write("specialKey.\(key)", value: "\(r),\(g),\(b),\(a)")
+                            }
+                        } label: {
+                            Circle()
+                                .fill(color)
+                                .frame(width: 22, height: 22)
+                                .overlay(Circle().stroke(NaqraColors.border, lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(title) \(name)")
+                    }
+                }
+            }
+            Text("اللوحة تقرأ specialKey.* عند إعادة فتحها. اترك «موحّد» للون واحد لكل الأزرار.")
+                .font(.system(size: 10))
+                .foregroundStyle(NaqraColors.textSecondary)
         }
     }
 
