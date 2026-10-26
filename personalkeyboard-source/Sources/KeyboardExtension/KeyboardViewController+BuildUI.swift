@@ -443,65 +443,38 @@ extension KeyboardViewController {
         return row
     }
     func paint(_ b: UIButton, chrome: KeyChrome = .letter, emphasized: Bool = false) {
-        // Role-colored keys: letters vs shift/lang/symbols/emoji/enter/delete.
+        let action: Set<KeyChrome> = [.shift, .language, .symbols, .emoji, .enter, .danger]
+        let isAction = action.contains(chrome)
         let bg: UIColor
         let fg: UIColor
-        switch chrome {
-        case .letter:
+        if chrome == .letter {
             bg = palette.key.withAlphaComponent(1)
             fg = palette.text
-        case .control:
+        } else if chrome == .control {
             bg = mix(palette.key, palette.background, t: 0.28)
             fg = palette.text.withAlphaComponent(0.92)
-        case .symbols:
-            // ١٢٣ / #+= / أبج — cooler accent mix so they differ from letters
-            bg = mix(palette.key, palette.accent, t: 0.42)
-            fg = palette.blurDark ? UIColor.white : palette.text
-        case .emoji:
-            bg = mix(palette.key, palette.accent, t: 0.30)
-            fg = palette.text
-        case .language:
-            bg = mix(palette.key, palette.accent, t: 0.50)
-            fg = palette.blurDark ? UIColor.white : palette.text
-        case .shift:
-            if emphasized {
-                bg = palette.accent
-                fg = .white
-            } else {
-                bg = mix(palette.key, palette.accent, t: 0.28)
-                fg = palette.text
-            }
-        case .enter:
+        } else if isAction {
+            // شيفت / لغة / رموز / إيموجي / إنتر / حذف = لون واحد
             bg = palette.accent
             fg = .white
-        case .danger:
-            // Delete: clearly reddish vs letter keys
-            bg = mix(palette.key, UIColor(red: 0.85, green: 0.25, blue: 0.28, alpha: 1), t: 0.48)
-            fg = palette.blurDark ? UIColor.white : palette.text
+        } else {
+            bg = palette.key
+            fg = palette.text
         }
         b.backgroundColor = bg
         b.setTitleColor(fg, for: .normal)
         b.tintColor = fg
         b.layer.cornerRadius = 8
         b.layer.cornerCurve = .continuous
-        b.layer.borderWidth = ([KeyChrome.language, .shift, .enter, .symbols, .emoji, .danger].contains(chrome)) ? 1.0 : (palette.blurDark ? 0.5 : 0.8)
-        let line: UIColor
-        switch chrome {
-        case .language, .enter, .symbols:
-            line = palette.accent.withAlphaComponent(0.55)
-        case .emoji:
-            line = palette.accent.withAlphaComponent(0.35)
-        case .danger:
-            line = UIColor.systemRed.withAlphaComponent(0.40)
-        case .shift where emphasized:
-            line = UIColor.white.withAlphaComponent(0.25)
-        default:
-            line = palette.blurDark ? UIColor.white.withAlphaComponent(0.16) : UIColor.black.withAlphaComponent(0.12)
-        }
-        b.layer.borderColor = line.cgColor
+        b.layer.borderWidth = isAction ? 1.0 : (palette.blurDark ? 0.5 : 0.8)
+        b.layer.borderColor = (isAction
+            ? UIColor.white.withAlphaComponent(0.28)
+            : (palette.blurDark ? UIColor.white.withAlphaComponent(0.16) : UIColor.black.withAlphaComponent(0.12))
+        ).cgColor
         b.layer.shadowOpacity = 0
         b.clipsToBounds = true
         b.isOpaque = true
+        _ = emphasized
     }
 
     /// Linear mix of two colors (t = amount of `b`).
