@@ -98,3 +98,11 @@ Functions:
   - pasteNow()
   - translateTapped()
   - applyTranslation()
+
+# 2026-10-26 packs-split
+KeyboardViewController+Input.swift  -> suggestions/language/shift/delete/space/enter
+KeyboardViewController+Hold.swift   -> charKey/charDown/Up/Drag/Cancel + hold popup
+KeyboardViewController+Clipboard.swift -> clipboard panel
+KeyboardViewController+Paint.swift  -> paint/mix/iconKey
+PackStores.swift (ContainerApp)     -> ThemePackStore + SoundPackStore (independent install)
+ThemesTab                           -> per-pack download then free switch

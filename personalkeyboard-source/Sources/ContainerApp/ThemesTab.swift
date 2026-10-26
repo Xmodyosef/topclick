@@ -1,64 +1,62 @@
 import SwiftUI
 import UIKit
 
-// MARK: - Themes
+// MARK: - Themes (downloadable packs + independent apply)
 
 struct ThemesTab: View {
     @State private var themeID = ThemeStore.themeID
     @State private var sounds = ThemeStore.bool("sounds") ?? true
     @State private var soundChoice = ThemeStore.string("soundChoice") ?? "system"
     @State private var showNumberRow = ThemeStore.bool("showNumberRow") ?? true
+    @State private var loadingThemeIDs: Set<String> = []
+    @State private var loadingSoundIDs: Set<String> = []
+    @State private var installedThemesTick = 0
+    @State private var installedSoundsTick = 0
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: NaqraSpacing.lg) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("اختر إحساس لوحتك")
+                        Text("حزم الثيمات والأصوات")
                             .font(.system(size: 23, weight: .bold, design: .rounded))
                             .foregroundStyle(NaqraColors.textPrimary)
-                        Text("معاينة حية بجانب كل ثيم. الأزرار الأساسية (لغة/رموز/إدخال/حذف/إيموجي) بلون موحّد. العربية بلا شيفت — البدائل بالضغط المطوّل.")
+                        Text("كل حزمة تُحمَّل لوحدها. بعد التحميل يمكنك التبديل بينها بحرية دون فقدان الحزم الأخرى.")
                             .font(.system(size: 13))
                             .foregroundStyle(NaqraColors.textSecondary)
                     }
                     .padding(.top, NaqraSpacing.sm)
 
-                    // Live full board (4 rows) — not a separate "preview tab"
-                    SettingsCard(title: "الثيم على اللوحة", subtitle: "\(ThemeCatalog.swatch(for: themeID).title) · يُطبَّق فورًا داخل لوحة المفاتيح") {
+                    SettingsCard(title: "الثيم على اللوحة", subtitle: "\(ThemeCatalog.swatch(for: themeID).title) · يُطبَّق فورًا") {
                         ThemeBoardCanvas(theme: ThemeCatalog.swatch(for: themeID), showNumbers: showNumberRow)
                     }
 
-                    SettingsCard(title: "صوت النقرة · صف الأرقام", subtitle: "نفس مكان الثيمات — أنيق ومباشر") {
-                        Toggle("تفعيل صوت النقر", isOn: $sounds)
-                            .onChange(of: sounds) { _, isEnabled in
-                                let next = isEnabled ? (soundChoice == "none" ? "system" : soundChoice) : "none"
-                                soundChoice = next
-                                ThemeStore.write("sounds", value: isEnabled)
-                                ThemeStore.write("soundChoice", value: next)
-                            }
-                        Picker("مكتبة الأصوات", selection: $soundChoice) {
-                            Text("النظام").tag("system")
-                            Text("كريمي").tag("creamy")
-                            Text("ثوكي").tag("thocky")
-                            Text("ناعم").tag("soft")
-                            Text("آلة كاتبة").tag("typewriter")
-                            Text("بدون").tag("none")
-                        }
-                        .pickerStyle(.menu)
-                        .disabled(!sounds)
-                        .onChange(of: soundChoice) { _, choice in
-                            let isEnabled = choice != "none"
-                            sounds = isEnabled
-                            ThemeStore.write("soundChoice", value: choice)
-                            ThemeStore.write("sounds", value: isEnabled)
-                        }
+                    SettingsCard(title: "صف الأرقام", subtitle: "يظهر داخل اللوحة") {
                         Toggle("إظهار صف الأرقام", isOn: $showNumberRow)
                             .onChange(of: showNumberRow) { _, value in ThemeStore.write("showNumberRow", value: value) }
                     }
 
+                    // Sound packs — each independent
+                    SettingsCard(title: "حزم الصوت", subtitle: "كل صوت يُحمَّل مرة ثم يُبدَّل بحرية · يحتاج الوصول الكامل داخل اللوحة") {
+                        Toggle("تفعيل صوت النقر", isOn: $sounds)
+                            .onChange(of: sounds) { _, isEnabled in
+                                if !isEnabled {
+                                    soundChoice = "none"
+                                    _ = SoundPackStore.apply("none")
+                                } else if soundChoice == "none" {
+                                    _ = SoundPackStore.apply("system")
+                                    soundChoice = "system"
+                                } else {
+                                    ThemeStore.write("sounds", value: true)
+                                }
+                            }
 
-                    SettingsCard(title: "ألوان الأزرار الأساسية", subtitle: "ستة خانات اختيارية — فارغ = لون accent موحّد") {
-                        specialKeyColorRow
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                            ForEach(SoundPackStore.catalog) { pack in
+                                soundTile(pack)
+                            }
+                        }
+                        .id(installedSoundsTick)
                     }
 
                     ForEach(ThemeCatalog.groups) { group in
@@ -71,12 +69,13 @@ struct ThemesTab: View {
                                 LazyHStack(alignment: .top, spacing: 10) {
                                     ForEach(group.themes) { theme in
                                         themeTile(theme)
-                                            .frame(width: 108)
+                                            .frame(width: 118)
                                     }
                                 }
                                 .scrollTargetLayout()
                             }
                             .scrollTargetBehavior(.viewAligned)
+                            .id(installedThemesTick)
                         }
                     }
                 }
@@ -86,77 +85,29 @@ struct ThemesTab: View {
             .background(NaqraBackground())
             .navigationTitle("الثيمات")
             .navigationBarTitleDisplayMode(.inline)
-            .onAppear { themeID = ThemeStore.themeID }
-        }
-    }
-
-
-    private var specialKeyColorRow: some View {
-        let keys: [(String, String)] = [
-            ("shift", "شيفت"), ("language", "لغة"), ("enter", "إدخال"),
-            ("delete", "حذف"), ("emoji", "إيموجي"), ("symbols", "رموز")
-        ]
-        let presets: [(String, Color)] = [
-            ("موحّد", NaqraColors.accent),
-            ("أزرق", Color(red: 0.28, green: 0.52, blue: 0.90)),
-            ("أخضر", Color(red: 0.18, green: 0.65, blue: 0.42)),
-            ("برتقالي", Color(red: 0.95, green: 0.55, blue: 0.20)),
-            ("وردي", Color(red: 0.90, green: 0.35, blue: 0.55)),
-            ("رمادي", Color(red: 0.45, green: 0.48, blue: 0.52))
-        ]
-        return VStack(alignment: .leading, spacing: 8) {
-            ForEach(keys, id: \.0) { key, title in
-                HStack(spacing: 6) {
-                    Text(title)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(NaqraColors.textPrimary)
-                        .frame(width: 48, alignment: .leading)
-                    ForEach(Array(presets.enumerated()), id: \.offset) { _, preset in
-                        let name = preset.0
-                        let color = preset.1
-                        Button {
-                            if name == "موحّد" {
-                                UserDefaults.standard.removeObject(forKey: "specialKey.\(key)")
-                                ThemeStore.write("specialKey.\(key)", value: "")
-                            } else {
-                                // store as r,g,b,a for NaqraPalette.storedColor
-                                let ui = UIColor(color)
-                                var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-                                ui.getRed(&r, green: &g, blue: &b, alpha: &a)
-                                ThemeStore.write("specialKey.\(key)", value: "\(r),\(g),\(b),\(a)")
-                            }
-                        } label: {
-                            Circle()
-                                .fill(color)
-                                .frame(width: 22, height: 22)
-                                .overlay(Circle().stroke(NaqraColors.border, lineWidth: 1))
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("\(title) \(name)")
-                    }
-                }
+            .onAppear {
+                themeID = ThemeStore.themeID
+                soundChoice = ThemeStore.string("soundChoice") ?? "system"
+                sounds = ThemeStore.bool("sounds") ?? true
             }
-            Text("اللوحة تقرأ specialKey.* عند إعادة فتحها. اترك «موحّد» للون واحد لكل الأزرار.")
-                .font(.system(size: 10))
-                .foregroundStyle(NaqraColors.textSecondary)
         }
     }
+
+    // MARK: Theme tile — load once, then free switch
 
     private func themeTile(_ theme: ThemeSwatch) -> some View {
-        Button {
-            themeID = theme.id
-            // App Group + standard + Darwin (ThemeStore.write). Also stamp appliedAt.
-            ThemeStore.write("themeId", value: theme.id)
-            ThemeStore.write("themeAppliedAt", value: Date().timeIntervalSince1970)
-            // Ensure UserDefaults suite flush for suspended keyboard extension.
-            UserDefaults(suiteName: ThemeStore.suiteName)?.set(theme.id, forKey: "themeId")
+        let installed = ThemePackStore.isInstalled(theme.id)
+        let loading = loadingThemeIDs.contains(theme.id)
+        let active = themeID == theme.id
+
+        return Button {
+            Task { await onThemeTap(theme) }
         } label: {
             VStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(theme.key)
                     .frame(height: 52)
                     .overlay {
-                        // Mini 4-line hint
                         VStack(spacing: 2) {
                             ForEach(0..<4, id: \.self) { _ in
                                 HStack(spacing: 2) {
@@ -172,31 +123,155 @@ struct ThemesTab: View {
                     }
                     .overlay {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(themeID == theme.id ? NaqraColors.accent : NaqraColors.border, lineWidth: themeID == theme.id ? 2 : 1)
+                            .stroke(active ? NaqraColors.accent : NaqraColors.border, lineWidth: active ? 2 : 1)
                     }
+                    .overlay(alignment: .topTrailing) {
+                        statusBadge(installed: installed, loading: loading, free: ThemePackStore.isFree(theme.id))
+                            .padding(6)
+                    }
+
                 HStack(spacing: 4) {
                     Text(theme.title)
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(NaqraColors.textPrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
-                    if themeID == theme.id {
+                    if active {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 10))
                             .foregroundStyle(NaqraColors.accent)
                     }
                 }
+                Text(statusLabel(installed: installed, loading: loading, free: ThemePackStore.isFree(theme.id), active: active))
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(NaqraColors.textSecondary)
             }
             .padding(4)
             .background(NaqraColors.surface.opacity(0.8), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
         }
         .buttonStyle(.plain)
+        .disabled(loading)
         .accessibilityLabel("ثيم \(theme.title)")
-        .accessibilityAddTraits(themeID == theme.id ? .isSelected : [])
+        .accessibilityAddTraits(active ? .isSelected : [])
+    }
+
+    private func onThemeTap(_ theme: ThemeSwatch) async {
+        if ThemePackStore.isInstalled(theme.id) {
+            // Safe switch — other packs stay installed
+            if ThemePackStore.apply(theme.id) {
+                themeID = theme.id
+            }
+            return
+        }
+        loadingThemeIDs.insert(theme.id)
+        // Local "download": unlock pack (content already in app; flag persists)
+        try? await Task.sleep(nanoseconds: 450_000_000)
+        ThemePackStore.markInstalled(theme.id)
+        loadingThemeIDs.remove(theme.id)
+        installedThemesTick += 1
+        if ThemePackStore.apply(theme.id) {
+            themeID = theme.id
+        }
+    }
+
+    // MARK: Sound tile
+
+    private func soundTile(_ pack: SoundPackStore.Pack) -> some View {
+        let installed = SoundPackStore.isInstalled(pack.id)
+        let loading = loadingSoundIDs.contains(pack.id)
+        let active = soundChoice == pack.id
+
+        return Button {
+            Task { await onSoundTap(pack) }
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(pack.title)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(NaqraColors.textPrimary)
+                    Spacer()
+                    if loading {
+                        ProgressView().scaleEffect(0.7)
+                    } else if active {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(NaqraColors.accent)
+                    } else if !installed {
+                        Image(systemName: "arrow.down.circle")
+                            .foregroundStyle(NaqraColors.textSecondary)
+                    }
+                }
+                Text(pack.blurb)
+                    .font(.system(size: 10))
+                    .foregroundStyle(NaqraColors.textSecondary)
+                Text(statusLabel(installed: installed, loading: loading, free: SoundPackStore.isFree(pack.id), active: active))
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(NaqraColors.textSecondary)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(NaqraColors.surface.opacity(0.9), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(active ? NaqraColors.accent : NaqraColors.border, lineWidth: active ? 1.5 : 0.5)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(loading)
+        .accessibilityLabel("صوت \(pack.title)")
+    }
+
+    private func onSoundTap(_ pack: SoundPackStore.Pack) async {
+        if SoundPackStore.isInstalled(pack.id) {
+            if SoundPackStore.apply(pack.id) {
+                soundChoice = pack.id
+                sounds = pack.id != "none"
+            }
+            return
+        }
+        loadingSoundIDs.insert(pack.id)
+        try? await Task.sleep(nanoseconds: 400_000_000)
+        SoundPackStore.markInstalled(pack.id)
+        loadingSoundIDs.remove(pack.id)
+        installedSoundsTick += 1
+        if SoundPackStore.apply(pack.id) {
+            soundChoice = pack.id
+            sounds = pack.id != "none"
+        }
+    }
+
+    // MARK: Status chrome
+
+    @ViewBuilder
+    private func statusBadge(installed: Bool, loading: Bool, free: Bool) -> some View {
+        if loading {
+            ProgressView().scaleEffect(0.6)
+                .padding(4)
+                .background(.ultraThinMaterial, in: Circle())
+        } else if free {
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(.green)
+        } else if installed {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(NaqraColors.accent)
+        } else {
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(NaqraColors.textSecondary)
+        }
+    }
+
+    private func statusLabel(installed: Bool, loading: Bool, free: Bool, active: Bool) -> String {
+        if loading { return "جاري التحميل…" }
+        if active { return "مُطبَّق" }
+        if free { return "جاهز" }
+        if installed { return "محمّل · اضغط للتطبيق" }
+        return "اضغط للتحميل"
     }
 }
 
-// MARK: - Full 4-row keyboard board canvas (matches real Naqra letter layout)
+// MARK: - Full 4-row keyboard board canvas
 
 struct ThemeBoardCanvas: View {
     let theme: ThemeSwatch
@@ -214,17 +289,16 @@ struct ThemeBoardCanvas: View {
             }
             keyRow(row1, height: 32, font: 13)
             keyRow(row2, height: 32, font: 13)
-            // Arabic preview: no Shift — delete only (#12)
             HStack(spacing: 4) {
                 keyRow(row3, height: 32, font: 13)
-                controlKey("⌫", width: 40, kind: .unified)
+                controlKey("⌫", width: 40)
             }
             HStack(spacing: 4) {
-                controlKey("١٢٣", width: 40, kind: .unified)
-                controlKey("EN", width: 36, kind: .unified)
+                controlKey("١٢٣", width: 40)
+                controlKey("EN", width: 36)
                 spaceKey
-                controlKey("😊", width: 32, kind: .unified)
-                controlKey("⏎", width: 40, kind: .unified)
+                controlKey("😊", width: 32)
+                controlKey("⏎", width: 40)
             }
         }
         .padding(8)
@@ -256,22 +330,17 @@ struct ThemeBoardCanvas: View {
         }
     }
 
-    private func controlKey(_ title: String, width: CGFloat, kind: ControlKind = .unified) -> some View {
-        // Unified action color for shift/lang/symbols/enter/delete/emoji (#1)
-        let bg = theme.accent
-        let fg = Color.white.opacity(0.95)
-        return Text(title)
+    private func controlKey(_ title: String, width: CGFloat) -> some View {
+        Text(title)
             .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(fg)
+            .foregroundStyle(Color.white.opacity(0.95))
             .frame(width: width, height: 32)
-            .background(bg, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+            .background(theme.accent, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
                     .stroke(Color.white.opacity(0.28), lineWidth: 1)
             )
     }
-
-    private enum ControlKind { case unified }
 
     private var spaceKey: some View {
         Text("مسافة")
