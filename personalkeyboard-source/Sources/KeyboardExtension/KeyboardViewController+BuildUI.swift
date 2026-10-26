@@ -117,7 +117,7 @@ extension KeyboardViewController {
         NSLayoutConstraint.activate([
             rootStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 4),
             rootStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -4),
-            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 10)
+            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 12)
         ])
         rootStack.setContentHuggingPriority(.required, for: .vertical)
         rootStack.setContentCompressionResistancePriority(.required, for: .vertical)
