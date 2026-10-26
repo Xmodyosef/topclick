@@ -95,6 +95,14 @@ extension KeyboardViewController {
         b.titleLabel?.minimumScaleFactor = 0.7
         paint(b)
         b.tag = rowIdx
+        // VoiceOver: character + long-press hint when alternates exist (a11y WCAG 4.1.2)
+        b.accessibilityLabel = t
+        let alts = holdChoices(for: t)
+        if alts.count > 1 {
+            b.accessibilityHint = language == .arabic
+                ? "اضغط مطولاً لبدائل وحركات"
+                : "Long press for alternates"
+        }
         b.addTarget(self, action: #selector(charDown(_:)), for: .touchDown)
         b.addTarget(self, action: #selector(charDrag(_:event:)), for: .touchDragInside)
         b.addTarget(self, action: #selector(charDrag(_:event:)), for: .touchDragOutside)
@@ -171,6 +179,8 @@ extension KeyboardViewController {
         saveLanguage()
         rebuild()
         tapHaptic(.action)
+        let announce = language == .arabic ? "العربية" : "English"
+        UIAccessibility.post(notification: .announcement, argument: announce)
     }
     func showHoldPopup(from button: UIButton) {
         guard let key = button.title(for: .normal) else { return }

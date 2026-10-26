@@ -28,3 +28,12 @@
 12–13. Arabic Shift removed; diacritics/forms/numbers via long-press hold_map
 14. Hold popup background near keyboard palette
 16. Board height remains 324; top inset 10pt for denser layout
+
+## skills-pass (agentic-eval + a11y + swift review) 2026-10-25
+
+- Arabic layout never switches to arabicShiftRows (Shift removed for real)
+- Symbols pack: 3 content rows + faces row visible under symbols (#11)
+- VoiceOver labels/hints on letter keys; language announcement
+- paint() sets isAccessibilityElement + .button trait
+- Special-key 6-slot UI in Themes (presets)
+- validate: نوع الصوت + top inset 12
