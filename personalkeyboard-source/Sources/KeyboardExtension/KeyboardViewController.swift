@@ -238,7 +238,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     }
 
 
-    enum KeyChrome { case letter, control, symbols, emoji, language, shift, enter, danger }
+    enum KeyChrome { case letter, control, symbols, emoji, language, shift, enter, danger, period }
 
     func control(_ t: String, _ a: Selector, font: CGFloat, chrome: KeyChrome = .control) -> UIButton {
         let b = KeyButton(type: .system)
