@@ -14,3 +14,17 @@
 - group.app.personal.PersonalKeyboard
 - PRODUCT_NAME PersonalKeyboard
 - Bundle IDs كما هي
+
+
+## agent/fix-task — 16-point batch (2026-10-25)
+
+1. Unified special-key color (accent) with optional 6 slots (shift/lang/enter/delete/emoji/symbols)
+2. Themes/sounds prefer in-app UserDefaults.standard then App Group
+3–4. Live theme canvas + tile preview; unified action keys in preview
+5–7. Sound library (system/creamy/thocky/soft/typewriter) in Settings + Themes
+8. Number row toggle in Themes
+9. Morning cream/icon notes
+10–11/15. Faces row under symbols; expanded emoji/hold for Arabic
+12–13. Arabic Shift removed; diacritics/forms/numbers via long-press hold_map
+14. Hold popup background near keyboard palette
+16. Board height remains 324; top inset 10pt for denser layout

@@ -130,7 +130,7 @@ extension KeyboardViewController {
         for v in popup.subviews {
             guard let b = v as? UIButton else { continue }
             let inside = b.frame.insetBy(dx: -4, dy: -10).contains(p)
-            b.backgroundColor = inside ? UIColor.white.withAlphaComponent(0.28) : .clear
+            b.backgroundColor = inside ? palette.accent.withAlphaComponent(0.40) : .clear
             if inside { holdChoice = b.title(for: .normal) ?? holdChoice }
         }
     }
@@ -186,9 +186,14 @@ extension KeyboardViewController {
         bar.spacing = 4
         bar.alignment = .center
         bar.translatesAutoresizingMaskIntoConstraints = false
-        bar.backgroundColor = UIColor.black.withAlphaComponent(0.82)
+        // Long-press popup background near keyboard palette (#14)
+        let popupBG = mix(palette.key, palette.background, t: 0.18).withAlphaComponent(1)
+        let popupFG = palette.text
+        bar.backgroundColor = popupBG
         bar.layer.cornerRadius = 10
         bar.layer.cornerCurve = .continuous
+        bar.layer.borderWidth = 1
+        bar.layer.borderColor = (palette.blurDark ? UIColor.white.withAlphaComponent(0.18) : UIColor.black.withAlphaComponent(0.12)).cgColor
         bar.isLayoutMarginsRelativeArrangement = true
         bar.layoutMargins = UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6)
         // First item is the base key — release without sliding keeps the original character.
@@ -197,8 +202,8 @@ extension KeyboardViewController {
             let b = UIButton(type: .system)
             b.setTitle(item, for: .normal)
             b.titleLabel?.font = .systemFont(ofSize: 24, weight: .medium)
-            b.setTitleColor(.white, for: .normal)
-            b.backgroundColor = i == 0 ? UIColor.white.withAlphaComponent(0.28) : .clear
+            b.setTitleColor(popupFG, for: .normal)
+            b.backgroundColor = i == 0 ? palette.accent.withAlphaComponent(0.35) : .clear
             b.layer.cornerRadius = 10 // Radius.key
             var config = UIButton.Configuration.plain(); config.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8); b.configuration = config
             bar.addArrangedSubview(b)

@@ -117,7 +117,7 @@ extension KeyboardViewController {
         NSLayoutConstraint.activate([
             rootStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 4),
             rootStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -4),
-            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 12)
+            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 10)
         ])
         rootStack.setContentHuggingPriority(.required, for: .vertical)
         rootStack.setContentCompressionResistancePriority(.required, for: .vertical)
@@ -308,9 +308,9 @@ extension KeyboardViewController {
         // Removed: flex spacer + bottom-pinned rootStack caused ghost stacked layers.
     }
     func makeLastLetterRow(_ keys: [String]) -> UIView {
-        // Shift on the last letter row for both languages so Arabic diacritic layer
-        // is reachable without a full rebuild (applyShiftSurface).
-        makeActionRow(keys, leading: .shift)
+        // Arabic: no Shift key — diacritics/forms via long-press (AGENTS 16-point #12/#13).
+        // English: keep Shift for upper case (in-place applyShiftSurface).
+        makeActionRow(keys, leading: language == .arabic ? .none : .shift)
     }
     func makeSymbolLastRow(_ keys: [String]) -> UIView {
         // Back-to-letters stays on the bottom bar, so these keys keep a full width.
@@ -454,8 +454,18 @@ extension KeyboardViewController {
             bg = mix(palette.key, palette.background, t: 0.28)
             fg = palette.text.withAlphaComponent(0.92)
         } else if isAction {
-            // شيفت / لغة / رموز / إيموجي / إنتر / حذف = لون واحد
-            bg = palette.accent
+            // Unified by default; optional per-key slots (#1 + #3)
+            let special: NaqraPalette.SpecialKey
+            switch chrome {
+            case .shift: special = .shift
+            case .language: special = .language
+            case .enter: special = .enter
+            case .danger: special = .delete
+            case .emoji: special = .emoji
+            case .symbols: special = .symbols
+            default: special = .symbols
+            }
+            bg = palette.color(for: special)
             fg = .white
         } else {
             bg = palette.key
