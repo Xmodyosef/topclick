@@ -20,3 +20,13 @@ xcodebuild -project PersonalKeyboard.xcodeproj -scheme PersonalKeyboard \
 ```
 
 التوقيع غير مضمّن في هذا المستودع؛ يجب توقيع IPA الناتج بأداة sideloading مناسبة قبل تثبيته على الجهاز.
+
+## الإصدار الحالي
+
+- **v0.2.8** — [Release](https://github.com/Xmodyosef/topclick/releases/tag/v0.2.8)
+- IPA: [PersonalKeyboard-unsigned.ipa](https://github.com/Xmodyosef/topclick/releases/download/v0.2.8/PersonalKeyboard-unsigned.ipa)
+
+### ملاحظات التثبيت
+1. نزّل IPA غير موقّع
+2. وقّع عبر ESign أو Feather مع **App Group** `group.app.personal.PersonalKeyboard`
+3. فعّل اللوحة + **Full Access** من إعدادات iOS

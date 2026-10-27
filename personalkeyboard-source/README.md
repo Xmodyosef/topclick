@@ -2,6 +2,11 @@
 
 لوحة مفاتيح iOS عربية/إنجليزية.
 
+## الحالة
+- الإصدار: **0.2.8** (build 27)
+- الحد الأدنى: iOS 17
+- التوقيع: IPA غير موقّع (ESign / Feather)
+
 ## الميزات
 - تبديل العربية/الإنجليزية (مسافتان)
 - ثيمات متعددة + ثيم مخصص
@@ -34,4 +39,6 @@ GitHub Actions → IPA غير موقّع → ESign
 
 ## التحميل
 
-الإصدار الوحيد: [v1.0.0](https://github.com/Xmodyosef/topclick/releases/tag/v1.0.0)
+الإصدار الحالي: [v0.2.8](https://github.com/Xmodyosef/topclick/releases/tag/v0.2.8)
+
+IPA: [PersonalKeyboard-unsigned.ipa](https://github.com/Xmodyosef/topclick/releases/download/v0.2.8/PersonalKeyboard-unsigned.ipa)
