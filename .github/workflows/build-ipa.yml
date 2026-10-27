@@ -1,0 +1,39 @@
+name: Build Fresh Unsigned IPA
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install XcodeGen
+        run: brew install xcodegen
+        
+      - name: Generate Project
+        run: |
+          cd personalkeyboard-source
+          if [ -f project.yml ]; then xcodegen generate; fi
+          
+      - name: Build App
+        run: |
+          cd personalkeyboard-source
+          PROJECT=$(find . -name "*.xcodeproj" | head -n 1)
+          xcodebuild -project "$PROJECT" -scheme "PersonalKeyboard" -sdk iphoneos -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+          
+      - name: Create IPA
+        run: |
+          cd personalkeyboard-source
+          mkdir -p Payload
+          find build/Build/Products/Release-iphoneos -name "*.app" -exec cp -r {} Payload/ \;
+          zip -r PersonalKeyboard-unsigned-fresh.ipa Payload
+          
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Fresh-Unsigned-IPA
+          path: personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa
