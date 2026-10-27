@@ -1,0 +1,47 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.mode1v3
+*.mode2v3
+*.moved-aside
+*.pbxuser
+*.perspectivev3
+*.xcscmblueprint
+*.swiftpackage
+xcuserdata/
+
+# Logs
+*.log
+
+# App & Framework
+*.ipa
+*.dSYM
+*.app
+*.framework
+
+# Environment
+.env
+.env.local
+.env.development
+.env.production
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Swift Package Manager
+.Packages
+.build/
+.packages
+
+# Documentation
+docs/build/
+
+# Ignore release notes
+docs/release-notes/*
