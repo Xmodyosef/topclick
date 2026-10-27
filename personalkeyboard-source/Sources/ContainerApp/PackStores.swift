@@ -1,4 +1,6 @@
 import Foundation
+import UIKit
+import SwiftUI
 
 // MARK: - Pref keys for content packs (app-owned install state)
 //
