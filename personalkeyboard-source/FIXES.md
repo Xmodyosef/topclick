@@ -70,3 +70,8 @@
 ## جولة 2026-10-27c — إنهاء الباقي
 1. TranslationPrepCard مربوط في Settings (iOS 18+).
 2. README + CHANGELOG يطابقان v0.2.7.
+
+## 0.2.8 (build 28)
+- TranslationPrepCard في Settings
+- README/CHANGELOG محدّثان
+- إصدار موحّد 0.2.8 / 28
