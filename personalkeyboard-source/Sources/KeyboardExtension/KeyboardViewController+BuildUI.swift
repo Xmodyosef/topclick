@@ -40,16 +40,22 @@ extension KeyboardViewController {
 
     /// Prefer: up to 3 symbol rows + faces row (emoji smileys) as last — #11 without overflow.
     func packedSymbolRows(from allRows: [[String]]) -> [[String]] {
+        // Always prefer 4 solid symbol rows (numbers + 3 symbol rows). Diacritics/tanween
+        // live on long-press (hold_map), not as invisible empty-looking keys.
         let nonEmpty = allRows.filter { !$0.isEmpty }
         guard !nonEmpty.isEmpty else { return [] }
         let facesLike: ([String]) -> Bool = { row in
             row.contains(where: { $0.unicodeScalars.first.map { $0.value >= 0x1F600 && $0.value <= 0x1F64F } ?? false })
         }
-        if let faces = nonEmpty.last, facesLike(faces), nonEmpty.count >= 2 {
-            let content = Array(nonEmpty.dropLast().prefix(3))
-            return content + [faces]
+        let content = nonEmpty.filter { !facesLike($0) }
+        // Drop pure-diacritic rows that render as blank keys (Mn marks).
+        let solid = content.filter { row in
+            row.contains(where: { key in
+                guard let s = key.unicodeScalars.first else { return false }
+                return s.properties.generalCategory != .nonspacingMark
+            })
         }
-        return Array(nonEmpty.prefix(symbolRowsCount()))
+        return Array(solid.prefix(symbolRowsCount()))
     }
 
     /// Emoji grid height inside the fixed 324 board (tabs + bottom + pads reserved).
@@ -408,7 +414,7 @@ extension KeyboardViewController {
             leading.append(back)
         } else {
             // Letters → single symbols page.
-            let symbols = control(language == .arabic ? "رموز" : "#+=", #selector(symbolsOrLettersTapped), font: 13, chrome: .symbols)
+            let symbols = control("#+=", #selector(symbolsOrLettersTapped), font: 13, chrome: .symbols)
             symbols.accessibilityLabel = "لوحة الرموز والأرقام"
             leading.append(symbols)
         }
