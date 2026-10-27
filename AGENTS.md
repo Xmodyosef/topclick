@@ -1,4 +1,4 @@
-# Naqra — AGENTS.md (Master Skill-Enabled Protocol v6.0)
+# Naqra — AGENTS.md (Master Skill-Enabled Protocol v1.5.0)
 # Repo: Xmodyosef/topclick
 
 ## 1. التفعيل الإجباري واستخدام المهارات (Mandatory Skills Execution)
@@ -31,3 +31,16 @@
 - **البحث الاستباقي:** ابحث في الإنترنت عن مهارات جديدة تناسب المهام الحالية.
 - **الاقتراح الذكي:** اعرض على المالك قائمة بأفضل 3 مهارات جديدة (مع الروابط) واطلب الإذن قبل التثبيت.
 - **التوثيق:** بعد الموافقة، قم بتثبيتها وتحديث `SKILLS.md` تلقائيًا.
+## 10. منع الإفراط في الهندسة (Anti-Over-engineering)
+- **No Over-defensive Coding:** Do NOT add edge-case checks or null-checks for extremely rare scenarios unless explicitly approved by the Owner.
+- **Single Boundary Validation:** Validate external data ONLY at system boundaries. Trust internal type systems.
+- **No Premature Abstraction:** Inline single-use logic. Do NOT create unnecessary helper functions.
+- **Control Complexity:** Avoid try/catch unless strictly necessary. Do NOT split simple single-function logic.
+
+## 11. بيئة العمل والبناء (Build & Environment Constraints)
+- **No Mac/Laptop:** المالك لا يملك جهاز Mac أو لابتوب. يعمل حصرياً من هاتف الآيفون.
+- **CI/CD Only:** جميع عمليات البناء (Build) تتم عبر GitHub Actions.
+- **No Local Xcode:** ممنوع منعاً باتاً اقتراح أوامر تتطلب تشغيل Xcode محلياً.
+- **Signing Method:** التوقيع يتم على الجوال (Feather, E-Sign, Sideloadly) بشهادة سنوية.
+- **No P12 Generation:** لا تطلب أبداً إنشاء أو رفع ملفات `.p12` أو `.mobileprovision`.
+- **App Limits:** تذكر قيود الذاكرة (50MB) ومنع الميكروفون في الإضافات.
