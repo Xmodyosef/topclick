@@ -37,3 +37,10 @@
 - paint() sets isAccessibilityElement + .button trait
 - Special-key 6-slot UI in Themes (presets)
 - validate: نوع الصوت + top inset 12
+
+## 0.2.4 — 2026-10-27
+
+- Arabic symbols page: same solid 4×10 layout as English (no invisible diacritic row)
+- Diacritics/tanween via long-press only (hold_map)
+- Symbols key label unified to `#+=`
+- Version marketing 0.2.4 / build 20

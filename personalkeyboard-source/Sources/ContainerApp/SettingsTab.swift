@@ -202,7 +202,7 @@ struct SettingsTab: View {
 
     private var footer: some View {
         VStack(spacing: 6) {
-            Text("نقرة · إصدار 0.3")
+            Text("نقرة · إصدار 0.2.4")
                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                 .foregroundStyle(NaqraColors.textSecondary)
             // Soft note — unsigned/sideload often has no App Group; dual-write still saves prefs.
