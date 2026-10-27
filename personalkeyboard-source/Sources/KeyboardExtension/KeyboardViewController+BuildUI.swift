@@ -40,22 +40,35 @@ extension KeyboardViewController {
 
     /// Prefer: up to 3 symbol rows + faces row (emoji smileys) as last — #11 without overflow.
     func packedSymbolRows(from allRows: [[String]]) -> [[String]] {
-        // Always prefer 4 solid symbol rows (numbers + 3 symbol rows). Diacritics/tanween
-        // live on long-press (hold_map), not as invisible empty-looking keys.
+        // #11: up to 3 solid symbol rows + faces row last (fills space under symbols).
+        // Drop pure-diacritic rows (Mn) that render as blank keys. Tanween via hold_map.
         let nonEmpty = allRows.filter { !$0.isEmpty }
         guard !nonEmpty.isEmpty else { return [] }
         let facesLike: ([String]) -> Bool = { row in
-            row.contains(where: { $0.unicodeScalars.first.map { $0.value >= 0x1F600 && $0.value <= 0x1F64F } ?? false })
-        }
-        let content = nonEmpty.filter { !facesLike($0) }
-        // Drop pure-diacritic rows that render as blank keys (Mn marks).
-        let solid = content.filter { row in
+            // Broad emoji detect (smileys + hands etc.), not only 1F600–1F64F.
             row.contains(where: { key in
+                key.unicodeScalars.contains { s in
+                    let v = s.value
+                    return (v >= 0x1F300 && v <= 0x1FAFF) || (v >= 0x2600 && v <= 0x27BF)
+                }
+            })
+        }
+        let solid = nonEmpty.filter { row in
+            guard !facesLike(row) else { return false }
+            return row.contains(where: { key in
                 guard let s = key.unicodeScalars.first else { return false }
                 return s.properties.generalCategory != .nonspacingMark
             })
         }
-        return Array(solid.prefix(symbolRowsCount()))
+        var out = Array(solid.prefix(3))
+        if let faces = nonEmpty.last(where: { facesLike($0) }) {
+            out.append(faces)
+        }
+        // Fallback: if no faces in data, keep up to 4 solid rows.
+        if out.count == solid.prefix(3).count && nonEmpty.filter(facesLike).isEmpty {
+            out = Array(solid.prefix(symbolRowsCount()))
+        }
+        return out
     }
 
     /// Emoji grid height inside the fixed 324 board (tabs + bottom + pads reserved).
