@@ -1,0 +1,50 @@
+name: Paste Code to PR
+on:
+  workflow_dispatch:
+    inputs:
+      file_path:
+        description: 'File path (e.g., personalkeyboard-source/Sources/KeyboardExtension/KeyboardViewController.swift)'
+        required: true
+      code_content:
+        description: 'Paste the full code here'
+        required: true
+      pr_title:
+        description: 'PR Title'
+        required: true
+        default: 'fix: applied AI code'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+      - name: Create Branch and Write File
+        run: |
+          BRANCH_NAME="agent/paste-${{ github.run_id }}"
+          git checkout -b "$BRANCH_NAME"
+          mkdir -p "$(dirname "${{ github.event.inputs.file_path }}")"
+          
+          cat << 'EOF' > "${{ github.event.inputs.file_path }}"
+          ${{ github.event.inputs.code_content }}
+          EOF
+          
+          git add .
+          git commit -m "feat: ${{ github.event.inputs.pr_title }}" --no-verify
+          git push origin "$BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create --base main --head "${{ env.BRANCH_NAME }}" --title "${{ github.event.inputs.pr_title }}" --body "This PR was created automatically by pasting code into GitHub Actions."
