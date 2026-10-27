@@ -13,21 +13,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Remove Agent Skills Folder (Fix submodule error)
+      - name: Remove Agent Folder
         run: rm -rf .agent
 
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Generate Project
+      - name: Generate Project & Debug
         run: |
           cd personalkeyboard-source
-          if [ -f project.yml ]; then xcodegen generate; fi
+          if [ -f project.yml ]; then 
+            xcodegen generate 
+          else 
+            echo "ERROR: project.yml NOT FOUND!" 
+          fi
+          echo "--- LISTING FILES ---"
+          ls -la
+          PROJECT=$(find . -name "*.xcodeproj" | head -n 1)
+          echo "Found Project: $PROJECT"
+          echo "--- LISTING SCHEMES ---"
+          xcodebuild -list -project "$PROJECT"
 
       - name: Build App
         run: |
           cd personalkeyboard-source
           PROJECT=$(find . -name "*.xcodeproj" | head -n 1)
+          # محاولة استخدام اسم الـ Scheme الصحيح
           xcodebuild -project "$PROJECT" -scheme "PersonalKeyboard" -sdk iphoneos -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
 
       - name: Create IPA
