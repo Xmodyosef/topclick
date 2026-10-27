@@ -7,31 +7,36 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-15
+
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Remove Agent Skills Folder (Fix submodule error)
+        run: rm -rf .agent
+
       - name: Install XcodeGen
         run: brew install xcodegen
-        
+
       - name: Generate Project
         run: |
           cd personalkeyboard-source
           if [ -f project.yml ]; then xcodegen generate; fi
-          
+
       - name: Build App
         run: |
           cd personalkeyboard-source
           PROJECT=$(find . -name "*.xcodeproj" | head -n 1)
           xcodebuild -project "$PROJECT" -scheme "PersonalKeyboard" -sdk iphoneos -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
-          
+
       - name: Create IPA
         run: |
           cd personalkeyboard-source
           mkdir -p Payload
           find build/Build/Products/Release-iphoneos -name "*.app" -exec cp -r {} Payload/ \;
           zip -r PersonalKeyboard-unsigned-fresh.ipa Payload
-          
+
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
