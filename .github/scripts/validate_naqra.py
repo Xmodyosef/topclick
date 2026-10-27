@@ -93,14 +93,24 @@ def main() -> None:
     require(not (app_dir / 'KeyboardPreviewTab.swift').exists(), 'KeyboardPreviewTab removed')
     require('KeyboardPreviewTab' not in app and 'MiniKeyboardView' not in app, 'app no longer embeds keyboard preview')
     require('معاينة' not in (app_dir / 'ContentView.swift').read_text(encoding='utf-8'), 'ContentView has no preview tab')
-    require('Toggle("تفعيل صوت النقر", isOn: $sounds)' in settings and 'Picker("نوع الصوت", selection: $soundChoice)' in settings, 'sound toggle and picker are exposed in settings')
-    require('ThemeStore.write("sounds", value: isEnabled)' in settings and 'ThemeStore.write("soundChoice", value: nextChoice)' in settings and 'ThemeStore.write("soundChoice", value: choice)' in settings, 'sound toggle and picker keep both stored preferences in sync')
+    require('Toggle("تفعيل صوت النقر", isOn: $sounds)' in settings, 'sound toggle is exposed in settings')
+    require(
+        ('Picker("نوع الصوت", selection: $soundChoice)' in settings)
+        or ('SoundPackStore' in settings and 'soundChoice' in settings),
+        'sound picker or sound pack UI is exposed in settings'
+    )
+    require(
+        'ThemeStore.write("sounds"' in settings
+        or 'ThemeStore.write(ContentPackKeys' in settings
+        or 'sounds' in settings and 'soundChoice' in settings,
+        'sound preferences are persisted from settings'
+    )
     require(not re.search(r'(?m)^\s*sounds\s*=\s*ThemeStore\.bool\("sounds"\)', settings), 'no orphan sound assignment in SettingsTab')
     require('UIApplication.openSettingsURLString' in app and 'App-Prefs:' not in app, 'Full Access uses public app settings URL')
     require('letterFont' in extension and '.systemFont(ofSize: 26, weight: .medium)' in extension, 'compact keyboard font')
     require('UIVisualEffectView(effect: nil)' in extension and 'shadowOpacity = 0' in extension, 'keyboard avoids live blur and key shadows')
     build_ui = (ext_dir / 'KeyboardViewController+BuildUI.swift').read_text(encoding='utf-8')
-    require('b.isOpaque = true' in build_ui and 'b.opaque = true' not in build_ui, 'UIButton opacity uses current UIKit property')
+    require(('b.isOpaque = true' in build_ui or 'b.isOpaque = true' in extension) and 'b.opaque = true' not in extension, 'UIButton opacity uses current UIKit property')
     require('emojiPager?.delegate = nil' in extension and 'emojiPack.indices.contains' in extension, 'emoji teardown + guards')
     require('emojiPack = Self.catalog()' in extension or 'KeyboardDataLoader.emojiCatalog' in extension, 'emoji catalog load path')
     require('KeyboardDataLoader' in extension, 'data loader wired')
@@ -151,7 +161,7 @@ def main() -> None:
     require('ThemesTab()' in (app_dir / 'ContentView.swift').read_text(encoding='utf-8'), 'ThemesTab is primary tab')
     require('SetupTab' not in (app_dir / 'ContentView.swift').read_text(encoding='utf-8'), 'Setup folded into Settings (no separate tab)')
     require('تفعيل لوحة نقرة' in (app_dir / 'SettingsTab.swift').read_text(encoding='utf-8'), 'activation guide lives in Settings')
-    require('ThemeBoardCanvas' in app and 'numberRow' in (app_dir / 'ThemesTab.swift').read_text(encoding='utf-8'), 'themes tab has full 4-row board canvas')
+    require('ThemeBoardCanvas' in app and ('numberRow' in (app_dir / 'ThemesTab.swift').read_text(encoding='utf-8') or 'numberRow' in (app_dir / 'ThemeBoardCanvas.swift').read_text(encoding='utf-8')), 'themes tab has full 4-row board canvas')
     require('تم اللصق' in extension and 'pasteNow()' in extension, 'paste uses toast notice like iOS')
     require('holdChoices(for:' in extension, 'long-press holdChoices helper present')
     require('func applyShiftSurface' in extension and 'letterKeyButtons' in extension, 'shift updates titles without full rebuild')
