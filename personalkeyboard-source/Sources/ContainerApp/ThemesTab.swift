@@ -11,6 +11,7 @@ struct ThemesTab: View {
     @State private var loadingSoundIDs: Set<String> = []
     @State private var installedThemesTick = 0
     @State private var installedSoundsTick = 0
+    @State private var specialColor = SpecialKeyColorStore.loadColor()
 
     var body: some View {
         NavigationStack {
@@ -28,6 +29,28 @@ struct ThemesTab: View {
 
                     SettingsCard(title: "الثيم على اللوحة", subtitle: "\(ThemeCatalog.swatch(for: themeID).title) · يُطبَّق فورًا") {
                         ThemeBoardCanvas(theme: ThemeCatalog.swatch(for: themeID), showNumbers: ThemeStore.bool("showNumberRow") ?? true)
+                    }
+
+                    // STEP 3: one system ColorPicker — no 6-swatch raft
+                    SettingsCard(
+                        title: "لون الأزرار الأساسية",
+                        subtitle: "شيفت · لغة · رموز · إدخال · حذف · نقطة — بدون إيموجي"
+                    ) {
+                        ColorPicker("اختر اللون", selection: $specialColor, supportsOpacity: false)
+                            .onChange(of: specialColor) { _, color in
+                                SpecialKeyColorStore.applyUnified(color)
+                            }
+                        Button {
+                            SpecialKeyColorStore.clearToThemeAccent()
+                            specialColor = SpecialKeyColorStore.loadColor()
+                        } label: {
+                            Label("إرجاع للون الثيم (accent)", systemImage: "arrow.uturn.backward")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .buttonStyle(.bordered)
+                        Text("الضغطة تفتح منتقي الألوان النظامي المجاني. النقطة تتلوّن · الإيموجي يبقى محايدًا.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(NaqraColors.textSecondary)
                     }
 
                     // Sound packs — each independent
@@ -77,6 +100,7 @@ struct ThemesTab: View {
                 themeID = ThemeStore.themeID
                 soundChoice = ThemeStore.string("soundChoice") ?? "system"
                 sounds = ThemeStore.bool("sounds") ?? true
+                specialColor = SpecialKeyColorStore.loadColor()
             }
         }
     }

@@ -139,3 +139,57 @@ extension ThemeStore {
         return nil
     }
 }
+
+// MARK: - Special action-key color (one system ColorPicker → all control keys)
+// Emoji is intentionally excluded (stays letter/neutral on the board).
+
+enum SpecialKeyColorStore {
+    /// Keys that accept a shared accent override. No emoji.
+    static let slots = ["shift", "language", "enter", "delete", "symbols", "period"]
+
+    static func storedRGBA(for slot: String) -> String? {
+        let key = "specialKey.\(slot)"
+        let raw = ThemeStore.string(key) ?? ""
+        return raw.isEmpty ? nil : raw
+    }
+
+    /// Prefer period/shift sample; fallback Naqra accent blue-ish.
+    static func loadUIColor() -> UIColor {
+        for slot in slots {
+            if let raw = storedRGBA(for: slot) {
+                let p = raw.split(separator: ",").compactMap { Double($0) }
+                if p.count == 4 {
+                    return UIColor(red: p[0], green: p[1], blue: p[2], alpha: p[3])
+                }
+            }
+        }
+        return UIColor(red: 0.36, green: 0.60, blue: 1.0, alpha: 1)
+    }
+
+    static func loadColor() -> Color { Color(loadUIColor()) }
+
+    static func applyUnified(_ color: Color) {
+        let ui = UIColor(color)
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        guard ui.getRed(&r, green: &g, blue: &b, alpha: &a) else { return }
+        let value = "\(r),\(g),\(b),\(a)"
+        for slot in slots {
+            ThemeStore.write("specialKey.\(slot)", value: value)
+        }
+        // Explicitly clear emoji override if any legacy value remains
+        ThemeStore.write("specialKey.emoji", value: "")
+    }
+
+    /// Back to theme accent (empty slots → NaqraPalette.color uses accent).
+    static func clearToThemeAccent() {
+        for slot in slots + ["emoji"] {
+            ThemeStore.write("specialKey.\(slot)", value: "")
+            UserDefaults.standard.removeObject(forKey: "specialKey.\(slot)")
+            ThemeStore.suite.removeObject(forKey: "specialKey.\(slot)")
+        }
+    }
+
+    static var hasCustom: Bool {
+        slots.contains { storedRGBA(for: $0) != nil }
+    }
+}
