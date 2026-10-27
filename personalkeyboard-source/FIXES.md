@@ -50,3 +50,13 @@
 - Symbols: 3 solid rows + faces row last (Arabic + English)
 - No blank diacritic keys; tanween stays on long-press
 - packedSymbolRows re-appends faces after solid content
+
+## جولة 2026-10-27 — إصلاح شامل للوحة
+
+1. الهولد (الضغط المطوّل) العربي مكتمل: ي←ى، و، ة، ء، وأرقام (٩→٠).
+2. الرموز: 4 صفوف رموز عالمية بنفس الطول 10 — بدون صف إيموجي داخل الرموز.
+3. زر الرموز أيقونة `textformat.123` بدون نص #+=.
+4. الصوت: AVAudioSession `.ambient` بدل `.playback`.
+5. الإيموجي: لا يمسح الكاش في كل فتحة.
+6. الإصدار موحّد: 0.2.6 (build 26).
+7. صف الشيفت العربي يبقى 9 مفاتيح (١–٩) و٠ عبر الهولد على ٩ ليتوافق مع عرض صف الحروف.
