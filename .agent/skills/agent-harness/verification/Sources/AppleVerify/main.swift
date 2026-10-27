@@ -1,0 +1,201 @@
+import AppleVerificationCore
+import Foundation
+
+let usage = """
+  apple-verify [--repository-root <skills-repository>] [--app-root <app-repository>] <command> [arguments]
+
+    repository --root <repository> [--output <new-report.json>]
+    compare --manifest <comparison.json> --output-dir <new-directory>
+    runtime-identity
+    health <report.json> --harness <private-harness.json> [--probe-xcode-mcp-bridge]
+    authorize, verify-reservation, prepare-action, initialize-run
+    resources <state.json> bootstrap|status|acquire|verify|heartbeat|release|recover|configure-host-policy|bundle-digest
+    resolve-project, materialize, spec-snapshot
+    knowledge index|query|status
+    delivery-report <completion-report.json> [--channel <channel>]
+    companion --manifest <manifest.json> check|sync-issue
+    skill-inventory [--home <dir>] [--codex-home <dir>] [--claude-config-dir <dir>]
+      [--xdg-state-home <dir>] [--project <dir>] [--output <new-report.json>]
+    flow record --client claude|codex --store <absolute-dir> [--include-labels]
+    flow render --store <dir> --session <id-or-hash> --format mermaid|tree
+      [--ledger <run-ledger.jsonl>] [--max-steps <n>] [--include-labels]
+    handoff create --from claude|codex --to claude|codex --task <text>
+      --brief <text>|--brief-file <file> [--thread <id>] [--session <id>] [--repo <dir>]
+      [--purpose continue|review] [--base <full-SHA>] [--target-session <native-session-id>]
+      [--surface cli|desktop] [--target-surface cli|desktop]
+    handoff resume --as claude|codex [--id <id>] [--session <id>] [--repo <dir>]
+    handoff list [--pending-for claude|codex] [--json] [--repo <dir>]
+    handoff show --thread <id> [--repo <dir>]
+    handoff propose --thread <existing-thread> --from claude|codex --to claude|codex
+      --task <text> --brief-file <file> --session <native-id> --surface cli|desktop
+      --target-session <native-id> --target-surface cli|desktop [--supersedes <proposal-id>] [--repo <dir>]
+    handoff respond --id <proposal-or-review-id> --as claude|codex --session <native-id>
+      --surface cli|desktop --by claude|codex|user --decision approve|changes-requested
+      --brief-file <actual-peer-reply> [--delivery <completed-delivery-id>] [--repo <dir>]
+    handoff send --id <proposal-or-review-id> --as claude --session <native-id>
+      --surface cli|desktop --host <native-host-id> [--timeout <0...300>] [--repo <dir>]
+    handoff transport register --dispatcher <id> --host <native-host-id>
+      --target-session <codex-desktop-id> --sender-session <claude-desktop-id>
+      --authorization <actual-user-turn-reference-or-quote> --ttl <60...3600> --limit <1...20> [--repo <dir>]
+    handoff transport next --dispatcher <id> --host <native-host-id>
+      --target-session <codex-desktop-id> [--wait <0...30>] [--repo <dir>]
+    handoff transport stop --dispatcher <id> [--repo <dir>]
+    handoff transport status --id <delivery-id> [--repo <dir>]
+    handoff transport begin --id <delivery-id> --claim <token> --baseline <native-turn-or-none> [--repo <dir>]
+    handoff transport sent --id <delivery-id> --claim <token> --turn <correlated-native-turn> [--repo <dir>]
+    handoff transport complete --id <delivery-id> --claim <token> --turn <correlated-native-turn>
+      --reply-file <actual-full-reply> [--repo <dir>]
+    handoff transport no-reply --id <delivery-id> --claim <token> --turn <native-turn> --note <reason> [--repo <dir>]
+    handoff transport fail --id <delivery-id> --claim <token> --note <unsent-reason> [--repo <dir>]
+    handoff transport recover --id <delivery-id> --dispatcher <id> [--repo <dir>]
+    handoff transport resolve --id <delivery-id> --dispatcher <id> --note <reconciliation-reason> [--repo <dir>]
+    handoff close --thread <id> --by claude|codex [--note <text>] [--repo <dir>]
+    sessions list [--repo <dir>] [--own-client claude|codex --own-session <id>] [--json]
+
+  See docs/verification.md and each skill's reference for command arguments.
+  The runtime uses Swift and Apple's tools; it does not prove app behavior by itself.
+  """
+
+func runtimeContext(repositoryRoot: String?) throws -> RuntimeContext {
+  if let repositoryRoot {
+    let root = URL(fileURLWithPath: repositoryRoot).standardizedFileURL.resolvingSymlinksInPath()
+    return RuntimeContext(
+      repositoryRoot: root, harnessRoot: root.appendingPathComponent("skills/agent-harness"))
+  }
+  // A build stays inside its installed skill. Resolve this location, never search
+  // the user's home directory or silently select another installed copy.
+  var candidate = try ResourceCoordinator.runningExecutableURL().deletingLastPathComponent()
+  while candidate.path != "/" {
+    if candidate.lastPathComponent == "agent-harness",
+      FileManager.default.fileExists(
+        atPath: candidate.appendingPathComponent("contracts/capabilities.json").path)
+    {
+      return RuntimeContext(
+        repositoryRoot: candidate.deletingLastPathComponent().deletingLastPathComponent(),
+        harnessRoot: candidate)
+    }
+    candidate.deleteLastPathComponent()
+  }
+  throw VerificationError.invalid(
+    "Cannot locate the installed contracts; use --repository-root before the command")
+}
+
+do {
+  var arguments = Array(CommandLine.arguments.dropFirst())
+  if arguments.isEmpty || arguments == ["--help"] {
+    print(usage)
+    exit(0)
+  }
+  var explicitRoot: String?
+  var appRoot: String?
+  while let option = arguments.first, ["--repository-root", "--app-root"].contains(option) {
+    guard arguments.count >= 3, !arguments[1].hasPrefix("--") else {
+      throw VerificationError.invalid("\(option) requires a path and command")
+    }
+    if option == "--repository-root" {
+      guard explicitRoot == nil else {
+        throw VerificationError.invalid("duplicate --repository-root")
+      }
+      explicitRoot = arguments[1]
+    } else {
+      guard appRoot == nil else { throw VerificationError.invalid("duplicate --app-root") }
+      guard arguments[1].hasPrefix("/") else {
+        throw VerificationError.invalid("--app-root requires an absolute app repository path")
+      }
+      appRoot = arguments[1]
+    }
+    arguments.removeFirst(2)
+  }
+  let command = arguments.removeFirst()
+  if command == "flow" {
+    // Session flow needs no contracts. `flow record` runs as a client hook: it reads only stdin
+    // and its store, prints nothing and exits 0, so it must not resolve the installed skill.
+    exit(try FlowCommand.run(arguments: arguments))
+  }
+  if command == "handoff" {
+    // Handoffs read only the repository's Git state and its ledger, never the contracts.
+    exit(
+      try SessionHandoff.run(
+        arguments: arguments, executable: try ResourceCoordinator.runningExecutableURL().path))
+  }
+  if command == "sessions" {
+    exit(try SessionInventoryCommand.run(arguments: arguments))
+  }
+  let installedContext = try runtimeContext(repositoryRoot: explicitRoot)
+  let context =
+    appRoot.map {
+      RuntimeContext(
+        repositoryRoot: URL(fileURLWithPath: $0).standardizedFileURL.resolvingSymlinksInPath(),
+        harnessRoot: installedContext.harnessRoot)
+    } ?? installedContext
+  let code: Int32
+  switch command {
+  case "repository":
+    let options = try RuntimeArguments(arguments)
+    try options.allow(["--root", "--output"])
+    let report = try RepositoryValidation.validate(
+      root: URL(fileURLWithPath: options.required("--root")))
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+    var data = try encoder.encode(report)
+    data.append(10)
+    if let path = options.value("--output") {
+      try data.write(to: URL(fileURLWithPath: path), options: [.withoutOverwriting])
+    }
+    FileHandle.standardOutput.write(data)
+    code = report.status == "passed" ? 0 : 1
+  case "compare":
+    let options = try RuntimeArguments(arguments)
+    try options.allow(["--manifest", "--output-dir"])
+    print(
+      try ImageComparison.render(
+        manifest: URL(fileURLWithPath: options.required("--manifest")),
+        outputDirectory: URL(fileURLWithPath: options.required("--output-dir"))
+      ).path)
+    code = 0
+  case "runtime-identity":
+    guard arguments.isEmpty else {
+      throw VerificationError.invalid("runtime-identity takes no arguments")
+    }
+    let executable = try ResourceCoordinator.runningExecutableURL()
+    let identity: [String: Any] = [
+      "runtime_kind": "swift", "runtime_contract": "apple-verification-core.authorization.v1",
+      "executable_path": executable.path,
+      "executable_sha256": "sha256:" + (try HarnessRuntime.sha256File(executable)),
+      "source_bundle_sha256": try ResourceCoordinator.sourceBundleSHA256(
+        skillRoot: context.harnessRoot),
+    ]
+    FileHandle.standardOutput.write(try HarnessRuntime.canonicalJSON(identity) + Data([10]))
+    code = 0
+  case "authorize": code = try CheckAuthorizationCommand.run(arguments: arguments, context: context)
+  case "verify-reservation":
+    code = try VerifyReservationCommand.run(arguments: arguments, context: context)
+  case "prepare-action":
+    code = try PrepareActionRequestCommand.run(arguments: arguments, context: context)
+  case "initialize-run": code = try InitializeRun.run(arguments: arguments, context: context)
+  case "resources": code = try ResourceCoordinator.run(arguments: arguments, context: context)
+  case "resolve-project": code = try ProjectResolver.run(arguments: arguments, context: context)
+  case "materialize":
+    code = try MaterializePrivateTemplate.run(arguments: arguments, context: context)
+  case "spec-snapshot":
+    code = try SpecKitSnapshotCommand.run(arguments: arguments, context: context)
+  case "health": code = try HealthEvaluation.run(arguments: arguments, context: context)
+  case "knowledge": code = try KnowledgeIndex.run(arguments: arguments, context: context)
+  case "delivery-report": code = try DeliveryReport.run(arguments: arguments, context: context)
+  case "companion": code = try CompanionWatcher.run(arguments: arguments, context: context)
+  case "skill-inventory":
+    // Read-only and harness-free: the lifecycle file and reference copies stay with this
+    // installed verifier; `--project` selects the repository whose skill roots are listed.
+    guard appRoot == nil else {
+      throw VerificationError.invalid("skill-inventory takes --project, not --app-root")
+    }
+    code = try SkillInventory.run(
+      arguments: arguments, context: installedContext,
+      environment: ProcessInfo.processInfo.environment)
+  default: throw VerificationError.invalid("Unknown command: \(command)")
+  }
+  exit(code)
+} catch {
+  FileHandle.standardError.write(Data("\(error)\n".utf8))
+  exit(2)
+}

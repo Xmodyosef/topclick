@@ -1,0 +1,59 @@
+# Bound host work and storage
+
+Before dispatch, bind [task workspaces](task-workspaces.md): exact checkout, shared-file ownership, output roots and actual sandbox/tool permissions. Folder separation alone does not enforce access or resource ownership.
+
+Start with one active writer per repository identity, one heavy build/test job, and one active destination. Independent readers can work from frozen inputs alongside the writer. The current coordinator keys source/Xcode/build conflicts by repository fingerprint, so separate worktrees of the same repository do not permit simultaneous writers. Worktrees still require explicit authorization. Delegate only a concrete independent task and send its acceptance criteria, owned paths, frozen base and resource constraints. A worker must finish and release ownership before another acquires it.
+
+The version 2 coordinator admits host-wide `heavy_jobs`, `active_devices`, and `internal_workers` atomically across tasks. Defaults are 1, 1 and 2: one build plus its destination fits without allowing two heavy jobs. Requested admission cannot understate the resource's minimum. Internal Xcode workers count too; `-parallel-testing-worker-count`, `-maximum-parallel-testing-workers`, `-maximum-concurrent-test-simulator-destinations`, `-jobs`, Swift `-j` and compiler jobs must fit the accepted host budget; parallel testing also creates clone Simulator devices. Increase host policy explicitly from observed capacity; do not let every subagent choose its own limit.
+
+`internal_workers` counts admitted local tool workers, not LLM subagents. A read-only research agent does not consume that budget merely because it is called a worker. Count the resources its actual tools request; use the client's separate effective slot limit for model concurrency.
+
+The lead/client queues work when the coordinator returns `resource_conflict` or `capacity_exceeded`; the coordinator is an admission gate, not a waiter queue or agent launcher. Retry when the conflicting work releases ownership or capacity, within the task's retry policy. Do not duplicate a coordinator, steal an expired lease, kill unrelated processes, or turn on maximum parallel testing to make progress. Model choice follows the [shared routing policy](cost-and-usage.md), which keeps model cost separate from these host resource limits.
+
+Describe the blocked operation and canonical reason, not “the skill is locked”:
+
+| Observation | Caller action |
+|---|---|
+| `resource_conflict` / `capacity_exceeded` | First read `resources <state> status`. When `expired_active_lease_count` is 0, the blocker is live work: queue the affected operation and continue independent work. Preserve the conflicting lease ID or exhausted dimension when available; report the owner only when verified. Recheck after a relevant release using supported bounded waits. Busy capacity is not a request for user permission. When removing `capacity_held_by_expired` from `capacity_in_use` would admit the request in the exhausted dimension, the blocker is an expired lease, which waiting never clears: see the next row. `status` does not name per-lease expiry or owners, so for a `resource_conflict` while `expired_active_lease_count` is above 0, treat the conflicting lease as possibly expired and confirm it only from this run's own receipts or the owning task. |
+| An expired lease holds the resource or capacity | Identify its owner run (from this run's own receipts, or by asking the owning task), then use the matching path of [recovery](coordinator-setup.md#recovery-boundary). This run's own lease with no protected operation still running: `recover` with `mode: "quiescent_release"` and this run's harness. Another run that has completed or been archived: a fresh active observer finalizes it with `owner_liveness.state: "completed"`. Another run that is still live: ask that task to finalize its own lease with `quiescent_release` once its protected work has stopped; never take it over. An owner that crashed (dead rather than completed): the default dead-owner `recover`, with the owner's own intact harness. An owner from before a runtime upgrade that is still live is an upgrade boundary (#120), not a lease to recover. Use `--preview` first and report what will be finalized. |
+| `expired_requires_recover` on this run's own verify, heartbeat or release | The lease has expired, so stop protected work under it at once. Once no protected operation of this run is still running, finalize that exact receipt with `recover` `mode: "quiescent_release"` and this run's harness (`--preview` first). Then acquire a fresh lease, under an active authorization, before continuing. Legitimate uncommitted changes stay as they are (`dirty_state` `preserved`, or `clean` when there are none). |
+| `stale_receipt` on this run's own verify, heartbeat or release | The supplied receipt is no longer the lease's current receipt: the lease was released, recovered or compacted, or a newer receipt (for example from this run's own heartbeat) replaced it. Stop protected work under it at once. If this run holds a newer receipt, use that one. Otherwise do not `recover` (it rejects a stale receipt too): read back `status`, then acquire a fresh lease before continuing. Never edit the coordinator state. |
+| `coordinator_busy` | Another coordinator call held the state lock for the whole bounded wait. Retry the same call after a short bounded wait; it is neither a lease conflict nor a malformed request. |
+| `io_error` | The host refused a coordinator file operation, such as opening the lock or replacing the state. Diagnose the private state directory's permissions and free space; do not create another coordinator. |
+| `invalid_request` | The command or its JSON arguments are malformed. Fix the call instead of retrying it unchanged. |
+| `coordination_required`, `untrusted_binding`, migration or runtime/root mismatch | Diagnose the configured runtime, app root and receipt. An installed-copy defect is a setup failure, not evidence another task owns the resource. Route repair to its owner; keep unaffected work moving. Do not create another coordinator or silently bypass the guard. |
+| Missing action/account/branch/signing authority | Ask only for the actual missing authorization, with the concrete action and applicable rule. Reuse confirmed facts within their scope. |
+
+Report progress as separate states, each with its exact cause: preparing, blocked
+(live work, an expired lease, or a migration or upgrade boundary), compiler
+started, build succeeded or failed, uploaded, processed, distributed. Do not
+describe every block as another task occupying the machine.
+
+An unchanged busy response is not a failed implementation attempt. Do not poll
+repeatedly or ask the user to “unlock four tasks” from a lease count alone. If
+the client cannot wait/resume, preserve the pending operation and its precise
+resumption condition; do not claim background progress. Release this task's
+unneeded leases before waiting for another resource or human input.
+
+Give every background command a deadline. A session wakes only when a background
+command ends, so a build, test run, Simulator capture or watch that hangs on a
+loaded host otherwise leaves the user waiting with no report. Pick a duration
+the work needs on this host (30 minutes by default), tell the user what runs and
+until when, and when the deadline stops it, report that instead of starting it
+again. In Claude Code, run it as `<plugin>/hooks/deadline.sh 30m -- <command>`,
+which stops the command's whole process group at the deadline and exits 124; the
+plugin refuses heavy background work without it and sends a turn back that
+would end while unbounded background work still runs. Processes that launchd
+starts for the command, such as a Simulator's services, are outside that group,
+so after a stopped `simctl boot` check the device state. Without the plugin,
+bound the work itself or run it in the foreground under the client's own timeout.
+
+Check relevant memory pressure, free disk, active builds/destinations and output sizes before admitting heavy work. Reduce concurrency before deleting caches. Capture only bounded logs and short recordings; stream large hashes, process images sequentially, and keep raw evidence only as long as the accepted retention policy needs it. Preserve original hashes and the final reviewable proof before cleaning task-owned temporary output.
+
+When builds or tests run much slower than usual, check host load before changing what a build or test gate runs. Background indexing or file sync of build output and worktrees (for example Spotlight or a sync client watching DerivedData), and heavy unrelated apps, compete with the build. Report what you observed and the suggested change; excluding folders from indexing or sync, or quitting apps, changes the person's machine, so do it only with their approval.
+
+Reuse DerivedData and package artifacts only for a matching build tuple. Give concurrent incompatible builds separate task-owned paths; avoid copying whole package caches into every worktree. Prefer `build-for-testing` followed by selected `test-without-building` runs when inputs match. Do not blindly reset package caches, erase all Simulators, delete archives, or remove global DerivedData. Route an actual storage-pressure cleanup to [xcode-storage](../../xcode-storage/SKILL.md), inventory candidates and obey its destructive-action scope.
+
+For Simulator, choose and reuse the destination under [xcodebuild](../../xcodebuild/SKILL.md#choose-and-reuse-a-simulator-destination), bind an exact UDID/runtime and use [core-simulator-health](../../core-simulator-health/SKILL.md). Registry discovery uses a short host registry admission; release it before acquiring an incompatible destination lease. Health takes that admission as a separate probe run named by the harness's [`runtime_probe_scope`](coordinator-setup.md#runtime-probe-scope). Nothing heartbeats it, so `runtime_probe_scope.ttl_seconds` must be at least 90, covering both 30-second inventory commands; health blocks a shorter scope with `runtime_probe_lease_too_short_blocked`. `runtime_registry_release_blocked` means the admission stayed active and blocks every destination lease until it is recovered. Never hold one lease while waiting indefinitely for a conflicting one. Shut down only a destination this task booted and owns, when no dependent work remains. A simulator screenshot validates appearance and flow; sustained performance claims usually need a real device.
+
+Release owned leases on success, failure and cancellation. Cancel owned child processes first, preserve actionable diagnostics, then apply bounded task-output retention. Expiry alone is not cleanup or proof that a process died.
