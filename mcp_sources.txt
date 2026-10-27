@@ -18,3 +18,9 @@ https://gitmcp.io
 https://registry.modelcontextprotocol.io
 https://mcptoplist.com
 https://aistudio.google.com
+https://docs.parallel.ai
+https://ai.google.dev
+https://firecrawl.dev
+https://www.npmjs.com
+https://pypi.org
+https://hub.docker.com
