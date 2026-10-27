@@ -44,3 +44,9 @@
 - Diacritics/tanween via long-press only (hold_map)
 - Symbols key label unified to `#+=`
 - Version marketing 0.2.4 / build 20
+
+## Point #11 restore (2026-10-27)
+
+- Symbols: 3 solid rows + faces row last (Arabic + English)
+- No blank diacritic keys; tanween stays on long-press
+- packedSymbolRows re-appends faces after solid content
