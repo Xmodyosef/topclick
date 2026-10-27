@@ -426,7 +426,7 @@ extension KeyboardViewController {
             back.accessibilityLabel = "العودة إلى لوحة الحروف"
             leading.append(back)
         } else {
-            // Letters → single symbols page (icon only — no "#+=" text).
+            // Letters → single symbols page (icon only).
             let symbols = iconKey("textformat.123", #selector(symbolsOrLettersTapped))
             paint(symbols, chrome: .symbols)
             symbols.accessibilityLabel = "لوحة الرموز والأرقام"
