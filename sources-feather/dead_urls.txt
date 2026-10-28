@@ -1,0 +1,4 @@
+https://fastsign.dev/repo.lite.json
+https://raw.githubusercontent.com/VeneraX/VeneraX/main/altstore-source.json
+https://raw.githubusercontent.com/VCMI/vcmi/main/altstore-source.json
+https://raw.githubusercontent.com/XLsn0w/XLsnowStore/main/altstore-source.json
