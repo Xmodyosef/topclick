@@ -6,3 +6,5 @@
 **/*.entitlements      @Xmodyosef
 **/Info.plist          @Xmodyosef
 *                      @Xmodyosef
+
+personalkeyboard-source/ @Xmodyosef
