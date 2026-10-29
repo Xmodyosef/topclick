@@ -28,7 +28,7 @@ def main() -> None:
     repo_root = Path(__file__).resolve().parents[2]
     project_file = repo_root / "personalkeyboard-source" / "project.yml"
     project_text = project_file.read_text(encoding="utf-8")
-    version_match = re.search(r"MARKETING_VERSION:\s*(0(?:\.[0-9]+){2,3})", project_text)
+    version_match = re.search(r"MARKETING_VERSION:\s*[\"\']?(0(?:\.[0-9]+){2,3})[\"\']?", project_text)
     require(version_match is not None, "project.yml defines MARKETING_VERSION")
     expected_version = version_match.group(1)
     require(
