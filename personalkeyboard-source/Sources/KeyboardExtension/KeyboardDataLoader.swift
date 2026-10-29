@@ -44,12 +44,27 @@ enum KeyboardDataLoader {
 
     private static func data(named name: String) -> Data? {
         let n = name.replacingOccurrences(of: ".json", with: "")
-        if let url = Bundle.main.url(forResource: n, withExtension: "json") {
+        let bundle = Bundle.main
+        // Primary: root of the .appex
+        if let url = bundle.url(forResource: n, withExtension: "json") {
             return try? Data(contentsOf: url)
         }
-        // Some hosts put resources next to the extension binary without subfolder registration.
-        if let url = Bundle.main.url(forResource: n, withExtension: "json", subdirectory: "Resources") {
+        // Nested Resources/ folder (some XcodeGen layouts)
+        if let url = bundle.url(forResource: n, withExtension: "json", subdirectory: "Resources") {
             return try? Data(contentsOf: url)
+        }
+        // Last resort: scan bundle for the file name (handles odd copy layouts)
+        if let root = bundle.resourceURL {
+            let direct = root.appendingPathComponent("\(n).json")
+            if FileManager.default.fileExists(atPath: direct.path),
+               let data = try? Data(contentsOf: direct) {
+                return data
+            }
+            if let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) {
+                for case let url as URL in enumerator where url.lastPathComponent == "\(n).json" {
+                    return try? Data(contentsOf: url)
+                }
+            }
         }
         return nil
     }
