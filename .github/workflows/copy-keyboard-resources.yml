@@ -14,7 +14,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GH_TOKEN || secrets.GH_PAT || github.token }
+          token: ${{ secrets.GH_TOKEN || secrets.GH_PAT || github.token }}
           ref: fix/board-height-tight-268
 
       - name: Configure git
