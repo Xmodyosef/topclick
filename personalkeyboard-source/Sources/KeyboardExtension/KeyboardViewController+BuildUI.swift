@@ -26,7 +26,7 @@ extension KeyboardViewController {
         }
     }
 
-    /// Unified board height: letters, symbols, and emoji share the same board (324).
+    /// Unified board height: letters, symbols, and emoji share the same tight board (278).
     /// Content is top-stacked; empty space (if any) stays at the bottom — no flex ghost layers.
     func computedBoardHeight() -> CGFloat {
         boardHeight
@@ -47,10 +47,10 @@ extension KeyboardViewController {
         return Array(validRows.prefix(symbolRowsCount()))
     }
 
-    /// Emoji grid height inside the fixed 324 board (tabs + bottom + pads reserved).
+    /// Emoji grid height inside the fixed 278 board (tabs + bottom + pads reserved).
     func emojiPagerHeight() -> CGFloat {
-        // Board 324 − topPad12 − tabs32 − two gaps12 − bottom44 ≈ 224.
-        return max(160, boardHeight - 100)
+        // Board 278 − topPad12 − tabs32 − two gaps16 − bottom44 ≈ 174.
+        return max(120, boardHeight - 100)
     }
     func armHaptics() {
         guard hapticsOn else { return }
@@ -115,7 +115,7 @@ extension KeyboardViewController {
             blurView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         rootStack.axis = .vertical
-        rootStack.spacing = 6
+        rootStack.spacing = 8
         rootStack.distribution = .fill
         rootStack.alignment = .fill
         rootStack.translatesAutoresizingMaskIntoConstraints = false
@@ -151,7 +151,7 @@ extension KeyboardViewController {
             rootStack.removeArrangedSubview(v)
             v.removeFromSuperview()
         }
-        rootStack.spacing = 6
+        rootStack.spacing = 8
         heightConstraint?.constant = computedBoardHeight()
         switch page {
         case .letters:

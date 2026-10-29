@@ -1,0 +1,47 @@
+name: Copy Keyboard Resources
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [fix/board-height-tight-268]
+    paths:
+      - 'personalkeyboard-source/Sources/KeyboardExtension/Resources/*.json'
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN || secrets.GH_PAT || github.token }}
+          ref: fix/board-height-tight-268
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create KeyboardResources folder and move JSON files
+        run: |
+          SRC="personalkeyboard-source/Sources/KeyboardExtension/Resources"
+          DST="personalkeyboard-source/Sources/KeyboardResources"
+          mkdir -p "$DST"
+          for f in emoji_catalog.json keyboard_layouts.json arabic_lexicon.json; do
+            if [ -f "$SRC/$f" ]; then
+              git mv "$SRC/$f" "$DST/$f"
+              echo "moved $f"
+            else
+              echo "missing $f"
+            fi
+          done
+
+      - name: Commit and push
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "ci: move keyboard JSON resources to KeyboardResources folder"
+            git push origin fix/board-height-tight-268
+          fi

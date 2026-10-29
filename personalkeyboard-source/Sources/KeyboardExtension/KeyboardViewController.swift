@@ -50,7 +50,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         .systemFont(ofSize: 26, weight: .medium)
     }
     let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
-    let boardHeight: CGFloat = 324
+    let boardHeight: CGFloat = 278
     /// Number row matches active language; long-press still offers the other script via hold_map.
     var numberRow: [String] {
         language == .arabic
