@@ -50,7 +50,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         .systemFont(ofSize: 26, weight: .medium)
     }
     let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
-    let boardHeight: CGFloat = 268
+    let boardHeight: CGFloat = 324
     /// Number row matches active language; long-press still offers the other script via hold_map.
     var numberRow: [String] {
         language == .arabic
@@ -201,14 +201,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
 
 
-    func refreshTabs() {
-        guard let tabs = emojiTabs else { return }
-        for (i, view) in tabs.arrangedSubviews.enumerated() {
-            view.backgroundColor = i == emojiCategoryIndex
-                ? palette.accent.withAlphaComponent(0.55)
-                : palette.key.withAlphaComponent(0.55)
-        }
-    }
+    // refreshTabs lives in KeyboardViewController+Emoji (single implementation).
 
 
 

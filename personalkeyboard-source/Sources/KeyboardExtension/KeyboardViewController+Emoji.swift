@@ -126,10 +126,8 @@ extension KeyboardViewController {
             page = .letters
         } else {
             page = .emoji
-            // Keep cache; refresh only if empty so frequent stays complete without reloading every open.
-            if emojiPack.isEmpty {
-                emojiPack = Self.catalog()
-            }
+            // Always reload full catalog from JSON so all categories/items appear.
+            emojiPack = Self.catalog()
             emojiCategoryIndex = min(emojiCategoryIndex, max(emojiPack.count - 1, 0))
         }
         rebuild()
