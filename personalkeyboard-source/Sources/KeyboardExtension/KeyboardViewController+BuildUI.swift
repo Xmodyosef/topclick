@@ -26,7 +26,7 @@ extension KeyboardViewController {
         }
     }
 
-    /// Unified board height: letters, symbols, and emoji share the same board (324).
+    /// Unified board height: letters, symbols, and emoji share the same tight board (268).
     /// Content is top-stacked; empty space (if any) stays at the bottom — no flex ghost layers.
     func computedBoardHeight() -> CGFloat {
         boardHeight
@@ -47,10 +47,10 @@ extension KeyboardViewController {
         return Array(validRows.prefix(symbolRowsCount()))
     }
 
-    /// Emoji grid height inside the fixed 324 board (tabs + bottom + pads reserved).
+    /// Emoji grid height inside the fixed 268 board (tabs + bottom + pads reserved).
     func emojiPagerHeight() -> CGFloat {
-        // Board 324 − topPad12 − tabs32 − two gaps12 − bottom44 ≈ 224.
-        return max(160, boardHeight - 100)
+        // Board 268 − topPad12 − tabs32 − two gaps12 − bottom44 = 168.
+        return max(120, boardHeight - 100)
     }
     func armHaptics() {
         guard hapticsOn else { return }
