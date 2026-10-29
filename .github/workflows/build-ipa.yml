@@ -41,11 +41,20 @@ jobs:
           # محاولة استخدام اسم الـ Scheme الصحيح
           xcodebuild -project "$PROJECT" -scheme "PersonalKeyboard" -sdk iphoneos -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
 
+      - name: Verify built app bundle
+        working-directory: personalkeyboard-source
+        run: |
+          APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
+          test -n "$APP"
+          python3 ../.github/scripts/validate_built_app.py "$APP"
+
       - name: Create IPA
         run: |
           cd personalkeyboard-source
           mkdir -p Payload
-          find build/Build/Products/Release-iphoneos -name "*.app" -exec cp -r {} Payload/ \;
+          APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
+          test -n "$APP"
+          cp -R "$APP" Payload/
           zip -r PersonalKeyboard-unsigned-fresh.ipa Payload
 
       - name: Upload IPA
