@@ -37,6 +37,7 @@
 ## 7. التطور المستمر واكتشاف المهارات (Continuous Evolution)
 - **فحص التقادم:** راجع المهارات في `.agent/skills/` وقارنها بأحدث تقنيات Swift/iOS.
 - **الاقتراح الذكي:** اعرض على المالك قائمة بأفضل 3 مهارات جديدة (مع الروابط) واطلب الإذن قبل التثبيت.
+- **التوثيق:** بعد الموافقة، قم بتثبيتها وتحديث `SKILLS.md` تلقائيًا.
 
 ## 8. منع الإفراط في الهندسة (Anti-Over-engineering)
 - **No Over-defensive Coding:** Do NOT add edge-case checks or null-checks for extremely rare scenarios unless explicitly approved by the Owner.
