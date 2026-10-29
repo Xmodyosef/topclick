@@ -51,7 +51,12 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     }
     let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
     let boardHeight: CGFloat = 324
-    let numberRow = ["1","2","3","4","5","6","7","8","9","0"]
+    /// Number row matches active language; long-press still offers the other script via hold_map.
+    var numberRow: [String] {
+        language == .arabic
+            ? ["١","٢","٣","٤","٥","٦","٧","٨","٩","٠"]
+            : ["1","2","3","4","5","6","7","8","9","0"]
+    }
     var showNumberRow: Bool { ThemeIO.bool("showNumberRow") ?? true }
     var themeSignature: String {
         let id = ThemeIO.string("themeId") ?? "auto"

@@ -33,6 +33,7 @@ struct SettingsTab: View {
                     accessCard
                     iconCard
                     keyboardCard
+                    translationCard
                     feelCard
                     privacyCard
                     footer
@@ -133,6 +134,14 @@ struct SettingsTab: View {
         }
     }
 
+
+    @ViewBuilder
+    private var translationCard: some View {
+        if #available(iOS 18.0, *) {
+            TranslationPrepCard()
+        }
+    }
+
     private var feelCard: some View {
         SettingsCard(title: "الاهتزاز", subtitle: "استجابة لمسية عند الضغط") {
             Toggle("اهتزاز المفاتيح", isOn: $haptics)
@@ -202,7 +211,7 @@ struct SettingsTab: View {
 
     private var footer: some View {
         VStack(spacing: 6) {
-            Text("نقرة · إصدار 0.2.4")
+            Text("نقرة · إصدار 0.2.8")
                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                 .foregroundStyle(NaqraColors.textSecondary)
             // Soft note — unsigned/sideload often has no App Group; dual-write still saves prefs.

@@ -124,9 +124,10 @@ extension KeyboardViewController {
             page = .letters
         } else {
             page = .emoji
-            // Reload catalog every open so JSON/frequent stay complete.
-            KeyboardDataLoader.clearEmojiCache()
-            emojiPack = Self.catalog()
+            // Keep cache; refresh only if empty so frequent stays complete without reloading every open.
+            if emojiPack.isEmpty {
+                emojiPack = Self.catalog()
+            }
             emojiCategoryIndex = min(emojiCategoryIndex, max(emojiPack.count - 1, 0))
         }
         rebuild()

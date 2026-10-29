@@ -50,3 +50,28 @@
 - Symbols: 3 solid rows + faces row last (Arabic + English)
 - No blank diacritic keys; tanween stays on long-press
 - packedSymbolRows re-appends faces after solid content
+
+## جولة 2026-10-27 — إصلاح شامل للوحة
+
+1. الهولد (الضغط المطوّل) العربي مكتمل: ي←ى، و، ة، ء، وأرقام (٩→٠).
+2. الرموز: 4 صفوف رموز عالمية بنفس الطول 10 — بدون صف إيموجي داخل الرموز.
+3. زر الرموز أيقونة `textformat.123` بدون نص #+=.
+4. الصوت: AVAudioSession `.ambient` بدل `.playback`.
+5. الإيموجي: لا يمسح الكاش في كل فتحة.
+6. الإصدار موحّد: 0.2.6 (build 26).
+7. صف الشيفت العربي يبقى 9 مفاتيح (١–٩) و٠ عبر الهولد على ٩ ليتوافق مع عرض صف الحروف.
+
+## جولة 2026-10-27b — أرقام عربية + صفر ظاهر
+
+1. صف الأرقام يتبع اللغة: عربي = ١٢٣٤٥٦٧٨٩٠ (الصفر ظاهر مباشرة).
+2. الهولد على ي يبدأ بـ ى (ياء بلا نقاط).
+3. الإصدار 0.2.7 (build 27).
+
+## جولة 2026-10-27c — إنهاء الباقي
+1. TranslationPrepCard مربوط في Settings (iOS 18+).
+2. README + CHANGELOG يطابقان v0.2.7.
+
+## 0.2.8 (build 28)
+- TranslationPrepCard في Settings
+- README/CHANGELOG محدّثان
+- إصدار موحّد 0.2.8 / 28

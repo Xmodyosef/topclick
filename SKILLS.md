@@ -2,12 +2,12 @@
 
 فهرس موحد للمهارات المتبقية بعد إزالة النسخ المكررة ودمج المهارات المتشابهة.
 
-**Valid skill files:** 566
+**Valid skill files:** 558
 **Exact duplicate groups:** 0
 
 > Consolidated by canonical skill path and high content similarity; distinct specialized skills were retained.
 
-## iOS & Swift (194)
+## iOS & Swift (185)
 
 - [`.agent/skills/app-store/apple-search-ads/SKILL.md`](.agent/skills/app-store/apple-search-ads/SKILL.md)
 - [`.agent/skills/apple-ads/SKILL.md`](.agent/skills/apple-ads/SKILL.md)
@@ -35,10 +35,8 @@
 - [`.agent/skills/apple-platform-setup/SKILL.md`](.agent/skills/apple-platform-setup/SKILL.md)
 - [`.agent/skills/apple-platform-testing/SKILL.md`](.agent/skills/apple-platform-testing/SKILL.md)
 - [`.agent/skills/apple-platform-ui/SKILL.md`](.agent/skills/apple-platform-ui/SKILL.md)
-- [`.agent/skills/axiom-accessibility/SKILL.md`](.agent/skills/axiom-accessibility/SKILL.md)
 - [`.agent/skills/axiom-accessibility_7611/SKILL.md`](.agent/skills/axiom-accessibility_7611/SKILL.md)
 - [`.agent/skills/axiom-accessibility_7857/SKILL.md`](.agent/skills/axiom-accessibility_7857/SKILL.md)
-- [`.agent/skills/axiom-ai/SKILL.md`](.agent/skills/axiom-ai/SKILL.md)
 - [`.agent/skills/axiom-analyze-crash/SKILL.md`](.agent/skills/axiom-analyze-crash/SKILL.md)
 - [`.agent/skills/axiom-analyze-swift-performance/SKILL.md`](.agent/skills/axiom-analyze-swift-performance/SKILL.md)
 - [`.agent/skills/axiom-analyze-swiftui-performance/SKILL.md`](.agent/skills/axiom-analyze-swiftui-performance/SKILL.md)
@@ -93,22 +91,14 @@
 - [`.agent/skills/axiom-resolve-spm/SKILL.md`](.agent/skills/axiom-resolve-spm/SKILL.md)
 - [`.agent/skills/axiom-run-tests/SKILL.md`](.agent/skills/axiom-run-tests/SKILL.md)
 - [`.agent/skills/axiom-scan-security-privacy/SKILL.md`](.agent/skills/axiom-scan-security-privacy/SKILL.md)
-- [`.agent/skills/axiom-security/SKILL.md`](.agent/skills/axiom-security/SKILL.md)
-- [`.agent/skills/axiom-shipping/SKILL.md`](.agent/skills/axiom-shipping/SKILL.md)
 - [`.agent/skills/axiom-swift-simplifier/SKILL.md`](.agent/skills/axiom-swift-simplifier/SKILL.md)
 - [`.agent/skills/axiom-swift/SKILL.md`](.agent/skills/axiom-swift/SKILL.md)
-- [`.agent/skills/axiom-swiftui/SKILL.md`](.agent/skills/axiom-swiftui/SKILL.md)
 - [`.agent/skills/axiom-swiftui_7820/SKILL.md`](.agent/skills/axiom-swiftui_7820/SKILL.md)
 - [`.agent/skills/axiom-swiftui_7956/SKILL.md`](.agent/skills/axiom-swiftui_7956/SKILL.md)
 - [`.agent/skills/axiom-test-simulator/SKILL.md`](.agent/skills/axiom-test-simulator/SKILL.md)
-- [`.agent/skills/axiom-testing/SKILL.md`](.agent/skills/axiom-testing/SKILL.md)
-- [`.agent/skills/axiom-tools/SKILL.md`](.agent/skills/axiom-tools/SKILL.md)
 - [`.agent/skills/axiom-tools_7832/SKILL.md`](.agent/skills/axiom-tools_7832/SKILL.md)
 - [`.agent/skills/axiom-tools_7966/SKILL.md`](.agent/skills/axiom-tools_7966/SKILL.md)
-- [`.agent/skills/axiom-uikit/SKILL.md`](.agent/skills/axiom-uikit/SKILL.md)
 - [`.agent/skills/axiom-validate-screenshots/SKILL.md`](.agent/skills/axiom-validate-screenshots/SKILL.md)
-- [`.agent/skills/axiom-vision/SKILL.md`](.agent/skills/axiom-vision/SKILL.md)
-- [`.agent/skills/axiom-watchos/SKILL.md`](.agent/skills/axiom-watchos/SKILL.md)
 - [`.agent/skills/axiom-xcode-mcp/SKILL.md`](.agent/skills/axiom-xcode-mcp/SKILL.md)
 - [`.agent/skills/axiom-xcode-mcp_7985/SKILL.md`](.agent/skills/axiom-xcode-mcp_7985/SKILL.md)
 - [`.agent/skills/build-swift-apps/SKILL.md`](.agent/skills/build-swift-apps/SKILL.md)
@@ -141,6 +131,7 @@
 - [`.agent/skills/ios_1296/run-device/SKILL.md`](.agent/skills/ios_1296/run-device/SKILL.md)
 - [`.agent/skills/ios_1296/SKILL.md`](.agent/skills/ios_1296/SKILL.md)
 - [`.agent/skills/karpathy-guidelines/SKILL.md`](.agent/skills/karpathy-guidelines/SKILL.md)
+- [`.agent/skills/keyboard-deep-audit/SKILL.md`](.agent/skills/keyboard-deep-audit/SKILL.md)
 - [`.agent/skills/macos-appkit-bridge/SKILL.md`](.agent/skills/macos-appkit-bridge/SKILL.md)
 - [`.agent/skills/macos-liquid-glass-designer/SKILL.md`](.agent/skills/macos-liquid-glass-designer/SKILL.md)
 - [`.agent/skills/macos-notarization-packager/SKILL.md`](.agent/skills/macos-notarization-packager/SKILL.md)
@@ -263,7 +254,7 @@
 - [`.agent/skills/xcode-ui-test-stabilizer/SKILL.md`](.agent/skills/xcode-ui-test-stabilizer/SKILL.md)
 - [`.agent/skills/xcodebuild/SKILL.md`](.agent/skills/xcodebuild/SKILL.md)
 
-## General Coding & Memory (322)
+## General Coding & Memory (323)
 
 - [`.agent/skills/agent-eval-improver/SKILL.md`](.agent/skills/agent-eval-improver/SKILL.md)
 - [`.agent/skills/agent-harness/SKILL.md`](.agent/skills/agent-harness/SKILL.md)
@@ -523,6 +514,7 @@
 - [`.agent/skills/remotion/SKILL.md`](.agent/skills/remotion/SKILL.md)
 - [`.agent/skills/repo-health-check/SKILL.md`](.agent/skills/repo-health-check/SKILL.md)
 - [`.agent/skills/review-duplication/SKILL.md`](.agent/skills/review-duplication/SKILL.md)
+- [`.agent/skills/runtime-bundle-check/SKILL.md`](.agent/skills/runtime-bundle-check/SKILL.md)
 - [`.agent/skills/screenshot/SKILL.md`](.agent/skills/screenshot/SKILL.md)
 - [`.agent/skills/secops-hunt/SKILL.md`](.agent/skills/secops-hunt/SKILL.md)
 - [`.agent/skills/session-handoff/SKILL.md`](.agent/skills/session-handoff/SKILL.md)
