@@ -136,8 +136,9 @@ enum SoundPackStore {
 
 extension ThemeStore {
     static func stringArray(_ key: String) -> [String]? {
-        if let a = UserDefaults.standard.array(forKey: key) as? [String] { return a }
+        // Suite first so extension and container agree (connectors review 2026-10-29).
         if let a = suite.array(forKey: key) as? [String] { return a }
+        if let a = UserDefaults.standard.array(forKey: key) as? [String] { return a }
         return nil
     }
 }
