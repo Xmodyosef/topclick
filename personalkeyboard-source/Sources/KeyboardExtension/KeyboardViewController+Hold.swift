@@ -59,8 +59,11 @@ extension KeyboardViewController {
         }
     }
 
-    /// Drops the letter typed on touch-down so a long-press choice replaces it instead of repeating it.
+    /// Drops the letter typed on touch-down, once.
+    /// A second call must not run: «ال» already ends with ل, so deleting by suffix again
+    /// would eat the lam already in the word before inserting لا / لأ / لإ / لآ.
     func undoProvisionalInsert() {
+        guard pendingInserted else { return }
         guard !downText.isEmpty else {
             pendingInserted = false
             return
@@ -70,7 +73,7 @@ extension KeyboardViewController {
             for _ in 0..<downText.count {
                 textDocumentProxy.deleteBackward()
             }
-        } else if pendingInserted {
+        } else {
             textDocumentProxy.deleteBackward()
         }
         pendingInserted = false
@@ -127,6 +130,7 @@ extension KeyboardViewController {
         bar.layer.borderColor = (palette.blurDark ? UIColor.white.withAlphaComponent(0.18) : UIColor.black.withAlphaComponent(0.12)).cgColor
         bar.isLayoutMarginsRelativeArrangement = true
         bar.layoutMargins = UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6)
+        bar.isUserInteractionEnabled = false
         holdChoice = items[0]
         for (i, item) in items.enumerated() {
             let b = UIButton(type: .system)
@@ -138,6 +142,7 @@ extension KeyboardViewController {
             var config = UIButton.Configuration.plain()
             config.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8)
             b.configuration = config
+            b.isUserInteractionEnabled = false
             bar.addArrangedSubview(b)
         }
         view.addSubview(bar)
