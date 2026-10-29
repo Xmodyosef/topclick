@@ -1,0 +1,93 @@
+name: Agent Guard
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  guard:
+    name: Validate agent work
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Run repository guard
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 - <<'PY'
+          import os, re, subprocess, tarfile
+          from pathlib import Path
+
+          base = os.environ['BASE_SHA']
+          head = os.environ['HEAD_SHA']
+          changed = subprocess.check_output(
+              ['git', 'diff', '--name-only', f'{base}...{head}'], text=True
+          ).splitlines()
+          changed = [Path(p) for p in changed]
+          app_code = any(str(p).startswith('personalkeyboard-source/') and p.suffix in {'.swift', '.yml', '.plist', '.entitlements'} for p in changed)
+          policy_only = {str(p) for p in changed} <= {
+              'AGENTS.md', 'SKILLS.md', 'personalkeyboard-source/AGENTS.md'
+          } or all(str(p).startswith(('.agent/', '.grok/', '.github/')) for p in changed)
+          if app_code and any(str(p).startswith(('.agent/', '.grok/')) for p in changed) and not policy_only:
+              raise SystemExit('Mixed agent/skills and application-source changes require separate PRs.')
+
+          text_files = []
+          for p in changed:
+              full = Path(p)
+              if full.exists() and full.is_file() and full.stat().st_size < 2_000_000:
+                  try:
+                      text_files.append((p, full.read_text(errors='ignore')))
+                  except UnicodeDecodeError:
+                      pass
+          markers = [(str(p), i + 1) for p, text in text_files for i, line in enumerate(text.splitlines()) if re.match(r'^(<<<<<<<|=======|>>>>>>>)( |$)', line)]
+          if markers:
+              raise SystemExit(f'Conflict markers found: {markers[:10]}')
+          diff = subprocess.check_output(['git', 'diff', '--unified=0', f'{base}...{head}'], text=True, errors='ignore')
+          secret = re.compile(r'(BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|ghp_[A-Za-z0-9]{20,}|xai-[A-Za-z0-9_-]{20,}|api[_-]?key\s*[:=]\s*["\'][^"\']{12,})', re.I)
+          if secret.search(diff):
+              raise SystemExit('Possible secret detected in the PR diff.')
+
+          root = Path('.agent/skills')
+          packs = sorted(p for p in root.iterdir() if p.is_dir())
+          bundles = list(root.rglob('bundle-*.md'))
+          archives = list(root.rglob('resources.tar.gz'))
+          legacy = list(root.rglob('SKILL.reference.md')) + list(root.rglob('references/source'))
+          if len(packs) != 8 or len(bundles) != 50 or len(archives) != 8 or legacy:
+              raise SystemExit(f'Invalid skill layout: packs={len(packs)}, bundles={len(bundles)}, archives={len(archives)}, legacy={len(legacy)}')
+          if any(not (p / 'SKILL.md').is_file() for p in packs):
+              raise SystemExit('Every active pack must contain SKILL.md.')
+          for archive in archives:
+              with tarfile.open(archive, 'r:gz') as tar:
+                  tar.getmembers()
+          version_text = Path('personalkeyboard-source/project.yml').read_text()
+          if not re.search(r'MARKETING_VERSION:\s*["\']?0\.\d+\.\d+["\']?', version_text):
+              raise SystemExit('Missing or invalid MARKETING_VERSION in project.yml.')
+
+          report = Path('agent-review-report.md')
+          report.write_text('''# Agent Review Report\n\n- Changed files: %d\n- Active skill packs: 8\n- Integrated bundles: 50\n- Resource archives: 8\n- Legacy individual skill files: 0\n- Conflict markers: 0\n- Obvious secrets: 0\n- Automated review: passed\n\n## Device-only checks\n\nSigning, installation, Feather, ESign, audio hardware, and long-session iPhone behavior require owner testing on a physical device.\n''' % len(changed))
+          print(report.read_text())
+          PY
+
+      - name: Publish review summary
+        if: always()
+        run: |
+          if [ -f agent-review-report.md ]; then cat agent-review-report.md >> "$GITHUB_STEP_SUMMARY"; fi
+
+      - name: Upload review report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-review-report
+          path: agent-review-report.md
+          if-no-files-found: ignore
