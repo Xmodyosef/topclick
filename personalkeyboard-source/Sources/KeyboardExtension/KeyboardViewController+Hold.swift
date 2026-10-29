@@ -59,14 +59,31 @@ extension KeyboardViewController {
         }
     }
 
+    /// Drops the letter typed on touch-down so a long-press choice replaces it instead of repeating it.
+    func undoProvisionalInsert() {
+        guard !downText.isEmpty else {
+            pendingInserted = false
+            return
+        }
+        let before = textDocumentProxy.documentContextBeforeInput ?? ""
+        if before.hasSuffix(downText) {
+            for _ in 0..<downText.count {
+                textDocumentProxy.deleteBackward()
+            }
+        } else if pendingInserted {
+            textDocumentProxy.deleteBackward()
+        }
+        pendingInserted = false
+    }
+
     @objc func charUp(_ sender: UIButton) {
         holdTimer?.invalidate()
         holdTimer = nil
         if holdPopup != nil {
             let text = holdChoice.isEmpty ? downText : holdChoice
             hideHoldPopup()
+            undoProvisionalInsert()
             if !text.isEmpty { textDocumentProxy.insertText(text) }
-            pendingInserted = false
             tapHaptic(.action)
         } else if !pendingInserted {
             let text = sender.title(for: .normal) ?? downText
@@ -94,10 +111,7 @@ extension KeyboardViewController {
         guard let key = button.title(for: .normal) else { return }
         let items = holdChoices(for: key)
         guard items.count > 1 else { return }
-        if pendingInserted {
-            textDocumentProxy.deleteBackward()
-            pendingInserted = false
-        }
+        undoProvisionalInsert()
         hideHoldPopup()
         let bar = UIStackView()
         bar.axis = .horizontal
