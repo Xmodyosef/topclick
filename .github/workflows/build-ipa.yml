@@ -52,7 +52,9 @@ jobs:
         run: |
           cd personalkeyboard-source
           mkdir -p Payload
-          find build/Build/Products/Release-iphoneos -name "*.app" -exec cp -r {} Payload/ \;
+          APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
+          test -n "$APP"
+          cp -R "$APP" Payload/
           zip -r PersonalKeyboard-unsigned-fresh.ipa Payload
 
       - name: Upload IPA

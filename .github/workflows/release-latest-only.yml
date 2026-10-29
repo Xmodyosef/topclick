@@ -82,8 +82,10 @@ jobs:
         run: |
           rm -rf Payload "Naqra-$VERSION.ipa"
           mkdir Payload
-          find build/Build/Products/Release-iphoneos -name '*.app' -maxdepth 1 -exec cp -R {} Payload/ \;
-          test "$(find Payload -maxdepth 1 -name '*.app' | wc -l | tr -d ' ')" = 1
+          APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
+          test -n "$APP"
+          cp -R "$APP" Payload/
+          test -d Payload/PersonalKeyboard.app
           zip -qr "Naqra-$VERSION.ipa" Payload
           shasum -a 256 "Naqra-$VERSION.ipa" | tee "Naqra-$VERSION.ipa.sha256"
           echo "ipa=personalkeyboard-source/Naqra-$VERSION.ipa" >> "$GITHUB_OUTPUT"
