@@ -41,7 +41,7 @@ extension KeyboardViewController {
         playSystemClick(sound)
         tapHaptic()
         guard holdChoices(for: key).count > 1 else { return }
-        let timer = Timer(timeInterval: 0.32, repeats: false) { [weak self] _ in
+        let timer = Timer(timeInterval: SharedKeyboardData.holdDelaySeconds(), repeats: false) { [weak self] _ in
             self?.showHoldPopup(from: sender)
         }
         holdTimer = timer
