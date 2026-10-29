@@ -102,3 +102,8 @@
 - MARKETING_VERSION / CURRENT_PROJECT_VERSION → 0.2.9 / 29
 - SharedKeyboardData.swift مضاف لهدفي ContainerApp و KeyboardExtension في project.yml
 - holdTimer يستخدم SharedKeyboardData.holdDelaySeconds() (افتراضي 320ms)
+
+## 0.2.8.1 (build 30) — 2026-10-29
+- MARKETING_VERSION / CFBundleShortVersionString → 0.2.8.1
+- CURRENT_PROJECT_VERSION / CFBundleVersion → 30
+- نفس إصلاحات 0.2.9 (hold ل + suite-first + SharedKeyboardData) بإصدار 0.2.8.x

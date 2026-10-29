@@ -23,8 +23,8 @@ xcodebuild -project PersonalKeyboard.xcodeproj -scheme PersonalKeyboard \
 
 ## الإصدار الحالي
 
-- **v0.2.8** — [Release](https://github.com/Xmodyosef/topclick/releases/tag/v0.2.8)
-- IPA: [PersonalKeyboard-unsigned.ipa](https://github.com/Xmodyosef/topclick/releases/download/v0.2.8/PersonalKeyboard-unsigned.ipa)
+- **v0.2.8.1** — [Release](https://github.com/Xmodyosef/topclick/releases/tag/v0.2.8.1)
+- IPA: [PersonalKeyboard-unsigned.ipa](https://github.com/Xmodyosef/topclick/releases/download/v0.2.8.1/PersonalKeyboard-unsigned.ipa)
 
 ### ملاحظات التثبيت
 1. نزّل IPA غير موقّع
