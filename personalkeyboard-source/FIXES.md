@@ -97,3 +97,8 @@
 ### Hold UX ملاحظة (PowerToys Quick Accent 2026)
 - نمط insert-on-down ثم delete+replace عند الـ popup مقبول ومعتمد
 - delay الحالي 0.32s؛ يمكن ربطه بـ SharedKeyboardData.holdDelaySeconds لاحقاً
+
+## 0.2.9 (build 29) — post-merge
+- MARKETING_VERSION / CURRENT_PROJECT_VERSION → 0.2.9 / 29
+- SharedKeyboardData.swift مضاف لهدفي ContainerApp و KeyboardExtension في project.yml
+- holdTimer يستخدم SharedKeyboardData.holdDelaySeconds() (افتراضي 320ms)

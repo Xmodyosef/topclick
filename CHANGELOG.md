@@ -1,3 +1,9 @@
+## 0.2.9 — 2026-10-29
+- Hold حرف **ل**: لا / لأ / لإ / لآ / ڵ / ّ
+- مزامنة App Group: suite أولاً ثم standard (ThemeIO + ThemeStore + PackStores)
+- SharedKeyboardData.swift (مفاتيح مشتركة + hold delay قابل للتعديل لاحقاً)
+- مراجعة موصلين: GitHub + Exa + Firecrawl + Context7
+
 ## 0.2.8 — 2026-10-27
 - صف الأرقام عربي: ١٢٣٤٥٦٧٨٩٠ (الصفر ظاهر)
 - Hold على ي يعطي ى أولاً
