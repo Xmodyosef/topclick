@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Verify the built app bundle, embedded keyboard extension, and icon metadata."""
 import plistlib
+import re
 import sys
 from pathlib import Path
 
@@ -23,7 +24,17 @@ def main() -> None:
     with info_path.open("rb") as handle:
         info = plistlib.load(handle)
     require(info.get("CFBundleIdentifier") == APP_BUNDLE, "built application bundle ID unchanged")
-    require(info.get("CFBundleShortVersionString") == "0.2.3", "built app version is 0.2.3")
+
+    repo_root = Path(__file__).resolve().parents[2]
+    project_file = repo_root / "personalkeyboard-source" / "project.yml"
+    project_text = project_file.read_text(encoding="utf-8")
+    version_match = re.search(r'MARKETING_VERSION:\s*["\\']?([^"\\'\s]+)', project_text)
+    require(version_match is not None, "project.yml defines MARKETING_VERSION")
+    expected_version = version_match.group(1)
+    require(
+        info.get("CFBundleShortVersionString") == expected_version,
+        f"built app version matches project.yml ({expected_version})",
+    )
 
     icon_dictionaries = [info.get("CFBundleIcons", {}), info.get("CFBundleIcons~ipad", {})]
     alternates = {}

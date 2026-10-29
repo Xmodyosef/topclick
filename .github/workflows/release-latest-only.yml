@@ -41,7 +41,7 @@ jobs:
           PY
           )
           if [ -n "$REQUESTED_VERSION" ]; then VERSION="$REQUESTED_VERSION"; fi
-          [[ "$VERSION" =~ ^0\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version: $VERSION"; exit 1; }
+          [[ "$VERSION" =~ ^0\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || { echo "Invalid version: $VERSION"; exit 1; }
           BUILD=$(python3 - <<'PY'
           import re
           from pathlib import Path
@@ -66,6 +66,13 @@ jobs:
         run: |
           PROJECT=$(find . -name '*.xcodeproj' | head -n 1)
           xcodebuild -project "$PROJECT" -scheme PersonalKeyboard -sdk iphoneos -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' build
+
+      - name: Verify built app bundle
+        working-directory: personalkeyboard-source
+        run: |
+          APP=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -type d -name 'PersonalKeyboard.app' -print -quit)
+          test -n "$APP"
+          python3 ../.github/scripts/validate_built_app.py "$APP"
 
       - name: Package exactly one IPA
         id: package
@@ -103,10 +110,12 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then echo "Release $TAG already exists"; exit 1; fi
+          git log -1 --pretty=format='Previous commit: %h%n%nChanges are documented in the commit and PR history.' > RELEASE_NOTES.md
+          gh release create "$TAG" "personalkeyboard-source/Naqra-$VERSION.ipa" "personalkeyboard-source/Naqra-$VERSION.ipa.sha256" --title "نقرة — $VERSION" --notes-file RELEASE_NOTES.md
+          # Keep the previous releases until the new release is successfully created.
           gh release list --limit 100 --json isDraft,isPrerelease,tagName --jq '.[] | select(.isDraft == false and .isPrerelease == false) | .tagName' | while read old_tag; do
             [ -z "$old_tag" ] && continue
+            [ "$old_tag" = "$TAG" ] && continue
             old_id=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$old_tag" --jq '.id')
             gh api --method DELETE "repos/$GITHUB_REPOSITORY/releases/$old_id"
           done
-          git log -1 --pretty=format='Previous commit: %h%n%nChanges are documented in the commit and PR history.' > RELEASE_NOTES.md
-          gh release create "$TAG" "personalkeyboard-source/Naqra-$VERSION.ipa" "personalkeyboard-source/Naqra-$VERSION.ipa.sha256" --title "نقرة — $VERSION" --notes-file RELEASE_NOTES.md

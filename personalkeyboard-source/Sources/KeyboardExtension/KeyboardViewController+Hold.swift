@@ -61,6 +61,9 @@ extension KeyboardViewController {
 
     /// Drops the letter typed on touch-down so a long-press choice replaces it instead of repeating it.
     func undoProvisionalInsert() {
+        // The touch-down character is inserted once; do not undo it a second time
+        // after the long-press popup has already removed it.
+        guard pendingInserted else { return }
         guard !downText.isEmpty else {
             pendingInserted = false
             return
