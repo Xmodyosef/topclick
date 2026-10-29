@@ -50,7 +50,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         .systemFont(ofSize: 26, weight: .medium)
     }
     let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
-    let boardHeight: CGFloat = 278
+    let boardHeight: CGFloat = 294
     /// Number row matches active language; long-press still offers the other script via hold_map.
     var numberRow: [String] {
         language == .arabic
@@ -211,13 +211,13 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     func alts(for key: String) -> [String] {
         if let direct = holdMap[key], !direct.isEmpty { return direct }
         // English shift: map "A" → hold of "a"
-        if key.count == 1, let ch = key.unicodeScalars.first, CharacterSet.uppercaseLetters.contains(ch) {
+        if key.count == 1, let ch = key.unicodeScalors.first, CharacterSet.uppercaseLetters.contains(ch) {
             let lower = key.lowercased()
             if let v = holdMap[lower], !v.isEmpty {
                 return v.map { $0.uppercased() }
             }
         }
-        if key.count == 1, let ch = key.unicodeScalars.first, CharacterSet.lowercaseLetters.contains(ch) {
+        if key.count == 1, let ch = key.unicodeScalors.first, CharacterSet.lowercaseLetters.contains(ch) {
             let upper = key.uppercased()
             if let v = holdMap[upper], !v.isEmpty { return v }
         }
