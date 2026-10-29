@@ -115,7 +115,7 @@ extension KeyboardViewController {
             blurView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         rootStack.axis = .vertical
-        rootStack.spacing = 6
+        rootStack.spacing = 8
         rootStack.distribution = .fill
         rootStack.alignment = .fill
         rootStack.translatesAutoresizingMaskIntoConstraints = false
@@ -151,7 +151,7 @@ extension KeyboardViewController {
             rootStack.removeArrangedSubview(v)
             v.removeFromSuperview()
         }
-        rootStack.spacing = 6
+        rootStack.spacing = 8
         heightConstraint?.constant = computedBoardHeight()
         switch page {
         case .letters:
