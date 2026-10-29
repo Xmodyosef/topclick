@@ -13,7 +13,7 @@ if git ls-files --error-unmatch skills >/dev/null 2>&1 || [ -d skills ]; then
 fi
 
 # النقل الكامل: bundles + tar.gz + SKILL.md
-git mv .agent/skills skills
+git mv skills skills
 rmdir .agent 2>/dev/null || true
 
 # تحديث المسارات في الوثائق والـ CI
@@ -28,15 +28,15 @@ for p in Path(".").rglob("*"):
         t = p.read_text(encoding="utf-8")
     except Exception:
         continue
-    if ".agent/skills" not in t:
+    if "skills" not in t:
         continue
-    p.write_text(t.replace(".agent/skills", "skills"), encoding="utf-8")
+    p.write_text(t.replace("skills", "skills"), encoding="utf-8")
     print("updated", p)
 PY
 
 git add -A
 git status
-git commit -m "chore: move full skill packs from .agent/skills to skills"
+git commit -m "chore: move full skill packs from skills to skills"
 git push -u origin chore/move-skills-full
 
 echo ""

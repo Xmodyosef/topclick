@@ -26,4 +26,4 @@
 - توحيد الإصدار 0.2.6
 
 ## Unreleased
-- Added 895 baked-in AI skills to `.agent/skills/` to enforce expert-level coding and debugging.
+- Added 895 baked-in AI skills to `skills/` to enforce expert-level coding and debugging.

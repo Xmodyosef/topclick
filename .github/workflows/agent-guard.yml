@@ -58,7 +58,7 @@ jobs:
           if secret.search(diff):
               raise SystemExit('Possible secret detected in the PR diff.')
 
-          root = Path('.agent/skills')
+          root = Path('skills')
           packs = sorted(p for p in root.iterdir() if p.is_dir())
           bundles = list(root.rglob('bundle-*.md'))
           archives = list(root.rglob('resources.tar.gz'))
