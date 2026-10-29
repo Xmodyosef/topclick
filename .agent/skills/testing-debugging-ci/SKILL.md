@@ -17,3 +17,13 @@ description: Use when diagnosing bugs, writing tests, debugging failures, profil
 ## المراجع المدمجة
 
 المراجع المنقولة تحت `references/source/` محفوظة من المهارات الأصلية، لكنها ليست مهارات مستقلة قابلة للاكتشاف. استخدمها كمعرفة داعمة للحزمة.
+
+## Integrated bundle map
+
+- [`bundle-01.md`](references/bundle-01.md)
+- [`bundle-02.md`](references/bundle-02.md)
+- [`bundle-03.md`](references/bundle-03.md)
+- [`bundle-04.md`](references/bundle-04.md)
+- [`bundle-05.md`](references/bundle-05.md)
+
+الموارد التنفيذية والقوالب والأصول محفوظة في `resources.tar.gz` داخل الحزمة.

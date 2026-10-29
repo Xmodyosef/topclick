@@ -1,6 +1,0 @@
-interface:
-  display_name: "Run Tests"
-  short_description: "The user wants to run XCUITests, parse test results, view test failures, or export test attachments."
-  default_prompt: "Use $axiom-run-tests to run tests in this project."
-policy:
-  allow_implicit_invocation: false

@@ -17,3 +17,9 @@ description: Use when working on custom iOS keyboards, Arabic/English layouts, k
 ## المراجع المدمجة
 
 المراجع المنقولة تحت `references/source/` محفوظة من المهارات الأصلية، لكنها ليست مهارات مستقلة قابلة للاكتشاف. استخدمها كمعرفة داعمة للحزمة.
+
+## Integrated bundle map
+
+- [`bundle-01.md`](references/bundle-01.md)
+
+الموارد التنفيذية والقوالب والأصول محفوظة في `resources.tar.gz` داخل الحزمة.
