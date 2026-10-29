@@ -1,3 +1,0 @@
-interface:
-  display_name: "Tools"
-  short_description: "Asking about Axiom skills or axbuild build/test capture, xclog console, xcsym .ips/MetricKit/.crash symbolication, xc..."

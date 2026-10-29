@@ -1,1 +1,0 @@
-iOS Keyboard Limits: Microphone DISALLOWED. Opening other apps BLOCKED. Memory limit 30-60MB (silent crash if exceeded). Persistence only via App Groups. Network requires 'Full Access' enabled by user.

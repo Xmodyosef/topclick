@@ -1,4 +1,0 @@
-interface:
-  display_name: "Swift AI Upstream"
-  short_description: "Port Vercel AI SDK upstream changes into Swift"
-  default_prompt: "Use $swift-ai-sdk-upstream to compare a package with upstream at the target commit and port the differences with boundary tests."

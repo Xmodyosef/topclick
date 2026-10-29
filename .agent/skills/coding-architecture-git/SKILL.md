@@ -17,3 +17,28 @@ description: Use when implementing code, refactoring architecture, reviewing cod
 ## المراجع المدمجة
 
 المراجع المنقولة تحت `references/source/` محفوظة من المهارات الأصلية، لكنها ليست مهارات مستقلة قابلة للاكتشاف. استخدمها كمعرفة داعمة للحزمة.
+
+## Integrated bundle map
+
+- [`bundle-01.md`](references/bundle-01.md)
+- [`bundle-02.md`](references/bundle-02.md)
+- [`bundle-03.md`](references/bundle-03.md)
+- [`bundle-04.md`](references/bundle-04.md)
+- [`bundle-05.md`](references/bundle-05.md)
+- [`bundle-06.md`](references/bundle-06.md)
+- [`bundle-07.md`](references/bundle-07.md)
+- [`bundle-08.md`](references/bundle-08.md)
+- [`bundle-09.md`](references/bundle-09.md)
+- [`bundle-10.md`](references/bundle-10.md)
+- [`bundle-11.md`](references/bundle-11.md)
+- [`bundle-12.md`](references/bundle-12.md)
+- [`bundle-13.md`](references/bundle-13.md)
+- [`bundle-14.md`](references/bundle-14.md)
+- [`bundle-15.md`](references/bundle-15.md)
+- [`bundle-16.md`](references/bundle-16.md)
+- [`bundle-17.md`](references/bundle-17.md)
+- [`bundle-18.md`](references/bundle-18.md)
+- [`bundle-19.md`](references/bundle-19.md)
+- [`bundle-20.md`](references/bundle-20.md)
+
+الموارد التنفيذية والقوالب والأصول محفوظة في `resources.tar.gz` داخل الحزمة.

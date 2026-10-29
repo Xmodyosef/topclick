@@ -1,48 +1,25 @@
 # Skills Index
 
-نظام الحزم الموحدة لمشروع نقرة. تم دمج المهارات المتقاربة في 8 حزم رئيسية، مع حفظ المحتوى الأصلي كمراجع داخلية.
+تم ضغط نظام المهارات إلى **8 حزم رئيسية** و**50 ملفًا مرجعيًا مدمجًا**. كل ملف مرجعي يجمع مجموعة متقاربة من المهارات الأصلية بدل إبقائها كملفات منفصلة.
 
-**Active skill packs: 8**
+- **Active skill files:** 8
+- **Integrated bundle files:** 50
+- **Resource archives:** 8
+- **Visible files inside `.agent/skills/`:** 66
 
-> اقرأ الحزمة المناسبة فقط، ثم حمّل المراجع المطلوبة من داخلها عند الحاجة.
+> اقرأ `SKILL.md` للحزمة، ثم افتح `bundle-XX.md` المناسب فقط. الموارد التنفيذية والقوالب محفوظة في `resources.tar.gz` ولا تحتاج فكها إلا عند الحاجة.
 
-## 1. iOS & Swift Platform
-- [`ios-swift-platform/SKILL.md`](ios-swift-platform/SKILL.md)
-- **المراجع المحفوظة:** 792 ملفات مهارات ومواردها الأصلية
-- **متى تستخدمها:** Use when building or reviewing Swift, SwiftUI, UIKit, Xcode, Apple-platform, concurrency, performance, memory, or platform API work.
+## الحزم
 
-## 2. Keyboard Extensions
-- [`keyboard-extension/SKILL.md`](keyboard-extension/SKILL.md)
-- **المراجع المحفوظة:** 5 ملفات مهارات ومواردها الأصلية
-- **متى تستخدمها:** Use when working on custom iOS keyboards, Arabic/English layouts, key interactions, long-press alternatives, emoji, sound, haptics, App Groups, or keyboard-extension limits.
+1. [`ios-swift-platform`](.agent/skills/ios-swift-platform/SKILL.md) — Swift وSwiftUI وUIKit ومنصات Apple.
+2. [`keyboard-extension`](.agent/skills/keyboard-extension/SKILL.md) — لوحة المفاتيح والإيموجي والصوت وApp Groups.
+3. [`security-auditing`](.agent/skills/security-auditing/SKILL.md) — الأمان والخصوصية والتدقيق.
+4. [`design-ux-accessibility`](.agent/skills/design-ux-accessibility/SKILL.md) — التصميم وUX وAccessibility.
+5. [`research-memory`](.agent/skills/research-memory/SKILL.md) — البحث والذاكرة والتوثيق.
+6. [`coding-architecture-git`](.agent/skills/coding-architecture-git/SKILL.md) — البرمجة والهندسة وGit.
+7. [`testing-debugging-ci`](.agent/skills/testing-debugging-ci/SKILL.md) — الاختبار والتشخيص وCI.
+8. [`product-release-growth`](.agent/skills/product-release-growth/SKILL.md) — المنتج والنشر والنمو.
 
-## 3. Security & Auditing
-- [`security-auditing/SKILL.md`](security-auditing/SKILL.md)
-- **المراجع المحفوظة:** 66 ملفات مهارات ومواردها الأصلية
-- **متى تستخدمها:** Use when reviewing security, privacy, permissions, secrets, compliance, threat models, or audit findings.
+## سياسة الدمج
 
-## 4. Design & UX Accessibility
-- [`design-ux-accessibility/SKILL.md`](design-ux-accessibility/SKILL.md)
-- **المراجع المحفوظة:** 153 ملفات مهارات ومواردها الأصلية
-- **متى تستخدمها:** Use when designing or reviewing UI, UX, accessibility, typography, animation, color, Liquid Glass, or interaction patterns.
-
-## 5. Research & Memory
-- [`research-memory/SKILL.md`](research-memory/SKILL.md)
-- **المراجع المحفوظة:** 37 ملفات مهارات ومواردها الأصلية
-- **متى تستخدمها:** Use when researching, searching, citing, retrieving, storing, or maintaining long-term project knowledge and AI memory.
-
-## 6. Coding Architecture & Git
-- [`coding-architecture-git/SKILL.md`](coding-architecture-git/SKILL.md)
-- **المراجع المحفوظة:** 1087 ملفات مهارات ومواردها الأصلية
-- **متى تستخدمها:** Use when implementing code, refactoring architecture, reviewing code, using Git, designing APIs, or applying general engineering patterns.
-
-## 7. Testing Debugging & CI
-- [`testing-debugging-ci/SKILL.md`](testing-debugging-ci/SKILL.md)
-- **المراجع المحفوظة:** 249 ملفات مهارات ومواردها الأصلية
-- **متى تستخدمها:** Use when diagnosing bugs, writing tests, debugging failures, profiling, validating builds, or configuring CI/CD.
-
-## 8. Product Release & Growth
-- [`product-release-growth/SKILL.md`](product-release-growth/SKILL.md)
-- **المراجع المحفوظة:** 257 ملفات مهارات ومواردها الأصلية
-- **متى تستخدمها:** Use when planning products, releases, App Store delivery, monetization, analytics, marketing, onboarding, or user growth.
-
+المحتوى النصي محفوظ داخل الحزم `bundle-XX.md`، والموارد غير النصية أو القابلة للتنفيذ محفوظة داخل أرشيف الحزمة. لا تُنشئ ملف مهارة جديدًا لموضوع فرعي يمكن إضافته إلى الحزمة أو إلى أحد ملفاتها المدمجة.
