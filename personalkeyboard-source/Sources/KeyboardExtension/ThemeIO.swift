@@ -14,21 +14,21 @@ enum ThemeIO {
         )
     }
 
-    /// Dual-write: UserDefaults.standard first (in-app storage), then App Group if available (#2).
-    /// Sideload builds often lack App Group — standard keeps themes/sounds inside the app.
+    /// Dual-write: App Group suite first (shared with container), then standard as fallback for sideload.
+    /// Connectors review (Exa/Firecrawl/Context7 2026-10-29): prefer suite for extension↔app sync.
     static func set(_ key: String, value: Any) {
-        UserDefaults.standard.set(value, forKey: key)
         suite.set(value, forKey: key)
+        UserDefaults.standard.set(value, forKey: key)
     }
 
     static func string(_ key: String) -> String? {
-        // Prefer standard (app-local) then group — themes live in-app when group is missing.
-        UserDefaults.standard.string(forKey: key) ?? suite.string(forKey: key)
+        // Prefer App Group suite so keyboard extension sees container writes immediately.
+        suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
     }
 
     static func bool(_ key: String) -> Bool? {
-        if UserDefaults.standard.object(forKey: key) != nil { return UserDefaults.standard.bool(forKey: key) }
         if suite.object(forKey: key) != nil { return suite.bool(forKey: key) }
+        if UserDefaults.standard.object(forKey: key) != nil { return UserDefaults.standard.bool(forKey: key) }
         return nil
     }
 }

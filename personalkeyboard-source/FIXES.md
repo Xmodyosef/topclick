@@ -75,3 +75,25 @@
 - TranslationPrepCard في Settings
 - README/CHANGELOG محدّثان
 - إصدار موحّد 0.2.8 / 28
+
+
+## 2026-10-29 — agent/fix-hold-l-prefs-connectors (مراجعة الموصلين)
+
+### P0 — hold_map حرف ل
+- كان: `"ل": ["ڵ","ّ"]` فقط
+- صار: `"ل": ["لا","لأ","لإ","لآ","ڵ","ّ"]`
+- الملف: `Sources/KeyboardExtension/Resources/keyboard_layouts.json`
+
+### P0 — مزامنة App Group (suite أولاً)
+- ThemeIO / ThemeStore / PackStores: القراءة والكتابة تفضّل `UserDefaults(suiteName:)` قبل `standard`
+- يمنع stale themes/sounds بين التطبيق والامتداد
+- مرجع: Exa + Firecrawl + Context7 (Swift Sharing / App Group best practices)
+
+### إضافات اختيارية (موثّقة، جاهزة للتفعيل)
+1. **SharedKeyboardData.swift** — ملف مفاتيح مشترك + holdDelay قابل للتعديل
+2. **Wispr-style deep link** — زر مايك يفتح التطبيق ويرجع النص عبر App Group (لاحقاً)
+3. **Keychain Access Group** — لأي أسرار (ليس للإعدادات العادية)
+
+### Hold UX ملاحظة (PowerToys Quick Accent 2026)
+- نمط insert-on-down ثم delete+replace عند الـ popup مقبول ومعتمد
+- delay الحالي 0.32s؛ يمكن ربطه بـ SharedKeyboardData.holdDelaySeconds لاحقاً

@@ -132,9 +132,10 @@ enum ThemeStore {
     static var suite: UserDefaults { UserDefaults(suiteName: suiteName) ?? .standard }
 
     static func write(_ key: String, value: Any) {
-        // App-local first, then App Group (#2 themes/sounds inside app for sideload).
-        UserDefaults.standard.set(value, forKey: key)
+        // App Group suite first (extension sync), then standard fallback for sideload.
+        // Connectors review 2026-10-29: suite-first matches ThemeIO and PowerToys/Wispr patterns.
         suite.set(value, forKey: key)
+        UserDefaults.standard.set(value, forKey: key)
         CFNotificationCenterPostNotification(
             CFNotificationCenterGetDarwinNotifyCenter(),
             CFNotificationName(notificationName as CFString),
@@ -143,7 +144,7 @@ enum ThemeStore {
     }
 
     static func string(_ key: String) -> String? {
-        return UserDefaults.standard.string(forKey: key) ?? suite.string(forKey: key)
+        return suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
     }
 
     static var themeID: String {
@@ -159,14 +160,14 @@ enum ThemeStore {
     }
 
     static func bool(_ key: String) -> Bool? {
-        if UserDefaults.standard.object(forKey: key) != nil { return UserDefaults.standard.bool(forKey: key) }
         if suite.object(forKey: key) != nil { return suite.bool(forKey: key) }
+        if UserDefaults.standard.object(forKey: key) != nil { return UserDefaults.standard.bool(forKey: key) }
         return nil
     }
 
     static func int(_ key: String) -> Int? {
-        if UserDefaults.standard.object(forKey: key) != nil { return UserDefaults.standard.integer(forKey: key) }
         if suite.object(forKey: key) != nil { return suite.integer(forKey: key) }
+        if UserDefaults.standard.object(forKey: key) != nil { return UserDefaults.standard.integer(forKey: key) }
         return nil
     }
 
