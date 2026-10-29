@@ -1,3 +1,10 @@
+## 0.2.8.1 — 2026-10-29
+- إصدار صيانة فوق 0.2.8 مع إصلاحات #62/#63
+- Hold حرف **ل**: لا / لأ / لإ / لآ / ڵ / ّ
+- مزامنة App Group suite-first (ThemeIO + ThemeStore + PackStores)
+- SharedKeyboardData + hold delay قابل للتعديل
+- build 30
+
 ## 0.2.9 — 2026-10-29
 - Hold حرف **ل**: لا / لأ / لإ / لآ / ڵ / ّ
 - مزامنة App Group: suite أولاً ثم standard (ThemeIO + ThemeStore + PackStores)
