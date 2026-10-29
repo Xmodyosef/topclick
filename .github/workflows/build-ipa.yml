@@ -44,7 +44,7 @@ jobs:
       - name: Verify built app bundle
         working-directory: personalkeyboard-source
         run: |
-          APP=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -type d -name 'PersonalKeyboard.app' -print -quit)
+          APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
           test -n "$APP"
           python3 ../.github/scripts/validate_built_app.py "$APP"
 
