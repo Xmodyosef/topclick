@@ -51,6 +51,21 @@ def main() -> None:
         extension_info = plistlib.load(handle)
     require(extension_info.get("CFBundleIdentifier") == EXTENSION_BUNDLE, "built keyboard extension bundle ID unchanged")
     require(extension_info.get("CFBundlePackageType") == "XPC!", "embedded target is an app extension")
+
+    # Keyboard data JSON must ship inside the appex — missing files force tiny emoji fallbacks.
+    required_json = ("emoji_catalog.json", "keyboard_layouts.json", "arabic_lexicon.json")
+    for name in required_json:
+        hits = list(extension.rglob(name))
+        require(bool(hits), f"keyboard extension embeds {name}")
+        if name == "emoji_catalog.json" and hits:
+            import json
+            try:
+                data = json.loads(hits[0].read_text(encoding="utf-8"))
+                n = sum(len(c.get("items", [])) for c in data) if isinstance(data, list) else 0
+                require(n >= 500, f"emoji_catalog.json has enough items (got {n})")
+            except Exception as exc:
+                raise AssertionError(f"emoji_catalog.json unreadable: {exc}") from exc
+
     print("Built app bundle verification passed.")
 
 

@@ -49,8 +49,12 @@ targets:
           - "Info.plist"
           - "Resources"
       - path: Sources/SharedKeyboardData.swift
+    # Explicit JSON files so XcodeGen copies them into KeyboardExtension.appex
+    # (folder resource alone was missing from the built unsigned IPA).
     resources:
-      - path: Sources/KeyboardExtension/Resources
+      - path: Sources/KeyboardExtension/Resources/emoji_catalog.json
+      - path: Sources/KeyboardExtension/Resources/keyboard_layouts.json
+      - path: Sources/KeyboardExtension/Resources/arabic_lexicon.json
     settings:
       base:
         PRODUCT_NAME: KeyboardExtension
