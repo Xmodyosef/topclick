@@ -104,9 +104,11 @@ extension KeyboardViewController {
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         // iOS-like dense grid (8–9 columns); never leave sparse holes.
-        let width = max(collectionView.bounds.width, collectionView.superview?.bounds.width ?? 0, UIScreen.main.bounds.width - 16)
-        let cols: CGFloat = width >= 390 ? 9 : 8
-        let side = max(floor(width / cols), 32)
+        // Use the collection view's real width, not the full screen width. Using
+        // UIScreen.main.bounds here made cells wider than the keyboard on compact layouts.
+        let width = max(collectionView.bounds.width - collectionView.adjustedContentInset.left - collectionView.adjustedContentInset.right, 1)
+        let columns = max(1, Int(floor(width / 42)))
+        let side = floor(width / CGFloat(columns))
         return CGSize(width: side, height: side)
     }
 
@@ -132,6 +134,18 @@ extension KeyboardViewController {
         }
         rebuild()
         tapHaptic()
+    }
+
+    /// Update category selection without rebuilding the collection view.
+    func refreshTabs() {
+        guard let emojiTabs else { return }
+        for (index, view) in emojiTabs.arrangedSubviews.enumerated() {
+            guard let button = view as? UIButton else { continue }
+            button.backgroundColor = index == emojiCategoryIndex
+                ? palette.accent.withAlphaComponent(0.55)
+                : palette.key.withAlphaComponent(0.55)
+            button.accessibilityTraits = index == emojiCategoryIndex ? [.button, .selected] : [.button]
+        }
     }
 
     func rememberEmoji(_ item: String) {

@@ -26,7 +26,7 @@ extension KeyboardViewController {
         }
     }
 
-    /// Unified board height: letters / symbols / emoji all pin to `boardHeight` (324).
+    /// Unified board height: letters, symbols, and emoji share the same compact board (268).
     /// Content is top-stacked; empty space (if any) stays at the bottom — no flex ghost layers.
     func computedBoardHeight() -> CGFloat {
         boardHeight
@@ -34,47 +34,23 @@ extension KeyboardViewController {
 
     /// How many symbol rows to show (1…4). Default 4 so the symbols page fills like letters.
     func symbolRowsCount() -> Int {
-        // Always 4 rows so symbols fill the 324 board like the letters page (iOS-style).
+        // Four symbol rows fit the compact board without adding filler keys.
         return 4
     }
 
-    /// Prefer: up to 3 symbol rows + faces row (emoji smileys) as last — #11 without overflow.
+    /// Preserve every valid symbol row in the supplied layout. Do not silently drop rows
+    /// just because a key contains an emoji-like Unicode scalar or a combining mark.
     func packedSymbolRows(from allRows: [[String]]) -> [[String]] {
-        // #11: up to 3 solid symbol rows + faces row last (fills space under symbols).
-        // Drop pure-diacritic rows (Mn) that render as blank keys. Tanween via hold_map.
-        let nonEmpty = allRows.filter { !$0.isEmpty }
-        guard !nonEmpty.isEmpty else { return [] }
-        let facesLike: ([String]) -> Bool = { row in
-            // Broad emoji detect (smileys + hands etc.), not only 1F600–1F64F.
-            row.contains(where: { key in
-                key.unicodeScalars.contains { s in
-                    let v = s.value
-                    return (v >= 0x1F300 && v <= 0x1FAFF) || (v >= 0x2600 && v <= 0x27BF)
-                }
-            })
+        let validRows = allRows.filter { row in
+            !row.isEmpty && row.allSatisfy { !$0.isEmpty }
         }
-        let solid = nonEmpty.filter { row in
-            guard !facesLike(row) else { return false }
-            return row.contains(where: { key in
-                guard let s = key.unicodeScalars.first else { return false }
-                return s.properties.generalCategory != .nonspacingMark
-            })
-        }
-        var out = Array(solid.prefix(3))
-        if let faces = nonEmpty.last(where: { facesLike($0) }) {
-            out.append(faces)
-        }
-        // Fallback: if no faces in data, keep up to 4 solid rows.
-        if out.count == solid.prefix(3).count && nonEmpty.filter(facesLike).isEmpty {
-            out = Array(solid.prefix(symbolRowsCount()))
-        }
-        return out
+        return Array(validRows.prefix(symbolRowsCount()))
     }
 
-    /// Emoji grid height inside the fixed 324 board (tabs + bottom + pads reserved).
+    /// Emoji grid height inside the fixed 268 board (tabs + bottom + pads reserved).
     func emojiPagerHeight() -> CGFloat {
-        // 324 − topPad12 − tabs32 − sp6 − sp6 − bottom44 ≈ 224
-        return max(210, boardHeight - 100)
+        // Board 268 − topPad12 − tabs32 − two gaps12 − bottom44 = 168.
+        return max(120, boardHeight - 100)
     }
     func armHaptics() {
         guard hapticsOn else { return }
@@ -198,8 +174,7 @@ extension KeyboardViewController {
                 rows = language == .arabic ? KeyboardDataLoader.builtinArabicSymbols[0] : KeyboardDataLoader.builtinEnglishSymbols[0]
             }
             for (i, row) in rows.enumerated() {
-                if i == rows.count - 1 { rootStack.addArrangedSubview(makeSymbolLastRow(row)) }
-                else { rootStack.addArrangedSubview(makeRow(row, rowIdx: i + 1)) }
+                rootStack.addArrangedSubview(makeRow(row, rowIdx: i + 1))
             }
             rootStack.addArrangedSubview(makeBottom())
         case .emoji:
@@ -321,7 +296,7 @@ extension KeyboardViewController {
         s.axis = .horizontal
         s.spacing = 4
         s.distribution = .fillEqually
-        s.heightAnchor.constraint(equalToConstant: 46).isActive = true
+        let rowHeight: CGFloat = page == .symbols ? 46 : 37
         s.distribution = .fillEqually
         s.semanticContentAttribute = .forceLeftToRight
         // Symbols: keep exactly the designed keys (10×4) — no filler clutter when layout is complete.
@@ -336,7 +311,7 @@ extension KeyboardViewController {
             if trackAsLetters { rowButtons.append(button) }
         }
         if trackAsLetters { letterKeyButtons.append(rowButtons) }
-        lockHeight(s, 46)
+        lockHeight(s, rowHeight)
         return s
     }
     func addFlexSpace() {
@@ -348,8 +323,8 @@ extension KeyboardViewController {
         makeActionRow(keys, leading: language == .arabic ? .none : .shift)
     }
     func makeSymbolLastRow(_ keys: [String]) -> UIView {
-        // Back-to-letters stays on the bottom bar, so these keys keep a full width.
-        makeActionRow(keys, leading: .none)
+        // Keep symbol rows uniform; the delete action lives in the bottom action row.
+        makeRow(keys, rowIdx: 4)
     }
     func makeActionRow(_ keys: [String], leading: RowLeading) -> UIView {
         let wrap = UIStackView()
@@ -394,16 +369,16 @@ extension KeyboardViewController {
         }
         wrap.addArrangedSubview(mid)
         wrap.addArrangedSubview(makeDeleteKey())
-        lockHeight(wrap, 44)
+        lockHeight(wrap, page == .symbols ? 46 : 37)
         return wrap
     }
-    func makeDeleteKey() -> UIButton {
+    func makeDeleteKey(width: CGFloat = 54) -> UIButton {
         let del = iconKey("delete.left", #selector(deleteTouchUp))
         del.addTarget(self, action: #selector(deleteTouchDown), for: .touchDown)
         del.addTarget(self, action: #selector(deleteTouchCancel), for: [.touchUpOutside, .touchCancel])
         del.addTarget(self, action: #selector(deleteDrag(_:event:)), for: .touchDragInside)
         del.addTarget(self, action: #selector(deleteDrag(_:event:)), for: .touchDragOutside)
-        del.widthAnchor.constraint(equalToConstant: 54).isActive = true
+        del.widthAnchor.constraint(equalToConstant: width).isActive = true
         return del
     }
     func makeBottom(emojiOn: Bool = false) -> UIView {
@@ -455,7 +430,7 @@ extension KeyboardViewController {
         space.addTarget(self, action: #selector(spaceDrag(_:event:)), for: .touchDragOutside)
         space.setContentHuggingPriority(.defaultLow, for: .horizontal)
         space.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        let minimumSpace = space.widthAnchor.constraint(greaterThanOrEqualToConstant: 74)
+        let minimumSpace = space.widthAnchor.constraint(greaterThanOrEqualToConstant: page == .symbols ? 58 : 74)
         minimumSpace.priority = UILayoutPriority(999)
         minimumSpace.isActive = true
         space.accessibilityLabel = "مسافة"
@@ -470,6 +445,9 @@ extension KeyboardViewController {
         if emojiOn {
             row.addArrangedSubview(makeDeleteKey())
         } else {
+            if page == .symbols {
+                row.addArrangedSubview(makeDeleteKey(width: 34))
+            }
             let period = control(".", #selector(periodTapped), font: 18, chrome: .period)
             period.widthAnchor.constraint(equalToConstant: 32).isActive = true
             row.addArrangedSubview(period)

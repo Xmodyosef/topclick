@@ -70,7 +70,7 @@ def main() -> None:
 
     require('func makeBottom' in extension, 'makeBottom present')
     require('greaterThanOrEqualToConstant: 74' in extension or '>= 74' in extension or '74' in extension, 'bottom-row space sizing present')
-    require('boardHeight' in extension and '324' in extension, 'keyboard height constant present')
+    require('boardHeight' in extension and '268' in extension, 'keyboard height constant present')
     loader = (ext_dir / 'KeyboardDataLoader.swift').read_text(encoding='utf-8')
     controller = (ext_dir / 'KeyboardViewController.swift').read_text(encoding='utf-8')
     require('arabicShiftRows' in extension and ('isShifted ? arabicShiftRows : arabicRows' in extension or 'activeLetterLayout' in extension), 'Arabic Shift layer used')
@@ -174,7 +174,7 @@ def main() -> None:
 
     require('shiftTapped' in extension and 'applyShiftSurface()' in extension, 'shiftTapped uses applyShiftSurface')
     require('emojiPagerHeight()' in extension and 'symbolRowsCount()' in extension, 'unified height helpers present')
-    require('boardHeight' in extension and 'func computedBoardHeight()' in extension, 'all pages use boardHeight 324')
+    require('boardHeight' in extension and 'func computedBoardHeight()' in extension, 'all pages use boardHeight 268')
     require('padRowKeys' in extension, 'symbol row gap fillers')
     require('constant: 12' in extension, 'board slightly lowered top inset')
     require('holdMap[lower]' in extension or 'lowercased()' in extension, 'shift-aware long-press')
