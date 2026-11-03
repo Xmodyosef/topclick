@@ -14,8 +14,8 @@ struct ThemesTab: View {
     @State private var specialColor = SpecialKeyColorStore.loadColor()
     @State private var themeTask: Task<Void, Never>?
     @State private var soundTask: Task<Void, Never>?
-    @State private var themeRequestID = UUID()
-    @State private var soundRequestID = UUID()
+    @State private var themeGate = LatestSelectionGate()
+    @State private var soundGate = LatestSelectionGate()
 
     var body: some View {
         NavigationStack {
@@ -107,6 +107,7 @@ struct ThemesTab: View {
                 soundTask = nil
                 loadingThemeIDs.removeAll()
                 loadingSoundIDs.removeAll()
+                Task { await themeGate.cancel(); await soundGate.cancel() }
             }
             .onAppear {
                 themeID = ThemeStore.themeID
@@ -182,13 +183,15 @@ struct ThemesTab: View {
     private func startThemeLoad(_ theme: ThemeSwatch) {
         themeTask?.cancel()
         loadingThemeIDs.removeAll()
-        let requestID = UUID()
-        themeRequestID = requestID
-        themeTask = Task { await onThemeTap(theme, requestID: requestID) }
+        themeTask = Task {
+            guard !Task.isCancelled else { return }
+            let requestID = await themeGate.begin()
+            await onThemeTap(theme, requestID: requestID)
+        }
     }
 
     private func onThemeTap(_ theme: ThemeSwatch, requestID: UUID) async {
-        guard !Task.isCancelled, requestID == themeRequestID else { return }
+        guard !Task.isCancelled, await themeGate.isCurrent(requestID) else { return }
         if ThemePackStore.isInstalled(theme.id) {
             if ThemePackStore.apply(theme.id) { themeID = theme.id }
             return
@@ -197,10 +200,10 @@ struct ThemesTab: View {
         loadingThemeIDs.insert(theme.id)
         // The packs are bundled locally; yield once for cancellation without faking a download delay.
         await Task.yield()
-        guard !Task.isCancelled, requestID == themeRequestID else { return }
+        guard !Task.isCancelled, await themeGate.isCurrent(requestID) else { return }
 
         ThemePackStore.markInstalled(theme.id)
-        guard !Task.isCancelled, requestID == themeRequestID else { return }
+        guard !Task.isCancelled, await themeGate.isCurrent(requestID) else { return }
         loadingThemeIDs.remove(theme.id)
         installedThemesTick += 1
         if ThemePackStore.apply(theme.id) { themeID = theme.id }
@@ -255,13 +258,15 @@ struct ThemesTab: View {
     private func startSoundLoad(_ pack: SoundPackStore.Pack) {
         soundTask?.cancel()
         loadingSoundIDs.removeAll()
-        let requestID = UUID()
-        soundRequestID = requestID
-        soundTask = Task { await onSoundTap(pack, requestID: requestID) }
+        soundTask = Task {
+            guard !Task.isCancelled else { return }
+            let requestID = await soundGate.begin()
+            await onSoundTap(pack, requestID: requestID)
+        }
     }
 
     private func onSoundTap(_ pack: SoundPackStore.Pack, requestID: UUID) async {
-        guard !Task.isCancelled, requestID == soundRequestID else { return }
+        guard !Task.isCancelled, await soundGate.isCurrent(requestID) else { return }
         if SoundPackStore.isInstalled(pack.id) {
             if SoundPackStore.apply(pack.id) {
                 soundChoice = pack.id
@@ -272,10 +277,10 @@ struct ThemesTab: View {
 
         loadingSoundIDs.insert(pack.id)
         await Task.yield()
-        guard !Task.isCancelled, requestID == soundRequestID else { return }
+        guard !Task.isCancelled, await soundGate.isCurrent(requestID) else { return }
 
         SoundPackStore.markInstalled(pack.id)
-        guard !Task.isCancelled, requestID == soundRequestID else { return }
+        guard !Task.isCancelled, await soundGate.isCurrent(requestID) else { return }
         loadingSoundIDs.remove(pack.id)
         installedSoundsTick += 1
         if SoundPackStore.apply(pack.id) {
