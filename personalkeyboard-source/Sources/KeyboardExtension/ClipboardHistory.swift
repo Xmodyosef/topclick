@@ -41,6 +41,9 @@ final class ClipboardHistory {
         if list.count > ClipboardHistoryCodec.maximumItems {
             list = Array(list.prefix(ClipboardHistoryCodec.maximumItems))
         }
+        while list.reduce(0, { $0 + $1.count }) > ClipboardHistoryCodec.maximumTotalCharacters {
+            list.removeLast()
+        }
         save(list)
     }
 
@@ -80,7 +83,10 @@ final class ClipboardHistory {
     }
 
     private func deleteExpiredBackupIfSafe() {
-        guard let deleteAfter = ThemeIO.suite.object(forKey: backupDeleteAfterKey) as? Double,
+        let hasBackup = ThemeIO.suite.object(forKey: backupKey) != nil
+            || UserDefaults.standard.object(forKey: backupKey) != nil
+        guard hasBackup,
+              let deleteAfter = ThemeIO.suite.object(forKey: backupDeleteAfterKey) as? Double,
               Date().timeIntervalSince1970 >= deleteAfter,
               let raw = ThemeIO.string(key),
               ClipboardHistoryCodec.decode(raw) != nil else {
@@ -89,9 +95,8 @@ final class ClipboardHistory {
 
         ThemeIO.suite.removeObject(forKey: backupKey)
         UserDefaults.standard.removeObject(forKey: backupKey)
-        ThemeIO.suite.removeObject(forKey: migrationSucceededAtKey)
-        UserDefaults.standard.removeObject(forKey: migrationSucceededAtKey)
-        ThemeIO.suite.removeObject(forKey: backupDeleteAfterKey)
-        UserDefaults.standard.removeObject(forKey: backupDeleteAfterKey)
+        // Keep migration metadata as an audit trail and record the backup deletion time.
+        let deletedAt = Date().timeIntervalSince1970
+        ThemeIO.set("clipboardHistory.backupDeletedAt", value: deletedAt)
     }
 }
