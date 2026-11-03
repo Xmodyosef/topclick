@@ -81,4 +81,6 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: Fresh-Unsigned-IPA
-          path: personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa\n          path: personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa.sha256
+          path: |
+            personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa
+            personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa.sha256
