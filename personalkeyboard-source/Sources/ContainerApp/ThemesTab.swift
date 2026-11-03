@@ -107,7 +107,6 @@ struct ThemesTab: View {
                 soundTask = nil
                 loadingThemeIDs.removeAll()
                 loadingSoundIDs.removeAll()
-                Task { await themeGate.cancel(); await soundGate.cancel() }
             }
             .onAppear {
                 themeID = ThemeStore.themeID
@@ -185,7 +184,7 @@ struct ThemesTab: View {
         loadingThemeIDs.removeAll()
         themeTask = Task {
             guard !Task.isCancelled else { return }
-            let requestID = await themeGate.begin()
+            guard let requestID = await themeGate.begin() else { return }
             await onThemeTap(theme, requestID: requestID)
         }
     }
@@ -260,7 +259,7 @@ struct ThemesTab: View {
         loadingSoundIDs.removeAll()
         soundTask = Task {
             guard !Task.isCancelled else { return }
-            let requestID = await soundGate.begin()
+            guard let requestID = await soundGate.begin() else { return }
             await onSoundTap(pack, requestID: requestID)
         }
     }
