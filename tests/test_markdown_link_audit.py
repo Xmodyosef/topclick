@@ -44,3 +44,12 @@ def test_local_links_classify_missing_moved_and_bad_anchor(tmp_path: Path) -> No
 def test_fragment_only_link_checks_current_file(tmp_path: Path) -> None:
     (tmp_path / "page.md").write_text("# Local\n[here](#local)\n", encoding="utf-8")
     assert MODULE.audit(tmp_path, check_external=False) == []
+
+
+def test_flattened_bundle_context_is_reported_without_false_missing(tmp_path: Path) -> None:
+    refs = tmp_path / "skills" / "sample" / "references"
+    refs.mkdir(parents=True)
+    (refs / "bundle-01.md").write_text("[upstream](references/original.md)\n", encoding="utf-8")
+    results = MODULE.audit(tmp_path, check_external=False)
+    assert len(results) == 1
+    assert results[0]["status"] == "unresolved-bundle-reference"
