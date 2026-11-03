@@ -21,6 +21,8 @@ xcodebuild -project PersonalKeyboard.xcodeproj -scheme PersonalKeyboard \
 
 التوقيع غير مضمّن في هذا المستودع؛ يجب توقيع IPA الناتج بأداة sideloading مناسبة قبل تثبيته على الجهاز.
 
+يفحص GitHub Actions موارد الامتداد قبل بناء IPA؛ لا يُستخدم Workflow مستقل لنقل ملفات JSON إلى مسار مختلف.
+
 ## الإصدار الحالي
 
 - **v0.2.8.1** — [Release](https://github.com/Xmodyosef/topclick/releases/tag/v0.2.8.1)
