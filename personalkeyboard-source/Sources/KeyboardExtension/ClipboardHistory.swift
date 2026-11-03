@@ -21,8 +21,8 @@ final class ClipboardHistory {
             deleteExpiredBackupIfSafe()
             return
         }
-        ThemeIO.set("clipboardHistoryEnabled", value: false)
-        ThemeIO.set(key, value: "")
+        // Disable capture by default, but preserve pre-existing bytes untouched.
+        // Migration runs only after the user explicitly enables clipboard history.
     }
 
     func clear() {
