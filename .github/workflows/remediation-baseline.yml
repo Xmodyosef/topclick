@@ -1,0 +1,26 @@
+name: Remediation Baseline
+
+on:
+  push:
+    branches: [feature/remediation]
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout remediation branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - name: Generate immutable baseline and archive inventory
+        run: python3 .github/scripts/create_remediation_baseline.py
+      - name: Upload baseline evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: remediation-baseline-8cec58ffc14f62acb24633edc7e3cce1031cdd1f
+          path: remediation-baseline/
+          if-no-files-found: error
+          retention-days: 90
