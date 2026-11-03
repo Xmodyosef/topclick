@@ -1,6 +1,6 @@
 ---
 name: testing-debugging-ci
-description: Use when diagnosing bugs, writing tests, debugging failures, profiling, validating builds, or configuring CI/CD.
+description: Use when diagnosing bugs, writing tests, debugging failures, profiling, validating builds, configuring CI/CD, or generating RTL/LTR regression suites.
 ---
 
 # Testing Debugging & CI
