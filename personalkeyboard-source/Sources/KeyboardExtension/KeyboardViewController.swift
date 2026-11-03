@@ -44,6 +44,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     /// Letter-key buttons on the letters page (for in-place shift without rebuild).
     var letterKeyButtons: [[UIButton]] = []
     weak var shiftKeyButton: UIButton?
+    var displayedNeedsInputModeSwitchKey: Bool?
 
     var letterFont: UIFont {
         // One compact, predictable font keeps Arabic and English aligned.
@@ -77,6 +78,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        displayedNeedsInputModeSwitchKey = needsInputModeSwitchKey
         emojiPack = Self.catalog()
         view.backgroundColor = .clear
         configureRoot()
@@ -98,6 +100,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         view.clipsToBounds = false
+        syncInputModeSwitchKey()
         updateHeightForCurrentSize()
         // Always re-read App Group theme — Darwin notify can be missed while extension was suspended.
         let sig = themeSignature
@@ -123,7 +126,15 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
+        syncInputModeSwitchKey()
         refreshSuggestions()
+    }
+
+    func syncInputModeSwitchKey() {
+        let required = needsInputModeSwitchKey
+        guard displayedNeedsInputModeSwitchKey != required else { return }
+        displayedNeedsInputModeSwitchKey = required
+        rebuild()
     }
 
     override func viewWillDisappear(_ animated: Bool) {

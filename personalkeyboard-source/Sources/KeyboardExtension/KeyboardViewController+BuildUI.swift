@@ -383,6 +383,7 @@ extension KeyboardViewController {
         return del
     }
     func makeBottom(emojiOn: Bool = false) -> UIView {
+        let showsNextKeyboard = needsInputModeSwitchKey
         let row = UIStackView()
         row.axis = .horizontal
         row.spacing = 4
@@ -412,8 +413,18 @@ extension KeyboardViewController {
         let lang = control(langTitle, #selector(languageTapped), font: language == .arabic ? 14 : 16, chrome: .language)
         lang.accessibilityLabel = "تغيير اللغة"
         leading.append(lang)
+        if showsNextKeyboard {
+            let next = UIButton(type: .system)
+            next.setImage(UIImage(systemName: "globe", withConfiguration: iconConfig), for: .normal)
+            paint(next, chrome: .language)
+            next.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
+            next.accessibilityLabel = "تبديل لوحة المفاتيح"
+            next.accessibilityHint = "التبديل إلى لوحة مفاتيح أخرى في النظام"
+            leading.append(next)
+        }
+        let sideKeyWidth: CGFloat = showsNextKeyboard ? 36 : 44
         for button in leading {
-            button.widthAnchor.constraint(equalToConstant: 44).isActive = true
+            button.widthAnchor.constraint(equalToConstant: sideKeyWidth).isActive = true
         }
 
 
@@ -422,7 +433,7 @@ extension KeyboardViewController {
         emoji.titleLabel?.font = .systemFont(ofSize: 19)
         paint(emoji, chrome: .emoji)
         emoji.addTarget(self, action: #selector(emojiTapped), for: .touchUpInside)
-        emoji.widthAnchor.constraint(equalToConstant: 32).isActive = true
+        emoji.widthAnchor.constraint(equalToConstant: showsNextKeyboard ? 30 : 32).isActive = true
         emoji.accessibilityLabel = "لوحة الرموز التعبيرية"
 
         let space = control("", #selector(spaceTouchUp), font: 14)
@@ -431,13 +442,14 @@ extension KeyboardViewController {
         space.addTarget(self, action: #selector(spaceDrag(_:event:)), for: .touchDragOutside)
         space.setContentHuggingPriority(.defaultLow, for: .horizontal)
         space.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        let minimumSpace = space.widthAnchor.constraint(greaterThanOrEqualToConstant: page == .symbols ? 58 : 74)
-        minimumSpace.priority = UILayoutPriority(999)
-        minimumSpace.isActive = true
+        let minimumSpace: CGFloat = page == .symbols ? (showsNextKeyboard ? 44 : 58) : (showsNextKeyboard ? 58 : 74)
+        let minimumSpaceConstraint = space.widthAnchor.constraint(greaterThanOrEqualToConstant: minimumSpace)
+        minimumSpaceConstraint.priority = UILayoutPriority(999)
+        minimumSpaceConstraint.isActive = true
         space.accessibilityLabel = "مسافة"
 
         let enter = iconKey("arrow.down.to.line", #selector(enterTapped))
-        enter.widthAnchor.constraint(equalToConstant: 42).isActive = true
+        enter.widthAnchor.constraint(equalToConstant: showsNextKeyboard ? 38 : 42).isActive = true
         enter.accessibilityLabel = "إدخال سطر جديد"
 
         leading.forEach { row.addArrangedSubview($0) }
@@ -447,10 +459,10 @@ extension KeyboardViewController {
             row.addArrangedSubview(makeDeleteKey())
         } else {
             if page == .symbols {
-                row.addArrangedSubview(makeDeleteKey(width: 34))
+                row.addArrangedSubview(makeDeleteKey(width: showsNextKeyboard ? 30 : 34))
             }
             let period = control(".", #selector(periodTapped), font: 18, chrome: .period)
-            period.widthAnchor.constraint(equalToConstant: 32).isActive = true
+            period.widthAnchor.constraint(equalToConstant: showsNextKeyboard ? 28 : 32).isActive = true
             row.addArrangedSubview(period)
         }
         row.addArrangedSubview(enter)
