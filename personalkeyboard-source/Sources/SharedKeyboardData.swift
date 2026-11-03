@@ -60,7 +60,7 @@ enum ClipboardHistoryCodec {
 
     /// The legacy U+001F format cannot recover a separator already embedded in an item.
     static func decodeLegacy(_ string: String) -> [String] {
-        string.split(separator: "\\u{1F}").map(String.init)
+        string.split(separator: "\u{1F}").map(String.init)
     }
 
     static func looksLikeVersionedJSON(_ string: String) -> Bool {
