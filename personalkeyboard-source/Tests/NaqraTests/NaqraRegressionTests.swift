@@ -25,14 +25,16 @@ final class ClipboardHistoryCodecTests: XCTestCase {
 final class LatestSelectionGateTests: XCTestCase {
     func testLateRequestAIsRejectedAfterRequestBStarts() async throws {
         let gate = LatestSelectionGate()
-        let requestA = await gate.begin()
+        let maybeRequestA = await gate.begin()
+        let requestA = try XCTUnwrap(maybeRequestA)
 
         let lateA = Task {
             try? await Task.sleep(nanoseconds: 80_000_000)
             return await gate.isCurrent(requestA)
         }
 
-        let requestB = await gate.begin()
+        let maybeRequestB = await gate.begin()
+        let requestB = try XCTUnwrap(maybeRequestB)
         let bIsCurrent = await gate.isCurrent(requestB)
         let aIsStillCurrent = await lateA.value
 
