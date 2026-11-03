@@ -128,3 +128,8 @@ Use when changing clipboard history, clipboard persistence, migration, App Group
 ### Report
 
 List storage keys/locations, migration states, size limits, retention semantics, tests and outcomes, and any unrecoverable legacy-data ambiguity.
+
+
+## External review notes
+
+See [Naqra upstream audit notes](naqra-upstream-audit-notes.md) for pinned public references and the practices adapted from them.
