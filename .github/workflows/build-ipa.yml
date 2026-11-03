@@ -34,6 +34,16 @@ jobs:
           brew install xcodegen
           xcodegen --version | grep -F "2.46.0"
 
+      - name: Select Xcode with installed iOS simulator runtime
+        run: |
+          XCODE_APP=$(find /Applications -maxdepth 1 -type d -name 'Xcode_26.0.1.app' -print -quit)
+          test -n "$XCODE_APP"
+          sudo xcode-select --switch "$XCODE_APP/Contents/Developer"
+          echo "DEVELOPER_DIR=$XCODE_APP/Contents/Developer" >> "$GITHUB_ENV"
+          xcodebuild -version | grep -F "26.0.1"
+          xcrun simctl list runtimes | grep -F "iOS 26.0"
+          xcrun simctl list devices available | grep -F "iPhone 16"
+
       - name: Generate Project & Debug
         run: |
           cd personalkeyboard-source
@@ -53,7 +63,7 @@ jobs:
         run: |
           cd personalkeyboard-source
           PROJECT=$(find . -name "*.xcodeproj" -print -quit)
-          xcodebuild test -project "$PROJECT" -scheme "PersonalKeyboard" -destination "platform=iOS Simulator,name=iPhone 16,OS=18.5" -derivedDataPath test-build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+          xcodebuild test -project "$PROJECT" -scheme "PersonalKeyboard" -destination "platform=iOS Simulator,name=iPhone 16,OS=26.0" -derivedDataPath test-build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
 
       - name: Build App
         run: |
