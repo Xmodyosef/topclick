@@ -21,8 +21,10 @@ jobs:
       - name: Remove Agent Folder
         run: rm -rf .agent
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
+      - name: Install pinned XcodeGen
+        run: |
+          brew install xcodegen
+          test "$(xcodegen --version)" = "2.46.0"
 
       - name: Generate Project & Debug
         run: |
@@ -38,6 +40,12 @@ jobs:
           echo "Found Project: $PROJECT"
           echo "--- LISTING SCHEMES ---"
           xcodebuild -list -project "$PROJECT"
+
+      - name: Run XCTest regression suite
+        run: |
+          cd personalkeyboard-source
+          PROJECT=$(find . -name "*.xcodeproj" -print -quit)
+          xcodebuild test -project "$PROJECT" -scheme "PersonalKeyboard" -destination "platform=iOS Simulator,name=iPhone 16,OS=18.5" -derivedDataPath test-build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
 
       - name: Build App
         run: |
