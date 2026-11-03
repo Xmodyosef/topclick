@@ -70,11 +70,18 @@ def main() -> None:
 
     require('func makeBottom' in extension, 'makeBottom present')
     require('greaterThanOrEqualToConstant: 74' in extension or '>= 74' in extension or '74' in extension, 'bottom-row space sizing present')
-    require('boardHeight' in extension and '268' in extension, 'keyboard height constant present')
-    loader = (ext_dir / 'KeyboardDataLoader.swift').read_text(encoding='utf-8')
+    height_match = re.search(r'let boardHeight: CGFloat\s*=\s*([0-9]+(?:\.[0-9]+)?)', extension)
+    require(height_match is not None and 200 <= float(height_match.group(1)) <= 400, 'keyboard height constant is configured')
+    require(
+        'needsInputModeSwitchKey' in extension
+        and 'handleInputModeList(from:with:)' in extension
+        and 'for: .allTouchEvents' in extension
+        and 'تبديل لوحة المفاتيح' in extension,
+        'system next-keyboard button is conditionally wired and labeled'
+    )
     controller = (ext_dir / 'KeyboardViewController.swift').read_text(encoding='utf-8')
-    require('arabicShiftRows' in extension and ('isShifted ? arabicShiftRows : arabicRows' in extension or 'activeLetterLayout' in extension), 'Arabic Shift layer used')
-    require('rows2("arabic_shift_rows")' in loader and 'layouts().arabicShiftRows' in controller, 'Arabic Shift JSON is loaded by the keyboard')
+    active_layout = re.search(r'func activeLetterLayout\(\)\s*->\s*\[\[String\]\]\s*\{(.*?)\n    \}', extension, re.S)
+    require(active_layout is not None and 'return arabicRows' in active_layout.group(1) and 'isShifted ? englishUpper : englishLower' in active_layout.group(1), 'Arabic layout stays fixed while English Shift changes case')
     lifecycle = re.search(r'override func viewWillDisappear\(_ animated: Bool\) \{(.*?)\n    \}', controller, re.S)
     require(lifecycle is not None and all(token in lifecycle.group(1) for token in ['holdTimer?.invalidate()', 'holdTimer = nil', 'hideHoldPopup()', 'pendingInserted = false']), 'viewWillDisappear cleans long-press state')
     require('showNumberRow' in extension and 'showNumberRow' in app, 'number-row setting shared')
@@ -174,7 +181,7 @@ def main() -> None:
 
     require('shiftTapped' in extension and 'applyShiftSurface()' in extension, 'shiftTapped uses applyShiftSurface')
     require('emojiPagerHeight()' in extension and 'symbolRowsCount()' in extension, 'unified height helpers present')
-    require('boardHeight' in extension and 'func computedBoardHeight()' in extension, 'all pages use boardHeight 268')
+    require('boardHeight' in extension and 'func computedBoardHeight()' in extension, 'all pages use the shared board height')
     require('padRowKeys' in extension, 'symbol row gap fillers')
     require('constant: 12' in extension, 'board slightly lowered top inset')
     require('holdMap[lower]' in extension or 'lowercased()' in extension, 'shift-aware long-press')
@@ -187,7 +194,10 @@ def main() -> None:
         alternates = icons.get('CFBundleAlternateIcons', {})
         require('AppIconEvening' in alternates, 'built Info.plist includes AppIconEvening alternate icon')
         require(info.get('CFBundleIdentifier') == APP_BUNDLE, 'built application bundle ID remains unchanged')
-        require(info.get('CFBundleShortVersionString') == '0.2.3', 'built app version is 0.2.3')
+        version_match = re.search(r'MARKETING_VERSION:\s*["\']([^"\']+)["\']', project)
+        build_match = re.search(r'CURRENT_PROJECT_VERSION:\s*([0-9]+)', project)
+        require(version_match is not None and info.get('CFBundleShortVersionString') == version_match.group(1), 'built app version matches project.yml')
+        require(build_match is not None and info.get('CFBundleVersion') == build_match.group(1), 'built app build number matches project.yml')
 
     print('All Naqra regression checks passed.')
 
