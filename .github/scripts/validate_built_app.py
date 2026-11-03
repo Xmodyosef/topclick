@@ -25,14 +25,24 @@ def main() -> None:
         info = plistlib.load(handle)
     require(info.get("CFBundleIdentifier") == APP_BUNDLE, "built application bundle ID unchanged")
 
-    script_path = Path(__file__).resolve()
-    repo_root = next(
-        (parent for parent in script_path.parents if (parent / "personalkeyboard-source" / "project.yml").is_file()),
+    # The workflow invokes this validator from personalkeyboard-source. Resolve
+    # the source root from the current working directory first, then fall back to
+    # walking upward from the script location for local/manual invocations.
+    cwd = Path.cwd().resolve()
+    source_root = next(
+        (parent for parent in (cwd, *cwd.parents) if (parent / "project.yml").is_file() and (parent / "Sources").is_dir()),
         None,
     )
-    if repo_root is None:
-        raise FileNotFoundError(f"could not locate repository root from {script_path}")
-    project_file = repo_root / "personalkeyboard-source" / "project.yml"
+    if source_root is None:
+        script_path = Path(__file__).resolve()
+        repo_root = next(
+            (parent for parent in script_path.parents if (parent / "personalkeyboard-source" / "project.yml").is_file()),
+            None,
+        )
+        source_root = (repo_root / "personalkeyboard-source") if repo_root else None
+    if source_root is None:
+        raise FileNotFoundError(f"could not locate personalkeyboard-source from cwd={cwd}")
+    project_file = source_root / "project.yml"
     project_text = project_file.read_text(encoding="utf-8")
     version_match = re.search(r"MARKETING_VERSION:\s*[\"\']?(0(?:\.[0-9]+){2})[\"\']?", project_text)
     require(version_match is not None, "project.yml defines MARKETING_VERSION")
@@ -47,14 +57,18 @@ def main() -> None:
     expected_build = build_match.group(1) if build_match else ""
     require(info.get("CFBundleVersion") == expected_build, "built app build number matches project.yml")
 
-    app_entitlements_path = repo_root / "personalkeyboard-source/Sources/ContainerApp/PersonalKeyboard.entitlements"
-    extension_entitlements_path = repo_root / "personalkeyboard-source/Sources/KeyboardExtension/KeyboardExtension.entitlements"
+    app_entitlements_path = source_root / "Sources/ContainerApp/PersonalKeyboard.entitlements"
+    extension_entitlements_path = source_root / "Sources/KeyboardExtension/KeyboardExtension.entitlements"
     with app_entitlements_path.open("rb") as handle:
         app_entitlements = plistlib.load(handle)
     with extension_entitlements_path.open("rb") as handle:
         extension_entitlements = plistlib.load(handle)
-    app_groups = sorted({str(value).strip() for value in app_entitlements.get("com.apple.security.application-groups", [])})
-    extension_groups = sorted({str(value).strip() for value in extension_entitlements.get("com.apple.security.application-groups", [])})
+    entitlement_key = "com.apple.security.application-groups"
+    app_groups = sorted({str(value).strip() for value in app_entitlements.get(entitlement_key, [])})
+    extension_groups = sorted({str(value).strip() for value in extension_entitlements.get(entitlement_key, [])})
+    print(f"App Group validation source root: {source_root}")
+    print(f"App entitlement keys: {sorted(app_entitlements)}")
+    print(f"Extension entitlement keys: {sorted(extension_entitlements)}")
     require(
         bool(app_groups) and app_groups == extension_groups,
         f"source App Group entitlement arrays match exactly (app={app_groups}, extension={extension_groups})",
