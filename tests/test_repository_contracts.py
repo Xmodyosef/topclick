@@ -32,3 +32,12 @@ def test_naqra_source_contracts() -> None:
         "personalkeyboard-source",
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_clipboard_privacy_default_does_not_destroy_existing_history() -> None:
+    source = (
+        ROOT / "personalkeyboard-source/Sources/KeyboardExtension/ClipboardHistory.swift"
+    ).read_text(encoding="utf-8")
+    block = source.split("func ensurePrivacyDefault()", 1)[1].split("\n    }", 1)[0]
+    assert 'ThemeIO.set("clipboardHistoryEnabled", value: false)' in block
+    assert 'ThemeIO.set(key, value: "")' not in block
