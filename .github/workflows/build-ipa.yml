@@ -27,7 +27,9 @@ jobs:
 
       - name: Install pinned XcodeGen
         run: |
-          brew install xcodegen
+          brew install mint
+          mint install yonaskolb/XcodeGen@2.46.0
+          echo "$HOME/.mint/bin" >> "$GITHUB_PATH"
           test "$(xcodegen --version)" = "2.46.0"
 
       - name: Generate Project & Debug
