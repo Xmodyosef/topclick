@@ -36,7 +36,7 @@ def main() -> None:
         f"built app version matches project.yml ({expected_version})",
     )
 
-    build_match = re.search(r"CURRENT_PROJECT_VERSION:\\s*([0-9]+)", project_text)
+    build_match = re.search(r"CURRENT_PROJECT_VERSION:\s*([0-9]+)", project_text)
     require(build_match is not None, "project.yml defines CURRENT_PROJECT_VERSION")
     expected_build = build_match.group(1) if build_match else ""
     require(info.get("CFBundleVersion") == expected_build, "built app build number matches project.yml")
