@@ -3710,3 +3710,42 @@ Use this as the first hop when a request could match more than one Build Swift A
 ## Portfolio Boundary
 
 Do not merge skills just because they share a platform word. Keep separate skills when triggers, tools, proof artifacts, or safety boundaries differ. Prefer this router plus focused skills until a decision ledger proves a merge preserves trigger coverage and validation.
+
+## Naqra specialist workflow: RTL/LTR Regression Test Generator
+
+### Trigger
+
+Use when changing layout direction, keyboard rows, text entry, cursor movement, deletion, punctuation, mixed-script display, or the keyboard extension's direction preferences.
+
+### Generate a focused test matrix
+
+Include representative cases for:
+
+- Arabic-only text, English-only text, and mixed Arabic/English words.
+- Arabic-Indic and Western digits, dates, decimals, parentheses, brackets, and punctuation.
+- URLs, email addresses, hashtags, and code-like tokens embedded in Arabic sentences.
+- Emoji and combining marks adjacent to both right-to-left and left-to-right text.
+- Cursor movement, selection, backspace/delete, insertion in the middle of mixed-direction text, and long-press alternatives.
+- Arabic keyboard row order and English Shift behavior.
+- App screens and keyboard extension behavior independently; never infer the extension's layout from the container app.
+
+### Test implementation
+
+1. Assert the intended direction at the smallest correct view/container boundary; do not force the entire app to LTR or RTL to fix one component.
+2. Use deterministic strings and expected caret/selection positions. Keep the literal test input in the test so failures are reproducible.
+3. Test direction changes after switching keyboard language and after the host text field changes its writing direction.
+4. Assert semantic outcomes (inserted text, selection range, row order, accessibility label) rather than relying only on screenshots.
+5. Add screenshots only when visual layout is itself the contract; pair them with behavioral assertions.
+6. Run on the supported simulator for deterministic regression coverage and repeat critical mixed-script cursor/deletion cases on a physical iPhone.
+
+### Acceptance
+
+- Arabic text remains in logical reading order and keyboard rows remain intentionally arranged.
+- Embedded English, URLs, numbers, punctuation, and emoji retain expected visual and editing behavior.
+- Cursor, selection, and deletion operate at the intended character/grapheme boundaries.
+- No global layout-direction override is introduced as a shortcut.
+- Any host-app-specific behavior and physical-device-only checks are recorded separately.
+
+### Report
+
+Provide the exact test strings, expected behavior, automated results, simulator/device and iOS version, and any unverified host-app or physical-device cases.
