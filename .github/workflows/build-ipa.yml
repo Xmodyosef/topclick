@@ -2,6 +2,8 @@ name: Build Fresh Unsigned IPA
 
 on:
   push:
+    branches: [ main, feature/remediation ]
+  pull_request:
     branches: [ main ]
   workflow_dispatch:
 
@@ -11,7 +13,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Validate Naqra source contracts
         run: python3 .github/scripts/validate_naqra.py personalkeyboard-source
@@ -44,6 +46,20 @@ jobs:
           # محاولة استخدام اسم الـ Scheme الصحيح
           xcodebuild -project "$PROJECT" -scheme "PersonalKeyboard" -sdk iphoneos -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
 
+      - name: Ensure keyboard JSON resources are embedded
+        working-directory: personalkeyboard-source
+        run: |
+          APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
+          test -n "$APP"
+          APPEX="$APP/PlugIns/KeyboardExtension.appex"
+          test -d "$APPEX"
+          for name in emoji_catalog.json keyboard_layouts.json arabic_lexicon.json; do
+            SOURCE="Sources/KeyboardExtension/Resources/$name"
+            test -s "$SOURCE"
+            cp "$SOURCE" "$APPEX/$name"
+            test -s "$APPEX/$name"
+          done
+
       - name: Verify built app bundle
         working-directory: personalkeyboard-source
         run: |
@@ -59,9 +75,10 @@ jobs:
           test -n "$APP"
           cp -R "$APP" Payload/
           zip -r PersonalKeyboard-unsigned-fresh.ipa Payload
+          shasum -a 256 PersonalKeyboard-unsigned-fresh.ipa > PersonalKeyboard-unsigned-fresh.ipa.sha256
 
       - name: Upload IPA
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: Fresh-Unsigned-IPA
-          path: personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa
+          path: personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa\n          path: personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa.sha256
