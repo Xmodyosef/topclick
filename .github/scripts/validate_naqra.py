@@ -39,6 +39,19 @@ def main() -> None:
     app = concat_swift(app_dir)
     project = (source / 'project.yml').read_text(encoding='utf-8')
 
+    # RTL contract: preserve Arabic keyboard direction without forcing the whole app to LTR.
+    app_info = plistlib.loads((app_dir / 'Info.plist').read_bytes())
+    extension_info = plistlib.loads((ext_dir / 'Info.plist').read_bytes())
+    require(
+        extension_info.get('NSExtension', {}).get('NSExtensionAttributes', {}).get('PrefersRightToLeft') is True,
+        'keyboard extension declares PrefersRightToLeft'
+    )
+    app_entry = (app_dir / 'KeyboardPrototypeApp.swift').read_text(encoding='utf-8')
+    require('.environment(\\.layoutDirection, .leftToRight)' not in app_entry, 'app does not force a global LTR layout direction')
+    app_groups = plistlib.loads((app_dir / 'PersonalKeyboard.entitlements').read_bytes()).get('com.apple.security.application-groups', [])
+    ext_groups = plistlib.loads((ext_dir / 'KeyboardExtension.entitlements').read_bytes()).get('com.apple.security.application-groups', [])
+    require(bool(app_groups) and app_groups == ext_groups, 'App Group entitlement arrays match exactly')
+
     require(APP_GROUP in (source / 'Sources/ContainerApp/PersonalKeyboard.entitlements').read_text(encoding='utf-8'), 'container App Group unchanged')
     require(APP_GROUP in (source / 'Sources/KeyboardExtension/KeyboardExtension.entitlements').read_text(encoding='utf-8'), 'extension App Group unchanged')
     require(APP_BUNDLE in project and EXT_BUNDLE in project, 'container and extension bundle IDs unchanged')
