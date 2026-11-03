@@ -1,55 +1,5 @@
 import Foundation
 
-struct ClipboardHistoryPayload: Codable, Equatable {
-    let version: Int
-    let items: [String]
-}
-
-enum ClipboardHistoryCodec {
-    static let currentVersion = 1
-    static let maximumItems = 20
-    static let maximumItemCharacters = 5_000
-    static let maximumTotalCharacters = 50_000
-
-    static func encode(_ items: [String]) -> String? {
-        let payload = ClipboardHistoryPayload(version: currentVersion, items: items)
-        guard isValid(payload),
-              let data = try? JSONEncoder().encode(payload),
-              let string = String(data: data, encoding: .utf8),
-              decode(string) == items else {
-            return nil
-        }
-        return string
-    }
-
-    static func decode(_ string: String) -> [String]? {
-        guard let data = string.data(using: .utf8),
-              let payload = try? JSONDecoder().decode(ClipboardHistoryPayload.self, from: data),
-              isValid(payload) else {
-            return nil
-        }
-        return payload.items
-    }
-
-    /// The legacy U+001F format cannot recover a separator that was already embedded in an item.
-    static func decodeLegacy(_ string: String) -> [String] {
-        string.split(separator: "\u{1F}").map(String.init)
-    }
-
-    static func looksLikeVersionedJSON(_ string: String) -> Bool {
-        string.hasPrefix("{") && string.contains("\"version\"")
-    }
-
-    private static func isValid(_ payload: ClipboardHistoryPayload) -> Bool {
-        guard payload.version == currentVersion,
-              payload.items.count <= maximumItems,
-              payload.items.allSatisfy({ !$0.isEmpty && $0.count <= maximumItemCharacters }) else {
-            return false
-        }
-        return payload.items.reduce(0) { $0 + $1.count } <= maximumTotalCharacters
-    }
-}
-
 final class ClipboardHistory {
     static let shared = ClipboardHistory()
 
