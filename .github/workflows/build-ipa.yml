@@ -60,7 +60,7 @@ jobs:
         run: |
           cd personalkeyboard-source
           PROJECT=$(find . -name "*.xcodeproj" -print -quit)
-          xcodebuild test -project "$PROJECT" -scheme "PersonalKeyboard" -destination "platform=iOS Simulator,name=iPhone 16,OS=26.0" -derivedDataPath test-build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+          xcodebuild test -project "$PROJECT" -scheme "PersonalKeyboard" -destination "platform=iOS Simulator,name=iPhone 16,OS=26.0.1" -derivedDataPath test-build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
 
       - name: Build App
         run: |
