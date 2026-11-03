@@ -1,6 +1,6 @@
 ---
 name: keyboard-extension
-description: Use when working on custom iOS keyboards, Arabic/English layouts, key interactions, long-press alternatives, emoji, sound, haptics, App Groups, or keyboard-extension limits.
+description: Use when working on custom iOS keyboards, Arabic/English layouts, key interactions, long-press alternatives, emoji, sound, haptics, App Groups, keyboard-extension limits, clipboard privacy/data integrity, or keyboard runtime performance and memory audits.
 ---
 
 # Keyboard Extensions
