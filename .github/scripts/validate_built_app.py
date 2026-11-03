@@ -47,9 +47,12 @@ def main() -> None:
         app_entitlements = plistlib.load(handle)
     with extension_entitlements_path.open("rb") as handle:
         extension_entitlements = plistlib.load(handle)
-    app_groups = app_entitlements.get("com.apple.security.application-groups", [])
-    extension_groups = extension_entitlements.get("com.apple.security.application-groups", [])
-    require(bool(app_groups) and app_groups == extension_groups, "source App Group entitlement arrays match exactly")
+    app_groups = sorted({str(value).strip() for value in app_entitlements.get("com.apple.security.application-groups", [])})
+    extension_groups = sorted({str(value).strip() for value in extension_entitlements.get("com.apple.security.application-groups", [])})
+    require(
+        bool(app_groups) and app_groups == extension_groups,
+        f"source App Group entitlement arrays match exactly (app={app_groups}, extension={extension_groups})",
+    )
 
     icon_dictionaries = [info.get("CFBundleIcons", {}), info.get("CFBundleIcons~ipad", {})]
     alternates = {}
