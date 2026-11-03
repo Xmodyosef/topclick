@@ -22,6 +22,7 @@ final class ClipboardHistory {
             return
         }
         // Disable capture by default, but preserve pre-existing bytes untouched.
+        ThemeIO.set("clipboardHistoryEnabled", value: false)
         // Migration runs only after the user explicitly enables clipboard history.
     }
 
