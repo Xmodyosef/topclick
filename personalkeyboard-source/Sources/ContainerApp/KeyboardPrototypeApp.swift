@@ -7,7 +7,6 @@ struct KeyboardPrototypeApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environment(\.layoutDirection, .leftToRight)
                 .onAppear { AppIconSwitcher.applyAutomaticIfNeeded() }
         }
         .onChange(of: scenePhase) { _, phase in
