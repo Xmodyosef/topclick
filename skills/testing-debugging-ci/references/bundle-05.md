@@ -1788,5 +1788,5 @@ References:
 
 - [Giving external agents access to Xcode](https://developer.apple.com/documentation/xcode/giving-external-agents-access-to-xcode)
 - [Xcode 27 release notes](https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes)
-- [Xcode command-line tools](https://developer.apple.com/documentation/xcode/xcode-command-line-tools)
+- [Xcode command-line tools](https://developer.apple.com/documentation/xcode/installing-the-command-line-tools/)
 - [XCTest](https://developer.apple.com/documentation/xctest)
