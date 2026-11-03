@@ -70,3 +70,28 @@ targets:
     dependencies:
       - sdk: Translation.framework
         weak: true
+  NaqraTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/NaqraTests
+    dependencies:
+      - target: PersonalKeyboard
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.personal.PersonalKeyboardTests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: PersonalKeyboard
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/PersonalKeyboard.app/PersonalKeyboard"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+
+schemes:
+  PersonalKeyboard:
+    build:
+      targets:
+        PersonalKeyboard: all
+        KeyboardExtension: all
+    test:
+      config: Debug
+      targets:
+        - NaqraTests
