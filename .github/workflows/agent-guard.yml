@@ -25,6 +25,8 @@ jobs:
 
       - name: Validate skill routing
         run: python3 skills/skill-routing-integrity/scripts/verify_skill_links.py --root .
+      - name: Audit repository Markdown links
+        run: python3 skills/skill-routing-integrity/scripts/verify_markdown_links.py --root . --timeout 5
 
       - name: Run repository guard
         env:
