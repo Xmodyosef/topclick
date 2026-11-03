@@ -5,7 +5,7 @@
 - **Active skill files:** 11
 - **Integrated bundle files:** 50
 - **Resource archives:** 8
-- **Visible files inside `skills/`:** 73
+- **Visible files inside `skills/`:** 74
 
 > اقرأ `SKILL.md` للحزمة، ثم افتح `bundle-XX.md` المناسب فقط. الموارد التنفيذية والقوالب محفوظة في `resources.tar.gz` ولا تحتاج فكها إلا عند الحاجة.
 
