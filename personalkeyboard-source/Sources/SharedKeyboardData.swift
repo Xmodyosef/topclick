@@ -92,7 +92,8 @@ enum ClipboardHistoryCodec {
 actor LatestSelectionGate {
     private var current = UUID()
 
-    func begin() -> UUID {
+    func begin() -> UUID? {
+        guard !Task.isCancelled else { return nil }
         current = UUID()
         return current
     }
