@@ -76,7 +76,7 @@ enum ClipboardHistoryCodec {
     }
 
     static func looksLikeVersionedJSON(_ string: String) -> Bool {
-        string.hasPrefix("{") && string.contains("\\"version\\"")
+        string.hasPrefix("{") && string.contains("\"version\"")
     }
 
     private static func isValid(_ payload: ClipboardHistoryPayload) -> Bool {
