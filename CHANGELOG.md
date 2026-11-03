@@ -26,4 +26,5 @@
 - توحيد الإصدار 0.2.6
 
 ## Unreleased
-- Added 895 baked-in AI skills to `skills/` to enforce expert-level coding and debugging.
+- Added three focused skills with runnable release, skill-routing, and accessibility-audit scripts.
+- Fixed stale `references/source/` instructions and updated the skill index and CI pack-count checks.
