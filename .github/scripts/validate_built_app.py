@@ -25,7 +25,13 @@ def main() -> None:
         info = plistlib.load(handle)
     require(info.get("CFBundleIdentifier") == APP_BUNDLE, "built application bundle ID unchanged")
 
-    repo_root = Path(__file__).resolve().parents[2]
+    script_path = Path(__file__).resolve()
+    repo_root = next(
+        (parent for parent in script_path.parents if (parent / "personalkeyboard-source" / "project.yml").is_file()),
+        None,
+    )
+    if repo_root is None:
+        raise FileNotFoundError(f"could not locate repository root from {script_path}")
     project_file = repo_root / "personalkeyboard-source" / "project.yml"
     project_text = project_file.read_text(encoding="utf-8")
     version_match = re.search(r"MARKETING_VERSION:\s*[\"\']?(0(?:\.[0-9]+){2})[\"\']?", project_text)
