@@ -1,8 +1,7 @@
 name: Remediation Baseline
 
 on:
-  push:
-    branches: [feature/remediation]
+  workflow_dispatch:
 
 permissions:
   contents: read
