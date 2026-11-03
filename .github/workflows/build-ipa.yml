@@ -31,7 +31,7 @@ jobs:
           mint install yonaskolb/XcodeGen@2.46.0
           echo "$HOME/.mint/bin" >> "$GITHUB_PATH"
           export PATH="$HOME/.mint/bin:$PATH"
-          test "$(xcodegen --version)" = "2.46.0"
+          xcodegen --version | grep -F "2.46.0"
 
       - name: Generate Project & Debug
         run: |
