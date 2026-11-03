@@ -36,13 +36,10 @@ jobs:
 
       - name: Select Xcode with installed iOS simulator runtime
         run: |
-          XCODE_APP=$(find /Applications -maxdepth 1 -type d -name 'Xcode_26.0.1.app' -print -quit)
-          test -n "$XCODE_APP"
-          sudo xcode-select --switch "$XCODE_APP/Contents/Developer"
+          XCODE_APP=/Applications/Xcode_26.0.1.app
+          test -d "$XCODE_APP"
           echo "DEVELOPER_DIR=$XCODE_APP/Contents/Developer" >> "$GITHUB_ENV"
-          xcodebuild -version | grep -F "26.0.1"
-          xcrun simctl list runtimes | grep -F "iOS 26.0"
-          xcrun simctl list devices available | grep -F "iPhone 16"
+          DEVELOPER_DIR="$XCODE_APP/Contents/Developer" xcodebuild -version | grep -F "26.0.1"
 
       - name: Generate Project & Debug
         run: |
