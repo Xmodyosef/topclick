@@ -157,8 +157,18 @@ def audit(root: Path, check_external: bool = True, timeout: float = 8.0) -> list
 
             if not destination.is_file():
                 matches = by_name.get(Path(raw_path).name.casefold(), []) if raw_path else []
-                status = "moved" if len(matches) == 1 else "missing"
-                action = str(matches[0].relative_to(root)) if status == "moved" else "repair or remove the target"
+                if len(matches) == 1:
+                    status = "moved"
+                    action = str(matches[0].relative_to(root))
+                elif source.name.startswith("bundle-") and raw_path:
+                    # Bundles aggregate upstream skill files; relative links may
+                    # retain their original directory context, which is not encoded
+                    # in the flattened bundle. Report rather than silently discard.
+                    status = "unresolved-bundle-reference"
+                    action = "upstream relative path context is absent; inspect source skill or restore the referenced file"
+                else:
+                    status = "missing"
+                    action = "repair or remove the target"
                 results.append({"status": status, "source": str(source.relative_to(root)), "line": line, "url": target, "action": action})
                 continue
 
