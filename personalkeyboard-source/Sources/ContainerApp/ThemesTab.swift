@@ -12,6 +12,10 @@ struct ThemesTab: View {
     @State private var installedThemesTick = 0
     @State private var installedSoundsTick = 0
     @State private var specialColor = SpecialKeyColorStore.loadColor()
+    @State private var themeTask: Task<Void, Never>?
+    @State private var soundTask: Task<Void, Never>?
+    @State private var themeRequestID = UUID()
+    @State private var soundRequestID = UUID()
 
     var body: some View {
         NavigationStack {
@@ -96,6 +100,14 @@ struct ThemesTab: View {
             .background(NaqraBackground())
             .navigationTitle("الثيمات")
             .navigationBarTitleDisplayMode(.inline)
+            .onDisappear {
+                themeTask?.cancel()
+                soundTask?.cancel()
+                themeTask = nil
+                soundTask = nil
+                loadingThemeIDs.removeAll()
+                loadingSoundIDs.removeAll()
+            }
             .onAppear {
                 themeID = ThemeStore.themeID
                 soundChoice = ThemeStore.string("soundChoice") ?? "system"
@@ -113,7 +125,7 @@ struct ThemesTab: View {
         let active = themeID == theme.id
 
         return Button {
-            Task { await onThemeTap(theme) }
+            startThemeLoad(theme)
         } label: {
             VStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -167,23 +179,31 @@ struct ThemesTab: View {
         .accessibilityAddTraits(active ? .isSelected : [])
     }
 
-    private func onThemeTap(_ theme: ThemeSwatch) async {
+    private func startThemeLoad(_ theme: ThemeSwatch) {
+        themeTask?.cancel()
+        loadingThemeIDs.removeAll()
+        let requestID = UUID()
+        themeRequestID = requestID
+        themeTask = Task { await onThemeTap(theme, requestID: requestID) }
+    }
+
+    private func onThemeTap(_ theme: ThemeSwatch, requestID: UUID) async {
+        guard !Task.isCancelled, requestID == themeRequestID else { return }
         if ThemePackStore.isInstalled(theme.id) {
-            // Safe switch — other packs stay installed
-            if ThemePackStore.apply(theme.id) {
-                themeID = theme.id
-            }
+            if ThemePackStore.apply(theme.id) { themeID = theme.id }
             return
         }
+
         loadingThemeIDs.insert(theme.id)
-        // Local "download": unlock pack (content already in app; flag persists)
-        try? await Task.sleep(nanoseconds: 450_000_000)
+        // The packs are bundled locally; yield once for cancellation without faking a download delay.
+        await Task.yield()
+        guard !Task.isCancelled, requestID == themeRequestID else { return }
+
         ThemePackStore.markInstalled(theme.id)
+        guard !Task.isCancelled, requestID == themeRequestID else { return }
         loadingThemeIDs.remove(theme.id)
         installedThemesTick += 1
-        if ThemePackStore.apply(theme.id) {
-            themeID = theme.id
-        }
+        if ThemePackStore.apply(theme.id) { themeID = theme.id }
     }
 
     // MARK: Sound tile
@@ -194,7 +214,7 @@ struct ThemesTab: View {
         let active = soundChoice == pack.id
 
         return Button {
-            Task { await onSoundTap(pack) }
+            startSoundLoad(pack)
         } label: {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
@@ -232,7 +252,16 @@ struct ThemesTab: View {
         .accessibilityLabel("صوت \(pack.title)")
     }
 
-    private func onSoundTap(_ pack: SoundPackStore.Pack) async {
+    private func startSoundLoad(_ pack: SoundPackStore.Pack) {
+        soundTask?.cancel()
+        loadingSoundIDs.removeAll()
+        let requestID = UUID()
+        soundRequestID = requestID
+        soundTask = Task { await onSoundTap(pack, requestID: requestID) }
+    }
+
+    private func onSoundTap(_ pack: SoundPackStore.Pack, requestID: UUID) async {
+        guard !Task.isCancelled, requestID == soundRequestID else { return }
         if SoundPackStore.isInstalled(pack.id) {
             if SoundPackStore.apply(pack.id) {
                 soundChoice = pack.id
@@ -240,9 +269,13 @@ struct ThemesTab: View {
             }
             return
         }
+
         loadingSoundIDs.insert(pack.id)
-        try? await Task.sleep(nanoseconds: 400_000_000)
+        await Task.yield()
+        guard !Task.isCancelled, requestID == soundRequestID else { return }
+
         SoundPackStore.markInstalled(pack.id)
+        guard !Task.isCancelled, requestID == soundRequestID else { return }
         loadingSoundIDs.remove(pack.id)
         installedSoundsTick += 1
         if SoundPackStore.apply(pack.id) {
