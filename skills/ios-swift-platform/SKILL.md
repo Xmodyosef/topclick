@@ -1,6 +1,6 @@
 ---
 name: ios-swift-platform
-description: Use when building or reviewing Swift, SwiftUI, UIKit, Xcode, Apple-platform, concurrency, performance, memory, or platform API work.
+description: Use when building or reviewing Swift, SwiftUI, UIKit, Xcode, Apple-platform, concurrency, performance, memory, platform APIs, or generating RTL/LTR regression tests.
 ---
 
 # iOS & Swift Platform
