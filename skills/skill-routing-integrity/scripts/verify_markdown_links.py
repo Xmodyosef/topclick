@@ -189,6 +189,11 @@ def main() -> int:
     parser.add_argument("--no-network", action="store_true", help="classify external URLs without making requests")
     parser.add_argument("--timeout", type=float, default=8.0)
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON")
+    parser.add_argument(
+        "--fail-on-external",
+        action="store_true",
+        help="also fail for HTTP 4xx/5xx external links; default keeps them in the report as actionable findings",
+    )
     args = parser.parse_args()
     root = args.root.resolve() if args.root else Path(__file__).resolve().parents[3]
     results = audit(root, check_external=not args.no_network, timeout=args.timeout)
@@ -202,7 +207,12 @@ def main() -> int:
             print(f"{status}: {count}")
         for item in results:
             print("{status}: {source}:{line} -> {url} | action: {action}".format(**item))
-    return 1 if any(item["status"] in {"missing", "broken-anchor", "broken"} for item in results) else 0
+    local_failures = {"missing", "broken-anchor"}
+    if args.fail_on_external:
+        local_failures.add("broken")
+    # Existing external URLs are reported, not allowed to block app CI by default:
+    # public docs can move or rate-limit HEAD requests; local path/anchor integrity remains a hard gate.
+    return 1 if any(item["status"] in local_failures for item in results) else 0
 
 
 if __name__ == "__main__":
