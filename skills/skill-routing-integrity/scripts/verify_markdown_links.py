@@ -63,12 +63,41 @@ def anchors_for(text: str) -> set[str]:
     return anchors
 
 
+def mask_code(text: str) -> str:
+    """Blank fenced and inline code while preserving line numbers and offsets."""
+    output: list[str] = []
+    in_fence = False
+    fence_char = ""
+    fence_size = 0
+    for line in text.splitlines(keepends=True):
+        fence = re.match(r"^\s{0,3}(`{3,}|~{3,})", line)
+        if not in_fence and fence:
+            in_fence = True
+            fence_char = fence.group(1)[0]
+            fence_size = len(fence.group(1))
+            output.append(re.sub(r"[^\n]", " ", line))
+            continue
+        if in_fence:
+            output.append(re.sub(r"[^\n]", " ", line))
+            if re.match(r"^\s{0,3}" + re.escape(fence_char) + r"{" + str(fence_size) + r",}\s*$", line.rstrip("\n")):
+                in_fence = False
+            continue
+        output.append(re.sub(r"`+[^\n`]*`+", lambda match: re.sub(r"[^\n]", " ", match.group()), line))
+    return "".join(output)
+
+
 def parse_links(text: str):
-    for pattern in (LINK_RE, REFERENCE_RE):
-        for match in pattern.finditer(text):
-            target = next((group for group in match.groups() if group), "")
-            if target:
-                yield text.count("\n", 0, match.start()) + 1, target
+    masked = mask_code(text)
+    patterns = (LINK_RE, REFERENCE_RE,
+                re.compile(r"<(https?://[^\s>]+)>"),
+                re.compile(r"""<a\b[^>]*\bhref\s*=\s*["']([^"']+)["']""", re.I))
+    matches = []
+    for pattern in patterns:
+        matches.extend(pattern.finditer(masked))
+    for match in sorted(matches, key=lambda item: item.start()):
+        target = next((group for group in match.groups() if group), "")
+        if target:
+            yield masked.count("\n", 0, match.start()) + 1, target
 
 
 def external_result(url: str, timeout: float) -> tuple[str, str]:
@@ -108,8 +137,9 @@ def audit(root: Path, check_external: bool = True, timeout: float = 8.0) -> list
                 if not check_external:
                     status, detail = "unverified-external", "network checks disabled"
                 else:
+                    request_url = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, parsed.query, ""))
                     if target not in checked_external:
-                        checked_external[target] = external_result(target, timeout)
+                        checked_external[target] = external_result(request_url, timeout)
                     status, detail = checked_external[target]
                 if status != "reachable":
                     results.append({"status": status, "source": str(source.relative_to(root)), "line": line, "url": target, "action": detail})
