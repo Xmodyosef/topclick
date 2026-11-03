@@ -36,6 +36,21 @@ def main() -> None:
         f"built app version matches project.yml ({expected_version})",
     )
 
+    build_match = re.search(r"CURRENT_PROJECT_VERSION:\\s*([0-9]+)", project_text)
+    require(build_match is not None, "project.yml defines CURRENT_PROJECT_VERSION")
+    expected_build = build_match.group(1) if build_match else ""
+    require(info.get("CFBundleVersion") == expected_build, "built app build number matches project.yml")
+
+    app_entitlements_path = repo_root / "personalkeyboard-source/Sources/ContainerApp/PersonalKeyboard.entitlements"
+    extension_entitlements_path = repo_root / "personalkeyboard-source/Sources/KeyboardExtension/KeyboardExtension.entitlements"
+    with app_entitlements_path.open("rb") as handle:
+        app_entitlements = plistlib.load(handle)
+    with extension_entitlements_path.open("rb") as handle:
+        extension_entitlements = plistlib.load(handle)
+    app_groups = app_entitlements.get("com.apple.security.application-groups", [])
+    extension_groups = extension_entitlements.get("com.apple.security.application-groups", [])
+    require(bool(app_groups) and app_groups == extension_groups, "source App Group entitlement arrays match exactly")
+
     icon_dictionaries = [info.get("CFBundleIcons", {}), info.get("CFBundleIcons~ipad", {})]
     alternates = {}
     primary_names = []
@@ -51,6 +66,8 @@ def main() -> None:
         extension_info = plistlib.load(handle)
     require(extension_info.get("CFBundleIdentifier") == EXTENSION_BUNDLE, "built keyboard extension bundle ID unchanged")
     require(extension_info.get("CFBundlePackageType") == "XPC!", "embedded target is an app extension")
+    require(extension_info.get("CFBundleShortVersionString") == expected_version, "extension marketing version matches app")
+    require(extension_info.get("CFBundleVersion") == expected_build, "extension build number matches app")
 
     # Keyboard data JSON must ship inside the appex — missing files force tiny emoji fallbacks.
     required_json = ("emoji_catalog.json", "keyboard_layouts.json", "arabic_lexicon.json")
