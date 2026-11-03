@@ -23,6 +23,9 @@ jobs:
       - name: Validate Naqra source contracts
         run: python3 .github/scripts/validate_naqra.py personalkeyboard-source
 
+      - name: Validate skill routing
+        run: python3 skills/skill-routing-integrity/scripts/verify_skill_links.py --root .
+
       - name: Run repository guard
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -39,10 +42,12 @@ jobs:
           ).splitlines()
           changed = [Path(p) for p in changed]
           app_code = any(str(p).startswith('personalkeyboard-source/') and p.suffix in {'.swift', '.yml', '.plist', '.entitlements'} for p in changed)
-          policy_only = {str(p) for p in changed} <= {
-              'AGENTS.md', 'SKILLS.md', 'personalkeyboard-source/AGENTS.md'
-          } or all(str(p).startswith(('.agent/', '.grok/', '.github/')) for p in changed)
-          if app_code and any(str(p).startswith(('.agent/', '.grok/')) for p in changed) and not policy_only:
+          policy_changes = any(
+              str(p).startswith(('skills/', '.agent/', '.grok/'))
+              or str(p) in {'AGENTS.md', 'SKILLS.md', 'LESSONS_LEARNED.md'}
+              for p in changed
+          )
+          if app_code and policy_changes:
               raise SystemExit('Mixed agent/skills and application-source changes require separate PRs.')
 
           text_files = []
@@ -66,7 +71,7 @@ jobs:
           bundles = list(root.rglob('bundle-*.md'))
           archives = list(root.rglob('resources.tar.gz'))
           legacy = list(root.rglob('SKILL.reference.md')) + list(root.rglob('references/source'))
-          if len(packs) != 8 or len(bundles) != 50 or len(archives) != 8 or legacy:
+          if len(packs) != 11 or len(bundles) != 50 or len(archives) != 8 or legacy:
               raise SystemExit(f'Invalid skill layout: packs={len(packs)}, bundles={len(bundles)}, archives={len(archives)}, legacy={len(legacy)}')
           if any(not (p / 'SKILL.md').is_file() for p in packs):
               raise SystemExit('Every active pack must contain SKILL.md.')
@@ -78,7 +83,7 @@ jobs:
               raise SystemExit('Missing or invalid MARKETING_VERSION in project.yml.')
 
           report = Path('agent-review-report.md')
-          report.write_text('''# Agent Review Report\n\n- Changed files: %d\n- Active skill packs: 8\n- Integrated bundles: 50\n- Resource archives: 8\n- Legacy individual skill files: 0\n- Conflict markers: 0\n- Obvious secrets: 0\n- Automated review: passed\n\n## Device-only checks\n\nSigning, installation, Feather, ESign, audio hardware, and long-session iPhone behavior require owner testing on a physical device.\n''' % len(changed))
+          report.write_text('''# Agent Review Report\n\n- Changed files: %d\n- Active skill packs: 11\n- Integrated bundles: 50\n- Resource archives: 8\n- Legacy individual skill files: 0\n- Conflict markers: 0\n- Obvious secrets: 0\n- Automated checks: source contracts, skill routing, and repository guard passed\n\n## Device-only checks\n\nSigning, installation, Feather, ESign, audio hardware, and long-session iPhone behavior require owner testing on a physical device.\n''' % len(changed))
           print(report.read_text())
           PY
 
