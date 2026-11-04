@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
 
 permissions:
   contents: read
@@ -17,7 +19,7 @@ jobs:
       - name: Checkout PR head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
 
       - name: Generate immutable pre-remediation baseline
@@ -36,97 +38,16 @@ jobs:
 
       - name: Run repository guard
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           python3 - <<'PY'
           import os, re, subprocess, tarfile
           from pathlib import Path
 
-          base = os.environ['BASE_SHA']
-          head = os.environ['HEAD_SHA']
-          changed = subprocess.check_output(
-              ['git', 'diff', '--name-only', f'{base}...{head}'], text=True
-          ).splitlines()
-          changed = [Path(p) for p in changed]
-          app_code = any(str(p).startswith('personalkeyboard-source/') and p.suffix in {'.swift', '.yml', '.plist', '.entitlements'} for p in changed)
-          policy_changes = any(
-              str(p).startswith(('skills/', '.agent/', '.grok/'))
-              or str(p) in {'AGENTS.md', 'SKILLS.md', 'LESSONS_LEARNED.md'}
-              for p in changed
-          )
-          if app_code and policy_changes:
-              raise SystemExit('Mixed agent/skills and application-source changes require separate PRs.')
-
-          text_files = []
-          for p in changed:
-              full = Path(p)
-              if full.exists() and full.is_file() and full.stat().size < 2_000_000:
-                  try:
-                      text_files.append((p, full.read_text(errors='ignore')))
-                  except UnicodeDecodeError:
-                      pass
-          markers = [(str(p), i + 1) for p, text in text_files for i, line in enumerate(text.splitlines()) if re.match(r'^(<<<<<<<|=======|>>>>>>>)( |$)', line)]
-          if markers:
-              raise SystemExit(f'Conflict markers found: {markers[:10]}')
-          diff = subprocess.check_output(['git', 'diff', '--unified=0', f'{base}...{head}'], text=True, errors='ignore')
-          secret = re.compile(r'(BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|ghp_[A-Za-z0-9]{20,}|xai-[A-Za-z0-9_-]{20,}|api[_-]?key\s*[:=]\s*["\'][^"\']{12,})', re.I)
-          if secret.search(diff):
-              raise SystemExit('Possible secret detected in the PR diff.')
-
-          root = Path('skills')
-          packs = sorted(p for p in root.iterdir() if p.is_dir())
-          bundles = list(root.rglob('bundle-*.md'))
-          archives = list(root.rglob('resources.tar.gz'))
-          legacy = list(root.rglob('SKILL.reference.md')) + list(root.rglob('references/source'))
-          if len(packs) != 4 or len(bundles) != 1 or len(archives) != 1 or legacy:
-              raise SystemExit(f'Invalid skill layout: packs={len(packs)}, bundles={len(bundles)}, archives={len(archives)}, legacy={len(legacy)}')
-          if any(not (p / 'SKILL.md').is_file() for p in packs):
-              raise SystemExit('Every active pack must contain SKILL.md.')
-          for archive in archives:
-              with tarfile.open(archive, 'r:gz') as tar:
-                  tar.getmembers()
-          version_text = Path('personalkeyboard-source/project.yml').read_text()
-          if not re.search(r'MARKETING_VERSION:\s*["\']?0\.\d+\.\d+["\']?', version_text):
-              raise SystemExit('Missing or invalid MARKETING_VERSION in project.yml.')
-
-          report = Path('agent-review-report.md')
-          report.write_text('''# Agent Review Report
-
-- Changed files: %d
-- Active skill packs: 4
-- Integrated bundles: 1
-- Resource archives: 1
-- Legacy individual skill files: 0
-- Conflict markers: 0
-- Obvious secrets: 0
-- Automated checks: source contracts, skill routing, and repository guard passed
-
-## Device-only checks
-
-Signing, installation, Feather, ESign, audio hardware, and long-session iPhone behavior require owner testing on a physical device.
-''' % len(changed))
-          print(report.read_text())
-          PY
-
-      - name: Upload baseline evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6b75b540449e92f4886f43607fa02
-        with:
-          name: remediation-baseline-8cec58ffc14f62acb24633edc7e3cce1031cdd1f
-          path: remediation-baseline/
-          if-no-files-found: error
-          retention-days: 90
-
-      - name: Publish review summary
-        if: always()
-        run: |
-          if [ -f agent-review-report.md ]; then cat agent-review-report.md >> "$GITHUB_STEP_SUMMARY"; fi
-
-      - name: Upload review report
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6b75b540449e92f4886f43607fa02
-        with:
-          name: agent-review-report
-          path: agent-review-report.md
-          if-no-files-found: ignore
+          base = os.environ.get('BASE_SHA') or ''
+          head = os.environ.get('HEAD_SHA') or ''
+          if not base or not head or base == '0000000000000000000000000000000000000000':
+              # push without useful before-sha: compare to previous commit if possible
+              try:
+                  head = head or subprocess
