@@ -17,7 +17,7 @@ jobs:
       - name: Checkout PR head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.event.pull_request.head.sha }
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
       - name: Generate immutable pre-remediation baseline
@@ -36,8 +36,8 @@ jobs:
 
       - name: Run repository guard
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           python3 - <<'PY'
           import os, re, subprocess, tarfile
@@ -66,7 +66,7 @@ jobs:
                       text_files.append((p, full.read_text(errors='ignore')))
                   except UnicodeDecodeError:
                       pass
-          markers = [(str(p), i + 1) for p, text in text_files for i, line in enumerate(text.splitlines()) if re.match(r'^(=======|=======|=======>)( |$)', line)]
+          markers = [(str(p), i + 1) for p, text in text_files for i, line in enumerate(text.splitlines()) if re.match(r'^(<<<<<<<|=======|>>>>>>>)( |$)', line)]
           if markers:
               raise SystemExit(f'Conflict markers found: {markers[:10]}')
           diff = subprocess.check_output(['git', 'diff', '--unified=0', f'{base}...{head}'], text=True, errors='ignore')
@@ -91,7 +91,21 @@ jobs:
               raise SystemExit('Missing or invalid MARKETING_VERSION in project.yml.')
 
           report = Path('agent-review-report.md')
-          report.write_text('''# Agent Review Report\n\n- Changed files: %d\n- Active skill packs: 4\n- Integrated bundles: 1\n- Resource archives: 1\n- Legacy individual skill files: 0\n- Conflict markers: 0\n- Obvious secrets: 0\n- Automated checks: source contracts, skill routing, and repository guard passed\n\n## Device-only checks\n\nSigning, installation, Feather, ESign, audio hardware, and long-session iPhone behavior require owner testing on a physical device.\n''' % len(changed))
+          report.write_text('''# Agent Review Report
+
+- Changed files: %d
+- Active skill packs: 4
+- Integrated bundles: 1
+- Resource archives: 1
+- Legacy individual skill files: 0
+- Conflict markers: 0
+- Obvious secrets: 0
+- Automated checks: source contracts, skill routing, and repository guard passed
+
+## Device-only checks
+
+Signing, installation, Feather, ESign, audio hardware, and long-session iPhone behavior require owner testing on a physical device.
+''' % len(changed))
           print(report.read_text())
           PY
 
@@ -107,7 +121,7 @@ jobs:
       - name: Publish review summary
         if: always()
         run: |
-          if [ -f agent-review-report.md ]; then cat agent-review-report.md >> "$GITHUB_SUMMARY"; fi
+          if [ -f agent-review-report.md ]; then cat agent-review-report.md >> "$GITHUB_STEP_SUMMARY"; fi
 
       - name: Upload review report
         if: always()
