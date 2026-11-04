@@ -59,14 +59,26 @@ def main() -> None:
 
     app_entitlements_path = source_root / "Sources/ContainerApp/PersonalKeyboard.entitlements"
     extension_entitlements_path = source_root / "Sources/KeyboardExtension/KeyboardExtension.entitlements"
+    require(app_entitlements_path.is_file(), f"app entitlements exist at {app_entitlements_path}")
+    require(extension_entitlements_path.is_file(), f"extension entitlements exist at {extension_entitlements_path}")
     with app_entitlements_path.open("rb") as handle:
         app_entitlements = plistlib.load(handle)
     with extension_entitlements_path.open("rb") as handle:
         extension_entitlements = plistlib.load(handle)
     entitlement_key = "com.apple.security.application-groups"
-    app_groups = sorted({str(value).strip() for value in app_entitlements.get(entitlement_key, [])})
-    extension_groups = sorted({str(value).strip() for value in extension_entitlements.get(entitlement_key, [])})
+    if entitlement_key not in app_entitlements:
+        raise AssertionError(
+            f"missing {entitlement_key} in {app_entitlements_path} (keys={sorted(app_entitlements)})"
+        )
+    if entitlement_key not in extension_entitlements:
+        raise AssertionError(
+            f"missing {entitlement_key} in {extension_entitlements_path} (keys={sorted(extension_entitlements)})"
+        )
+    app_groups = sorted({str(value).strip() for value in app_entitlements.get(entitlement_key, []) if str(value).strip()})
+    extension_groups = sorted({str(value).strip() for value in extension_entitlements.get(entitlement_key, []) if str(value).strip()})
     print(f"App Group validation source root: {source_root}")
+    print(f"App entitlements path: {app_entitlements_path}")
+    print(f"Extension entitlements path: {extension_entitlements_path}")
     print(f"App entitlement keys: {sorted(app_entitlements)}")
     print(f"Extension entitlement keys: {sorted(extension_entitlements)}")
     require(

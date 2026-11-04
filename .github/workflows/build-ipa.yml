@@ -14,6 +14,7 @@ concurrency:
 jobs:
   build:
     runs-on: macos-15
+    timeout-minutes: 35
 
     steps:
       - name: Checkout
@@ -44,30 +45,96 @@ jobs:
       - name: Generate Project & Debug
         run: |
           cd personalkeyboard-source
-          if [ -f project.yml ]; then 
-            xcodegen generate 
-          else 
-            echo "ERROR: project.yml NOT FOUND!" 
+          if [ -f project.yml ]; then
+            xcodegen generate
+          else
+            echo "ERROR: project.yml NOT FOUND!"
+            exit 1
           fi
           echo "--- LISTING FILES ---"
           ls -la
-          PROJECT=$(find . -name "*.xcodeproj" | head -n 1)
+          PROJECT=$(find . -name "*.xcodeproj" -print -quit)
           echo "Found Project: $PROJECT"
           echo "--- LISTING SCHEMES ---"
           xcodebuild -list -project "$PROJECT"
 
       - name: Run XCTest regression suite
+        timeout-minutes: 12
+        working-directory: personalkeyboard-source
         run: |
-          cd personalkeyboard-source
+          set -euo pipefail
           PROJECT=$(find . -name "*.xcodeproj" -print -quit)
-          xcodebuild test -project "$PROJECT" -scheme "PersonalKeyboard" -destination "platform=iOS Simulator,name=iPhone 16,OS=26.0.1" -derivedDataPath test-build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+          test -n "$PROJECT"
+
+          # Pick any available iPhone simulator by UDID (avoids hanging on a missing named destination).
+          DEST_ID=$(python3 - <<'PY'
+          import json, subprocess, sys
+          data = json.loads(subprocess.check_output(
+              ["xcrun", "simctl", "list", "devices", "available", "-j"], text=True
+          ))
+          candidates = []
+          for runtime, devices in data.get("devices", {}).items():
+              if "iOS" not in runtime and "iphonesimulator" not in runtime.lower():
+                  continue
+              for device in devices:
+                  if not device.get("isAvailable"):
+                      continue
+                  name = device.get("name") or ""
+                  if "iPhone" not in name:
+                      continue
+                  udid = device.get("udid")
+                  if not udid:
+                      continue
+                  # Prefer iPhone 16, then any iPhone; prefer iOS 26 runtimes when present.
+                  rank = (
+                      0 if "iOS-26" in runtime or "iOS 26" in runtime else 1,
+                      0 if "iPhone 16" in name else 1,
+                      name,
+                  )
+                  candidates.append((rank, udid, name, runtime))
+          if not candidates:
+              print("No available iPhone simulator found", file=sys.stderr)
+              sys.exit(1)
+          candidates.sort(key=lambda item: item[0])
+          _, udid, name, runtime = candidates[0]
+          print(f"Selected simulator: {name} ({runtime}) -> {udid}", file=sys.stderr)
+          print(udid)
+          PY
+          )
+
+          # Boot (or wait until booted) before xcodebuild so the test step cannot stall forever.
+          xcrun simctl bootstatus "$DEST_ID" -b || xcrun simctl boot "$DEST_ID" || true
+          xcrun simctl bootstatus "$DEST_ID" -b
+
+          # Host-app unit tests need ad-hoc signing on Simulator. Unsigned Release settings hang/install-fail.
+          xcodebuild test \
+            -project "$PROJECT" \
+            -scheme "PersonalKeyboard" \
+            -destination "id=$DEST_ID" \
+            -only-testing:NaqraTests \
+            -derivedDataPath test-build \
+            -resultBundlePath test-results.xcresult \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=- \
+            DEVELOPMENT_TEAM=""
 
       - name: Build App
+        working-directory: personalkeyboard-source
         run: |
-          cd personalkeyboard-source
-          PROJECT=$(find . -name "*.xcodeproj" | head -n 1)
-          # محاولة استخدام اسم الـ Scheme الصحيح
-          xcodebuild -project "$PROJECT" -scheme "PersonalKeyboard" -sdk iphoneos -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+          set -euo pipefail
+          PROJECT=$(find . -name "*.xcodeproj" -print -quit)
+          test -n "$PROJECT"
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme "PersonalKeyboard" \
+            -sdk iphoneos \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
 
       - name: Ensure keyboard JSON resources are embedded
         working-directory: personalkeyboard-source
@@ -91,8 +158,8 @@ jobs:
           python3 ../.github/scripts/validate_built_app.py "$APP"
 
       - name: Create IPA
+        working-directory: personalkeyboard-source
         run: |
-          cd personalkeyboard-source
           mkdir -p Payload
           APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
           test -n "$APP"
