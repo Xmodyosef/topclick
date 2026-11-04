@@ -62,7 +62,7 @@ jobs:
           xcodebuild -list -project "$PROJECT"
 
       - name: Run XCTest regression suite
-        timeout-minutes: 12
+        timeout-minutes: 20
         run: |
           set -euo pipefail
           cd personalkeyboard-source
@@ -89,11 +89,12 @@ jobs:
             exit 1
           fi
           echo "Using simulator UDID=$UDID"
-          # bootstatus -b blocks until the step timeout (run 177). Poll instead.
+
+          # Avoid bootstatus -b (blocks until step timeout). Poll boot state instead.
           xcrun simctl shutdown all >/dev/null 2>&1 || true
           xcrun simctl boot "$UDID" >/dev/null 2>&1 || true
           booted=0
-          for _ in $(seq 1 30); do
+          for _ in $(seq 1 45); do
             if xcrun simctl list devices | grep -F "$UDID" | grep -q "(Booted)"; then
               booted=1
               break
@@ -101,12 +102,15 @@ jobs:
             sleep 2
           done
           if [ "$booted" -ne 1 ]; then
-            echo "ERROR: simulator $UDID did not reach Booted within 60s"
+            echo "ERROR: simulator $UDID did not reach Booted within 90s"
             xcrun simctl list devices || true
             exit 1
           fi
           echo "Simulator is Booted"
 
+          # Ad-hoc simulator signing is required for host-app unit tests.
+          # CODE_SIGN_IDENTITY="" / CODE_SIGNING_ALLOWED=NO hangs install on
+          # macos-15 (root cause of run 180 timeout after compile).
           xcodebuild test \
             -project "$PROJECT" \
             -scheme PersonalKeyboard \
@@ -116,9 +120,10 @@ jobs:
             -only-testing:NaqraTests \
             -parallel-testing-enabled NO \
             -maximum-concurrent-test-simulator-destinations 1 \
-            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_ALLOWED=YES \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY=- \
+            DEVELOPMENT_TEAM=
 
       - name: Upload XCTest result bundle on failure
         if: failure()
