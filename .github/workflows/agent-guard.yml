@@ -28,7 +28,7 @@ jobs:
       - name: Validate Naqra source contracts
         run: python3 .github/scripts/validate_naqra.py personalkeyboard-source
 
-      - name: Validate skill routing
+      name: Validate skill routing
         run: python3 skills/skill-routing-integrity/scripts/verify_skill_links.py --root .
 
       - name: Run pytest regression suite
