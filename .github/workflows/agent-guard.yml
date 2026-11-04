@@ -15,16 +15,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR head
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+
+      - name: Generate immutable pre-remediation baseline
+        run: python3 .github/scripts/create_remediation_baseline.py
 
       - name: Validate Naqra source contracts
         run: python3 .github/scripts/validate_naqra.py personalkeyboard-source
 
       - name: Validate skill routing
         run: python3 skills/skill-routing-integrity/scripts/verify_skill_links.py --root .
+
+      - name: Run pytest regression suite
+        run: |
+          python3 -m pip install --disable-pip-version-check pytest
+          python3 -m pytest -q
 
       - name: Run repository guard
         env:
@@ -87,6 +95,15 @@ jobs:
           print(report.read_text())
           PY
 
+      - name: Upload baseline evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: remediation-baseline-8cec58ffc14f62acb24633edc7e3cce1031cdd1f
+          path: remediation-baseline/
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Publish review summary
         if: always()
         run: |
@@ -94,7 +111,7 @@ jobs:
 
       - name: Upload review report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: agent-review-report
           path: agent-review-report.md

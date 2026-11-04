@@ -1,10 +1,15 @@
-/.github/workflows/    @Xmodyosef
-/.github/scripts/      @Xmodyosef
-/.github/CODEOWNERS    @Xmodyosef
-/AGENTS.md             @Xmodyosef
-/project.yml           @Xmodyosef
-**/*.entitlements      @Xmodyosef
-**/Info.plist          @Xmodyosef
-*                      @Xmodyosef
+# Owner review is required for all CI, release, and security policy changes.
+/.github/workflows/ @Xmodyosef
+/.github/workflows/release.yml @Xmodyosef
+/.github/workflows/security-review.yml @Xmodyosef
+/.github/scripts/ @Xmodyosef
+/.github/CODEOWNERS @Xmodyosef
+/AGENTS.md @Xmodyosef
+/SKILLS.md @Xmodyosef
+/personalkeyboard-source/project.yml @Xmodyosef
+/personalkeyboard-source/scripts/ @Xmodyosef
+**/*.entitlements @Xmodyosef
+**/Info.plist @Xmodyosef
+* @Xmodyosef
 
 personalkeyboard-source/ @Xmodyosef

@@ -3,50 +3,160 @@ name: Build Fresh Unsigned IPA
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: naqra-build-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: macos-15
+    timeout-minutes: 40
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Validate Naqra source contracts
         run: python3 .github/scripts/validate_naqra.py personalkeyboard-source
 
+      - name: Validate rolling version set
+        working-directory: personalkeyboard-source
+        run: python3 scripts/bump_version.py --check
+
       - name: Remove Agent Folder
         run: rm -rf .agent
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
+      - name: Install pinned XcodeGen
+        run: |
+          brew install xcodegen
+          xcodegen --version | grep -F "2.46.0"
+
+      - name: Select Xcode with installed iOS simulator runtime
+        run: |
+          XCODE_APP=/Applications/Xcode_26.0.1.app
+          test -d "$XCODE_APP"
+          echo "DEVELOPER_DIR=$XCODE_APP/Contents/Developer" >> "$GITHUB_ENV"
+          DEVELOPER_DIR="$XCODE_APP/Contents/Developer" xcodebuild -version | grep -F "26.0.1"
 
       - name: Generate Project & Debug
         run: |
           cd personalkeyboard-source
-          if [ -f project.yml ]; then 
-            xcodegen generate 
-          else 
-            echo "ERROR: project.yml NOT FOUND!" 
+          if [ -f project.yml ]; then
+            xcodegen generate
+          else
+            echo "ERROR: project.yml NOT FOUND!"
+            exit 1
           fi
           echo "--- LISTING FILES ---"
           ls -la
-          PROJECT=$(find . -name "*.xcodeproj" | head -n 1)
+          PROJECT=$(find . -name "*.xcodeproj" -print -quit)
           echo "Found Project: $PROJECT"
           echo "--- LISTING SCHEMES ---"
           xcodebuild -list -project "$PROJECT"
 
+      - name: Run XCTest regression suite
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          cd personalkeyboard-source
+          PROJECT=$(find . -name "*.xcodeproj" -print -quit)
+          test -n "$PROJECT"
+
+          echo "Available simulators:"
+          xcrun simctl list devices available || true
+
+          DEST_LINE=$(
+            xcodebuild -showdestinations -project "$PROJECT" -scheme PersonalKeyboard 2>/dev/null \
+              | grep "platform:iOS Simulator" | grep "OS:26.0.1" | grep "iPhone" | head -1 || true
+          )
+          if [ -z "$DEST_LINE" ]; then
+            DEST_LINE=$(
+              xcodebuild -showdestinations -project "$PROJECT" -scheme PersonalKeyboard 2>/dev/null \
+                | grep "platform:iOS Simulator" | grep "iPhone" | head -1 || true
+            )
+          fi
+          echo "Destination line: ${DEST_LINE:-<none>}"
+          UDID=$(echo "$DEST_LINE" | sed -n 's/.*id:\([A-Fa-f0-9-]*\).*/\1/p')
+          if [ -z "$UDID" ]; then
+            echo "ERROR: no iOS Simulator destination found for PersonalKeyboard"
+            exit 1
+          fi
+          echo "Using simulator UDID=$UDID"
+          # bootstatus -b blocks until the step timeout (run 177). Poll instead.
+          xcrun simctl shutdown all >/dev/null 2>&1 || true
+          xcrun simctl boot "$UDID" >/dev/null 2>&1 || true
+          booted=0
+          for _ in $(seq 1 30); do
+            if xcrun simctl list devices | grep -F "$UDID" | grep -q "(Booted)"; then
+              booted=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$booted" -ne 1 ]; then
+            echo "ERROR: simulator $UDID did not reach Booted within 60s"
+            xcrun simctl list devices || true
+            exit 1
+          fi
+          echo "Simulator is Booted"
+
+          xcodebuild test \
+            -project "$PROJECT" \
+            -scheme PersonalKeyboard \
+            -destination "platform=iOS Simulator,id=$UDID" \
+            -derivedDataPath test-build \
+            -resultBundlePath test-results.xcresult \
+            -only-testing:NaqraTests \
+            -parallel-testing-enabled NO \
+            -maximum-concurrent-test-simulator-destinations 1 \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Upload XCTest result bundle on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: xctest-results
+          path: personalkeyboard-source/test-results.xcresult
+          if-no-files-found: ignore
+
       - name: Build App
         run: |
           cd personalkeyboard-source
-          PROJECT=$(find . -name "*.xcodeproj" | head -n 1)
-          # محاولة استخدام اسم الـ Scheme الصحيح
+          PROJECT=$(find . -name "*.xcodeproj" -print -quit)
           xcodebuild -project "$PROJECT" -scheme "PersonalKeyboard" -sdk iphoneos -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+
+      - name: Ensure keyboard JSON resources are embedded
+        working-directory: personalkeyboard-source
+        run: |
+          APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
+          test -n "$APP"
+          APPEX="$APP/PlugIns/KeyboardExtension.appex"
+          test -d "$APPEX"
+          for name in emoji_catalog.json keyboard_layouts.json arabic_lexicon.json; do
+            SOURCE="Sources/KeyboardExtension/Resources/$name"
+            test -s "$SOURCE"
+            cp "$SOURCE" "$APPEX/$name"
+            test -s "$APPEX/$name"
+          done
 
       - name: Verify built app bundle
         working-directory: personalkeyboard-source
         run: |
+          # xcodebuild with CODE_SIGNING_ALLOWED=NO rewrites CODE_SIGN_ENTITLEMENTS
+          # source files to empty plists; restore the committed entitlements first.
+          git checkout HEAD -- \
+            Sources/ContainerApp/PersonalKeyboard.entitlements \
+            Sources/KeyboardExtension/KeyboardExtension.entitlements
+          wc -c Sources/ContainerApp/PersonalKeyboard.entitlements Sources/KeyboardExtension/KeyboardExtension.entitlements
           APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
           test -n "$APP"
           python3 ../.github/scripts/validate_built_app.py "$APP"
@@ -59,9 +169,12 @@ jobs:
           test -n "$APP"
           cp -R "$APP" Payload/
           zip -r PersonalKeyboard-unsigned-fresh.ipa Payload
+          shasum -a 256 PersonalKeyboard-unsigned-fresh.ipa > PersonalKeyboard-unsigned-fresh.ipa.sha256
 
       - name: Upload IPA
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: Fresh-Unsigned-IPA
-          path: personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa
+          path: |
+            personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa
+            personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa.sha256
