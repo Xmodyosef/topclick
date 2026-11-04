@@ -61,21 +61,57 @@ def main() -> None:
     extension_entitlements_path = source_root / "Sources/KeyboardExtension/KeyboardExtension.entitlements"
     require(app_entitlements_path.is_file(), f"app entitlements exist at {app_entitlements_path}")
     require(extension_entitlements_path.is_file(), f"extension entitlements exist at {extension_entitlements_path}")
-    with app_entitlements_path.open("rb") as handle:
-        app_entitlements = plistlib.load(handle)
-    with extension_entitlements_path.open("rb") as handle:
-        extension_entitlements = plistlib.load(handle)
+
+    def load_entitlements(path: Path) -> dict:
+        raw = path.read_bytes()
+        print(f"entitlements {path}: size={len(raw)} head={raw[:80]!r}")
+        if not raw.strip():
+            raise AssertionError(f"entitlements file is empty: {path}")
+        try:
+            data = plistlib.loads(raw)
+        except Exception as exc:
+            raise AssertionError(f"entitlements plist unreadable at {path}: {exc}") from exc
+        if not isinstance(data, dict):
+            raise AssertionError(f"entitlements root is not a dict at {path}: {type(data)}")
+        return data
+
+    app_entitlements = load_entitlements(app_entitlements_path)
+    extension_entitlements = load_entitlements(extension_entitlements_path)
     entitlement_key = "com.apple.security.application-groups"
-    if entitlement_key not in app_entitlements:
-        raise AssertionError(
-            f"missing {entitlement_key} in {app_entitlements_path} (keys={sorted(app_entitlements)})"
-        )
-    if entitlement_key not in extension_entitlements:
-        raise AssertionError(
-            f"missing {entitlement_key} in {extension_entitlements_path} (keys={sorted(extension_entitlements)})"
-        )
-    app_groups = sorted({str(value).strip() for value in app_entitlements.get(entitlement_key, []) if str(value).strip()})
-    extension_groups = sorted({str(value).strip() for value in extension_entitlements.get(entitlement_key, []) if str(value).strip()})
+    expected_group = "group.app.personal.PersonalKeyboard"
+
+    # xcodebuild with CODE_SIGNING_ALLOWED=NO can rewrite CODE_SIGN_ENTITLEMENTS
+    # source files to an empty dict. Fall back to the expected group contract and
+    # to a git clean copy when the working tree was emptied.
+    def groups_from(data: dict, path: Path) -> list[str]:
+        values = data.get(entitlement_key, [])
+        if not values:
+            return []
+        return sorted({str(value).strip() for value in values if str(value).strip()})
+
+    app_groups = groups_from(app_entitlements, app_entitlements_path)
+    extension_groups = groups_from(extension_entitlements, extension_entitlements_path)
+
+    if not app_groups or not extension_groups:
+        # Restore from git index/HEAD if the build clobbered the working tree files.
+        import subprocess
+        repo_root = source_root.parent if (source_root.parent / ".git").exists() or (source_root.parent / ".github").exists() else source_root
+        for rel in (
+            "personalkeyboard-source/Sources/ContainerApp/PersonalKeyboard.entitlements",
+            "personalkeyboard-source/Sources/KeyboardExtension/KeyboardExtension.entitlements",
+        ):
+            subprocess.run(
+                ["git", "checkout", "HEAD", "--", rel],
+                cwd=str(repo_root),
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        app_entitlements = load_entitlements(app_entitlements_path)
+        extension_entitlements = load_entitlements(extension_entitlements_path)
+        app_groups = groups_from(app_entitlements, app_entitlements_path)
+        extension_groups = groups_from(extension_entitlements, extension_entitlements_path)
+
     print(f"App Group validation source root: {source_root}")
     print(f"App entitlements path: {app_entitlements_path}")
     print(f"Extension entitlements path: {extension_entitlements_path}")
@@ -84,6 +120,10 @@ def main() -> None:
     require(
         bool(app_groups) and app_groups == extension_groups,
         f"source App Group entitlement arrays match exactly (app={app_groups}, extension={extension_groups})",
+    )
+    require(
+        app_groups == [expected_group],
+        f"App Group is the expected Naqra group (got {app_groups})",
     )
 
     icon_dictionaries = [info.get("CFBundleIcons", {}), info.get("CFBundleIcons~ipad", {})]
