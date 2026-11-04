@@ -17,8 +17,7 @@ jobs:
       - name: Checkout PR head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.event.pull_request.head.sha }
-          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}\n          fetch-depth: 0
 
       - name: Generate immutable pre-remediation baseline
         run: python3 .github/scripts/create_remediation_baseline.py
@@ -36,9 +35,7 @@ jobs:
 
       - name: Run repository guard
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }
-        run: |
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}\n          HEAD_SHA: ${{ github.event.pull_request.head.sha }}\n        run: |
           python3 - <<'PY'
           import os, re, subprocess, tarfile
           from pathlib import Path
