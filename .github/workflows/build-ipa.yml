@@ -136,6 +136,10 @@ jobs:
       - name: Verify built app bundle
         working-directory: personalkeyboard-source
         run: |
+          # xcodebuild with CODE_SIGNING_ALLOWED=NO rewrites CODE_SIGN_ENTITLEMENTS
+          # source files to empty plists; restore the committed entitlements first.
+          git checkout HEAD --             Sources/ContainerApp/PersonalKeyboard.entitlements             Sources/KeyboardExtension/KeyboardExtension.entitlements
+          wc -c Sources/ContainerApp/PersonalKeyboard.entitlements Sources/KeyboardExtension/KeyboardExtension.entitlements
           APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
           test -n "$APP"
           python3 ../.github/scripts/validate_built_app.py "$APP"
