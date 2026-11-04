@@ -61,7 +61,7 @@ jobs:
           text_files = []
           for p in changed:
               full = Path(p)
-              if full.exists() and full.is_file() and full.stat().st_size < 2_000_000:
+              if full.exists() and full.is_file() and full.stat().size < 2_000_000:
                   try:
                       text_files.append((p, full.read_text(errors='ignore')))
                   except UnicodeDecodeError:
