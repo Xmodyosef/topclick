@@ -21,7 +21,7 @@ extension KeyboardViewController {
         s.axis = .horizontal
         s.spacing = 4
         s.distribution = .fillEqually
-        let rowHeight: CGFloat = page == .symbols ? 46 : 37
+        let rowHeight: CGFloat = page == .symbols ? symbolKeyRowHeight() : letterKeyRowHeight()
         s.distribution = .fillEqually
         s.semanticContentAttribute = .forceLeftToRight
         // Symbols: keep exactly the designed keys (10×4) — no filler clutter when layout is complete.
@@ -94,7 +94,7 @@ extension KeyboardViewController {
         }
         wrap.addArrangedSubview(mid)
         wrap.addArrangedSubview(makeDeleteKey())
-        lockHeight(wrap, page == .symbols ? 46 : 37)
+        lockHeight(wrap, page == .symbols ? symbolKeyRowHeight() : letterKeyRowHeight())
         return wrap
     }
     func makeDeleteKey(width: CGFloat = 54) -> UIButton {

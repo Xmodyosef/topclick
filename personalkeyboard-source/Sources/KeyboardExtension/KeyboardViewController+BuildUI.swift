@@ -25,9 +25,29 @@ extension KeyboardViewController {
     }
 
     /// Unified board height: letters, symbols, and emoji share the same board (324).
-    /// Content is top-stacked; empty space (if any) stays at the bottom — no flex ghost layers.
+    /// Key rows grow so each page fills that height. The stack stays top-pinned;
+    /// pinning the bottom previously stacked ghost rows.
     func computedBoardHeight() -> CGFloat {
         boardHeight
+    }
+
+    /// Height of one flexible key row so the page fills `boardHeight`.
+    func filledRowHeight(flexibleRows: Int, fixedHeight: CGFloat, arrangedCount: Int) -> CGFloat {
+        let spacing: CGFloat = 6
+        let topInset: CGFloat = 12
+        let gaps = CGFloat(max(arrangedCount - 1, 0)) * spacing
+        let available = boardHeight - topInset - gaps - fixedHeight
+        return max(36, available / CGFloat(max(flexibleRows, 1)))
+    }
+
+    func letterKeyRowHeight() -> CGFloat {
+        let flex = showNumberRow ? 4 : 3
+        return filledRowHeight(flexibleRows: flex, fixedHeight: 34 + 44, arrangedCount: flex + 2)
+    }
+
+    func symbolKeyRowHeight() -> CGFloat {
+        let flex = symbolRowsCount()
+        return filledRowHeight(flexibleRows: flex, fixedHeight: 44, arrangedCount: flex + 1)
     }
 
     /// How many symbol rows to show. Five rows stay inside the 324 board.
@@ -45,10 +65,10 @@ extension KeyboardViewController {
         return Array(validRows.prefix(symbolRowsCount()))
     }
 
-    /// Emoji grid height inside the fixed 324 board (tabs + bottom + pads reserved).
+    /// Emoji grid fills the rest of the 324 board: top 12 + tabs 32 + two gaps + bottom 44.
     func emojiPagerHeight() -> CGFloat {
-        // Board 324 − topPad12 − tabs32 − two gaps12 − bottom44 ≈ 224.
-        return max(160, boardHeight - 100)
+        let used: CGFloat = 12 + 32 + 6 + 6 + 44
+        return max(160, boardHeight - used)
     }
     func armHaptics() {
         guard hapticsOn else { return }
