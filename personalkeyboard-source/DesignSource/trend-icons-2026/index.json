@@ -1,0 +1,552 @@
+[
+  {
+    "id": "01-cloud-dancer",
+    "title": "سحابة بيضاء",
+    "file": "01-cloud-dancer.png",
+    "dark": false,
+    "rgb": [
+      244,
+      241,
+      236
+    ]
+  },
+  {
+    "id": "02-muted-clay",
+    "title": "طين خافت",
+    "file": "02-muted-clay.png",
+    "dark": false,
+    "rgb": [
+      196,
+      148,
+      130
+    ]
+  },
+  {
+    "id": "03-foxglove",
+    "title": "ختم الثعلب",
+    "file": "03-foxglove.png",
+    "dark": false,
+    "rgb": [
+      196,
+      140,
+      160
+    ]
+  },
+  {
+    "id": "04-neptune-green",
+    "title": "نبتون أخضر",
+    "file": "04-neptune-green.png",
+    "dark": false,
+    "rgb": [
+      72,
+      168,
+      156
+    ]
+  },
+  {
+    "id": "05-green-envy",
+    "title": "حسد أخضر",
+    "file": "05-green-envy.png",
+    "dark": false,
+    "rgb": [
+      110,
+      148,
+      72
+    ]
+  },
+  {
+    "id": "06-burnt-olive",
+    "title": "زيتون محروق",
+    "file": "06-burnt-olive.png",
+    "dark": true,
+    "rgb": [
+      96,
+      92,
+      56
+    ]
+  },
+  {
+    "id": "07-acacia",
+    "title": "أكاسيا",
+    "file": "07-acacia.png",
+    "dark": false,
+    "rgb": [
+      214,
+      196,
+      72
+    ]
+  },
+  {
+    "id": "08-mustard",
+    "title": "خردل",
+    "file": "08-mustard.png",
+    "dark": false,
+    "rgb": [
+      196,
+      148,
+      40
+    ]
+  },
+  {
+    "id": "09-tangerine-disco",
+    "title": "يوسفي ديسكو",
+    "file": "09-tangerine-disco.png",
+    "dark": false,
+    "rgb": [
+      232,
+      112,
+      48
+    ]
+  },
+  {
+    "id": "10-scarlet-run",
+    "title": "قرمزي",
+    "file": "10-scarlet-run.png",
+    "dark": true,
+    "rgb": [
+      196,
+      40,
+      48
+    ]
+  },
+  {
+    "id": "11-red-mahogany",
+    "title": "ماهوجني",
+    "file": "11-red-mahogany.png",
+    "dark": true,
+    "rgb": [
+      110,
+      40,
+      48
+    ]
+  },
+  {
+    "id": "12-arabian-spice",
+    "title": "بهار عربي",
+    "file": "12-arabian-spice.png",
+    "dark": true,
+    "rgb": [
+      92,
+      52,
+      40
+    ]
+  },
+  {
+    "id": "13-chocolate",
+    "title": "شوكولا",
+    "file": "13-chocolate.png",
+    "dark": true,
+    "rgb": [
+      72,
+      48,
+      40
+    ]
+  },
+  {
+    "id": "14-festival-fuchsia",
+    "title": "فوشيا مهرجان",
+    "file": "14-festival-fuchsia.png",
+    "dark": true,
+    "rgb": [
+      168,
+      40,
+      112
+    ]
+  },
+  {
+    "id": "15-ultra-violet",
+    "title": "بنفسج فائق",
+    "file": "15-ultra-violet.png",
+    "dark": true,
+    "rgb": [
+      88,
+      48,
+      160
+    ]
+  },
+  {
+    "id": "16-lavender-haze",
+    "title": "ضباب لافندر",
+    "file": "16-lavender-haze.png",
+    "dark": false,
+    "rgb": [
+      168,
+      148,
+      196
+    ]
+  },
+  {
+    "id": "17-mauve-silk",
+    "title": "موف حرير",
+    "file": "17-mauve-silk.png",
+    "dark": false,
+    "rgb": [
+      156,
+      120,
+      140
+    ]
+  },
+  {
+    "id": "18-cobalt-prime",
+    "title": "كوبالت أولي",
+    "file": "18-cobalt-prime.png",
+    "dark": true,
+    "rgb": [
+      32,
+      72,
+      168
+    ]
+  },
+  {
+    "id": "19-midnight-ink",
+    "title": "حبر ليلي",
+    "file": "19-midnight-ink.png",
+    "dark": true,
+    "rgb": [
+      24,
+      32,
+      64
+    ]
+  },
+  {
+    "id": "20-all-aboard",
+    "title": "أزرق رصيف",
+    "file": "20-all-aboard.png",
+    "dark": true,
+    "rgb": [
+      56,
+      104,
+      156
+    ]
+  },
+  {
+    "id": "21-transform-teal",
+    "title": "تيل تحوّل",
+    "file": "21-transform-teal.png",
+    "dark": true,
+    "rgb": [
+      24,
+      112,
+      120
+    ]
+  },
+  {
+    "id": "22-alexandrite",
+    "title": "إسكندرين",
+    "file": "22-alexandrite.png",
+    "dark": true,
+    "rgb": [
+      32,
+      88,
+      96
+    ]
+  },
+  {
+    "id": "23-pine-rise",
+    "title": "صنوبر",
+    "file": "23-pine-rise.png",
+    "dark": true,
+    "rgb": [
+      40,
+      80,
+      56
+    ]
+  },
+  {
+    "id": "24-moss-earth",
+    "title": "طحلب",
+    "file": "24-moss-earth.png",
+    "dark": true,
+    "rgb": [
+      80,
+      92,
+      56
+    ]
+  },
+  {
+    "id": "25-charcoal-rise",
+    "title": "فحمي صاعد",
+    "file": "25-charcoal-rise.png",
+    "dark": true,
+    "rgb": [
+      48,
+      48,
+      52
+    ]
+  },
+  {
+    "id": "26-steel-gray",
+    "title": "رمادي فولاذ",
+    "file": "26-steel-gray.png",
+    "dark": false,
+    "rgb": [
+      112,
+      120,
+      128
+    ]
+  },
+  {
+    "id": "27-sand-dune",
+    "title": "كثيب رملي",
+    "file": "27-sand-dune.png",
+    "dark": false,
+    "rgb": [
+      196,
+      176,
+      148
+    ]
+  },
+  {
+    "id": "28-beige-twin",
+    "title": "بيج توأم",
+    "file": "28-beige-twin.png",
+    "dark": false,
+    "rgb": [
+      212,
+      196,
+      172
+    ]
+  },
+  {
+    "id": "29-cream-sugar",
+    "title": "سكر كريمي",
+    "file": "29-cream-sugar.png",
+    "dark": false,
+    "rgb": [
+      232,
+      212,
+      180
+    ]
+  },
+  {
+    "id": "30-peach-nurture",
+    "title": "خوخ دافئ",
+    "file": "30-peach-nurture.png",
+    "dark": false,
+    "rgb": [
+      232,
+      168,
+      140
+    ]
+  },
+  {
+    "id": "31-hot-coral",
+    "title": "مرجاني حار",
+    "file": "31-hot-coral.png",
+    "dark": false,
+    "rgb": [
+      232,
+      88,
+      88
+    ]
+  },
+  {
+    "id": "32-electric-lime",
+    "title": "ليموني كهربائي",
+    "file": "32-electric-lime.png",
+    "dark": false,
+    "rgb": [
+      168,
+      216,
+      56
+    ]
+  },
+  {
+    "id": "33-sherbet-pink",
+    "title": "شيربت وردي",
+    "file": "33-sherbet-pink.png",
+    "dark": false,
+    "rgb": [
+      244,
+      168,
+      188
+    ]
+  },
+  {
+    "id": "34-powder-lavender",
+    "title": "لافندر بودرة",
+    "file": "34-powder-lavender.png",
+    "dark": false,
+    "rgb": [
+      196,
+      180,
+      220
+    ]
+  },
+  {
+    "id": "35-buoyant-aqua",
+    "title": "أكوا حيوي",
+    "file": "35-buoyant-aqua.png",
+    "dark": false,
+    "rgb": [
+      88,
+      196,
+      196
+    ]
+  },
+  {
+    "id": "36-mystical-purple",
+    "title": "بنفسج سحري",
+    "file": "36-mystical-purple.png",
+    "dark": true,
+    "rgb": [
+      104,
+      64,
+      140
+    ]
+  },
+  {
+    "id": "37-citrus-pop",
+    "title": "حمضيات",
+    "file": "37-citrus-pop.png",
+    "dark": false,
+    "rgb": [
+      244,
+      188,
+      48
+    ]
+  },
+  {
+    "id": "38-burgundy-depth",
+    "title": "عنابي عميق",
+    "file": "38-burgundy-depth.png",
+    "dark": true,
+    "rgb": [
+      88,
+      24,
+      40
+    ]
+  },
+  {
+    "id": "39-indigo-wave",
+    "title": "نيلي موجة",
+    "file": "39-indigo-wave.png",
+    "dark": true,
+    "rgb": [
+      40,
+      48,
+      112
+    ]
+  },
+  {
+    "id": "40-emerald-lux",
+    "title": "زمرد فاخر",
+    "file": "40-emerald-lux.png",
+    "dark": true,
+    "rgb": [
+      16,
+      112,
+      80
+    ]
+  },
+  {
+    "id": "41-saffron-glow",
+    "title": "زعفران",
+    "file": "41-saffron-glow.png",
+    "dark": false,
+    "rgb": [
+      220,
+      148,
+      40
+    ]
+  },
+  {
+    "id": "42-rose-quartz",
+    "title": "كوارتز وردي",
+    "file": "42-rose-quartz.png",
+    "dark": false,
+    "rgb": [
+      232,
+      188,
+      196
+    ]
+  },
+  {
+    "id": "43-slate-night",
+    "title": "أردواز ليلي",
+    "file": "43-slate-night.png",
+    "dark": true,
+    "rgb": [
+      56,
+      64,
+      80
+    ]
+  },
+  {
+    "id": "44-butter-cream",
+    "title": "زبدة كريم",
+    "file": "44-butter-cream.png",
+    "dark": false,
+    "rgb": [
+      248,
+      228,
+      180
+    ]
+  },
+  {
+    "id": "45-matcha-foam",
+    "title": "ماتشا",
+    "file": "45-matcha-foam.png",
+    "dark": false,
+    "rgb": [
+      156,
+      184,
+      120
+    ]
+  },
+  {
+    "id": "46-cerulean-sky",
+    "title": "سماوي",
+    "file": "46-cerulean-sky.png",
+    "dark": false,
+    "rgb": [
+      72,
+      148,
+      196
+    ]
+  },
+  {
+    "id": "47-oxblood",
+    "title": "دم ثور",
+    "file": "47-oxblood.png",
+    "dark": true,
+    "rgb": [
+      72,
+      24,
+      32
+    ]
+  },
+  {
+    "id": "48-kiwi-pop",
+    "title": "كيوي",
+    "file": "48-kiwi-pop.png",
+    "dark": false,
+    "rgb": [
+      140,
+      188,
+      72
+    ]
+  },
+  {
+    "id": "49-orchid-neon",
+    "title": "أوركيد نيون",
+    "file": "49-orchid-neon.png",
+    "dark": false,
+    "rgb": [
+      188,
+      88,
+      168
+    ]
+  },
+  {
+    "id": "50-graphite",
+    "title": "غرافيت",
+    "file": "50-graphite.png",
+    "dark": true,
+    "rgb": [
+      64,
+      68,
+      72
+    ]
+  }
+]
