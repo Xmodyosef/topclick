@@ -30,10 +30,10 @@ extension KeyboardViewController {
         boardHeight
     }
 
-    /// How many symbol rows to show (1…4). Default 4 so the symbols page fills like letters.
+    /// How many symbol rows to show. Five rows stay inside the 324 board.
     func symbolRowsCount() -> Int {
-        // Four symbol rows fit the compact board without adding filler keys.
-        return 4
+        // 12 top + 5×46 + 5×6 gaps + 44 bottom = 316, under 324.
+        return 5
     }
 
     /// Preserve every valid symbol row in the supplied layout. Do not silently drop rows
