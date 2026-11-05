@@ -1,0 +1,310 @@
+[
+  {
+    "id": "morning",
+    "title": "صباح هادئ",
+    "file": "morning.png",
+    "dark": false,
+    "rgb": [
+      244,
+      229,
+      198
+    ]
+  },
+  {
+    "id": "evening",
+    "title": "مساء مخملي",
+    "file": "evening.png",
+    "dark": true,
+    "rgb": [
+      20,
+      30,
+      61
+    ]
+  },
+  {
+    "id": "light",
+    "title": "لؤلؤي",
+    "file": "light.png",
+    "dark": false,
+    "rgb": [
+      229,
+      242,
+      252
+    ]
+  },
+  {
+    "id": "dark",
+    "title": "فحمي",
+    "file": "dark.png",
+    "dark": true,
+    "rgb": [
+      25,
+      40,
+      71
+    ]
+  },
+  {
+    "id": "glass",
+    "title": "منشور",
+    "file": "glass.png",
+    "dark": false,
+    "rgb": [
+      219,
+      209,
+      244
+    ]
+  },
+  {
+    "id": "ocean",
+    "title": "محيط",
+    "file": "ocean.png",
+    "dark": true,
+    "rgb": [
+      15,
+      56,
+      81
+    ]
+  },
+  {
+    "id": "cobalt",
+    "title": "كوبالت",
+    "file": "cobalt.png",
+    "dark": true,
+    "rgb": [
+      25,
+      45,
+      107
+    ]
+  },
+  {
+    "id": "forest",
+    "title": "غابة",
+    "file": "forest.png",
+    "dark": true,
+    "rgb": [
+      15,
+      45,
+      30
+    ]
+  },
+  {
+    "id": "violet",
+    "title": "بنفسج",
+    "file": "violet.png",
+    "dark": true,
+    "rgb": [
+      45,
+      25,
+      81
+    ]
+  },
+  {
+    "id": "orchid",
+    "title": "أوركيد",
+    "file": "orchid.png",
+    "dark": true,
+    "rgb": [
+      81,
+      20,
+      45
+    ]
+  },
+  {
+    "id": "ember",
+    "title": "جمر",
+    "file": "ember.png",
+    "dark": true,
+    "rgb": [
+      61,
+      30,
+      12
+    ]
+  },
+  {
+    "id": "hailey",
+    "title": "دم",
+    "file": "hailey.png",
+    "dark": true,
+    "rgb": [
+      56,
+      12,
+      20
+    ]
+  },
+  {
+    "id": "matrix",
+    "title": "ماتريكس",
+    "file": "matrix.png",
+    "dark": true,
+    "rgb": [
+      5,
+      17,
+      7
+    ]
+  },
+  {
+    "id": "nord",
+    "title": "نورد",
+    "file": "nord.png",
+    "dark": false,
+    "rgb": [
+      198,
+      209,
+      219
+    ]
+  },
+  {
+    "id": "m4",
+    "title": "مشمش",
+    "file": "m4.png",
+    "dark": false,
+    "rgb": [
+      247,
+      209,
+      163
+    ]
+  },
+  {
+    "id": "m7",
+    "title": "نعناع",
+    "file": "m7.png",
+    "dark": false,
+    "rgb": [
+      214,
+      237,
+      224
+    ]
+  },
+  {
+    "id": "m9",
+    "title": "سماء",
+    "file": "m9.png",
+    "dark": false,
+    "rgb": [
+      198,
+      224,
+      244
+    ]
+  },
+  {
+    "id": "m12",
+    "title": "ورد",
+    "file": "m12.png",
+    "dark": false,
+    "rgb": [
+      244,
+      219,
+      229
+    ]
+  },
+  {
+    "id": "e2",
+    "title": "كحلي",
+    "file": "e2.png",
+    "dark": true,
+    "rgb": [
+      20,
+      30,
+      61
+    ]
+  },
+  {
+    "id": "e5",
+    "title": "برقوق",
+    "file": "e5.png",
+    "dark": true,
+    "rgb": [
+      45,
+      25,
+      56
+    ]
+  },
+  {
+    "id": "e8",
+    "title": "زمرد",
+    "file": "e8.png",
+    "dark": true,
+    "rgb": [
+      15,
+      45,
+      40
+    ]
+  },
+  {
+    "id": "e11",
+    "title": "جمر ليلي",
+    "file": "e11.png",
+    "dark": true,
+    "rgb": [
+      56,
+      25,
+      20
+    ]
+  },
+  {
+    "id": "aurora",
+    "title": "شفق",
+    "file": "aurora.png",
+    "dark": true,
+    "rgb": [
+      25,
+      71,
+      76
+    ]
+  },
+  {
+    "id": "lavender",
+    "title": "لافندر",
+    "file": "lavender.png",
+    "dark": true,
+    "rgb": [
+      71,
+      51,
+      107
+    ]
+  },
+  {
+    "id": "sunset",
+    "title": "غروب",
+    "file": "sunset.png",
+    "dark": true,
+    "rgb": [
+      96,
+      35,
+      40
+    ]
+  },
+  {
+    "id": "mint",
+    "title": "نعناع ليلي",
+    "file": "mint.png",
+    "dark": true,
+    "rgb": [
+      20,
+      61,
+      56
+    ]
+  },
+  {
+    "id": "rose",
+    "title": "وردي",
+    "file": "rose.png",
+    "dark": true,
+    "rgb": [
+      91,
+      30,
+      61
+    ]
+  },
+  {
+    "id": "mono",
+    "title": "أحادي",
+    "file": "mono.png",
+    "dark": true,
+    "rgb": [
+      56,
+      58,
+      63
+    ]
+  }
+]
