@@ -146,7 +146,7 @@ jobs:
           test -n "$APP"
           APPEX="$APP/PlugIns/KeyboardExtension.appex"
           test -d "$APPEX"
-          for name in emoji_catalog.json keyboard_layouts.json arabic_lexicon.json; do
+          for name in emoji_catalog.json keyboard_layouts.json; do
             SOURCE="Sources/KeyboardExtension/Resources/$name"
             test -s "$SOURCE"
             cp "$SOURCE" "$APPEX/$name"

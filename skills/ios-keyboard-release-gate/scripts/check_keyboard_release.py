@@ -9,7 +9,7 @@ import re
 import sys
 from pathlib import Path
 
-REQUIRED_RESOURCES = {"emoji_catalog.json", "keyboard_layouts.json", "arabic_lexicon.json"}
+REQUIRED_RESOURCES = {"emoji_catalog.json", "keyboard_layouts.json"}
 APP_GROUP_KEY = "com.apple.security.application-groups"
 
 

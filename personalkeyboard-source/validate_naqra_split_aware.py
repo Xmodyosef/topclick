@@ -27,7 +27,6 @@ checks = [
     ('no giant emoji literal', '😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇' not in text),
     ('layouts json', Path('Sources/KeyboardExtension/Resources/keyboard_layouts.json').exists()),
     ('emoji json', Path('Sources/KeyboardExtension/Resources/emoji_catalog.json').exists()),
-    ('lexicon json', Path('Sources/KeyboardExtension/Resources/arabic_lexicon.json').exists()),
     ('App slim', Path('Sources/ContainerApp/KeyboardPrototypeApp.swift').exists() and Path('Sources/ContainerApp/KeyboardPrototypeApp.swift').read_text().count('\n') < 40),
     ('no App godfile types', 'enum NaqraColors' not in Path('Sources/ContainerApp/KeyboardPrototypeApp.swift').read_text()),
 ]

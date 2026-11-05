@@ -145,7 +145,7 @@ def main() -> None:
     require(extension_info.get("CFBundleVersion") == expected_build, "extension build number matches app")
 
     # Keyboard data JSON must ship inside the appex — missing files force tiny emoji fallbacks.
-    required_json = ("emoji_catalog.json", "keyboard_layouts.json", "arabic_lexicon.json")
+    required_json = ("emoji_catalog.json", "keyboard_layouts.json")
     for name in required_json:
         hits = list(extension.rglob(name))
         require(bool(hits), f"keyboard extension embeds {name}")

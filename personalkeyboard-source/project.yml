@@ -55,7 +55,6 @@ targets:
     resources:
       - path: Sources/KeyboardExtension/Resources/emoji_catalog.json
       - path: Sources/KeyboardExtension/Resources/keyboard_layouts.json
-      - path: Sources/KeyboardExtension/Resources/arabic_lexicon.json
     settings:
       base:
         PRODUCT_NAME: KeyboardExtension

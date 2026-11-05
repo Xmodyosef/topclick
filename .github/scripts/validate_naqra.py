@@ -62,7 +62,6 @@ def main() -> None:
     require((ext_dir / 'KeyboardDataLoader.swift').is_file(), 'KeyboardDataLoader exists')
     require((ext_dir / 'Resources/keyboard_layouts.json').is_file(), 'layouts JSON exists')
     require((ext_dir / 'Resources/emoji_catalog.json').is_file(), 'emoji JSON exists')
-    require((ext_dir / 'Resources/arabic_lexicon.json').is_file(), 'lexicon JSON exists')
     require('path: Sources/KeyboardExtension/Resources' in project, 'project.yml registers Resources')
 
     layouts = json.loads((ext_dir / 'Resources/keyboard_layouts.json').read_text(encoding='utf-8'))
