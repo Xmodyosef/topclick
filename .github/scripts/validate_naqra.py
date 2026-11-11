@@ -33,39 +33,42 @@ def main() -> None:
     args = parser.parse_args()
     source = args.source
 
-    ext_dir = source / 'Sources/KeyboardExtension'
-    app_dir = source / 'Sources/ContainerApp'
+    ext_dir = source / 'KeyboardExtension/Sources'
+    app_dir = source / 'App/Sources'
+    extension_resources = source / 'KeyboardExtension/Resources'
+    app_config = source / 'App/Config'
+    extension_config = source / 'KeyboardExtension/Config'
     extension = concat_swift(ext_dir)
     app = concat_swift(app_dir)
     project = (source / 'project.yml').read_text(encoding='utf-8')
 
     # RTL contract: preserve Arabic keyboard direction without forcing the whole app to LTR.
-    app_info = plistlib.loads((app_dir / 'Info.plist').read_bytes())
-    extension_info = plistlib.loads((ext_dir / 'Info.plist').read_bytes())
+    app_info = plistlib.loads((app_config / 'Info.plist').read_bytes())
+    extension_info = plistlib.loads((extension_config / 'Info.plist').read_bytes())
     require(
         extension_info.get('NSExtension', {}).get('NSExtensionAttributes', {}).get('PrefersRightToLeft') is True,
         'keyboard extension declares PrefersRightToLeft'
     )
-    app_entry = (app_dir / 'KeyboardPrototypeApp.swift').read_text(encoding='utf-8')
+    app_entry = (app_dir / 'AppShell/KeyboardPrototypeApp.swift').read_text(encoding='utf-8')
     require('.environment(\\.layoutDirection, .leftToRight)' not in app_entry, 'app does not force a global LTR layout direction')
-    app_groups = plistlib.loads((app_dir / 'PersonalKeyboard.entitlements').read_bytes()).get('com.apple.security.application-groups', [])
-    ext_groups = plistlib.loads((ext_dir / 'KeyboardExtension.entitlements').read_bytes()).get('com.apple.security.application-groups', [])
+    app_groups = plistlib.loads((app_config / 'PersonalKeyboard.entitlements').read_bytes()).get('com.apple.security.application-groups', [])
+    ext_groups = plistlib.loads((extension_config / 'KeyboardExtension.entitlements').read_bytes()).get('com.apple.security.application-groups', [])
     require(bool(app_groups) and app_groups == ext_groups, 'App Group entitlement arrays match exactly')
 
-    require(APP_GROUP in (source / 'Sources/ContainerApp/PersonalKeyboard.entitlements').read_text(encoding='utf-8'), 'container App Group unchanged')
-    require(APP_GROUP in (source / 'Sources/KeyboardExtension/KeyboardExtension.entitlements').read_text(encoding='utf-8'), 'extension App Group unchanged')
+    require(APP_GROUP in (source / 'App/Config/PersonalKeyboard.entitlements').read_text(encoding='utf-8'), 'container App Group unchanged')
+    require(APP_GROUP in (source / 'KeyboardExtension/Config/KeyboardExtension.entitlements').read_text(encoding='utf-8'), 'extension App Group unchanged')
     require(APP_BUNDLE in project and EXT_BUNDLE in project, 'container and extension bundle IDs unchanged')
 
     # Split structure
-    require((ext_dir / 'KeyboardViewController.swift').is_file(), 'core KeyboardViewController exists')
-    require((ext_dir / 'KeyboardViewController+BuildUI.swift').is_file(), 'BuildUI extension exists')
-    require((ext_dir / 'KeyboardDataLoader.swift').is_file(), 'KeyboardDataLoader exists')
-    require((ext_dir / 'Resources/keyboard_layouts.json').is_file(), 'layouts JSON exists')
-    require((ext_dir / 'Resources/emoji_catalog.json').is_file(), 'emoji JSON exists')
+    require((ext_dir / 'Lifecycle/KeyboardViewController.swift').is_file(), 'core KeyboardViewController exists')
+    require((ext_dir / 'UI/KeyboardViewController+BuildUI.swift').is_file(), 'BuildUI extension exists')
+    require((ext_dir / 'Input/KeyboardDataLoader.swift').is_file(), 'KeyboardDataLoader exists')
+    require((extension_resources / 'keyboard_layouts.json').is_file(), 'layouts JSON exists')
+    require((extension_resources / 'emoji_catalog.json').is_file(), 'emoji JSON exists')
     # arabic_lexicon.json is optional: suggestions fall back inside KeyboardDataLoader.
-    require('path: Sources/KeyboardExtension/Resources' in project, 'project.yml registers Resources')
+    require('path: KeyboardExtension/Resources' in project, 'project.yml registers Resources')
 
-    layouts = json.loads((ext_dir / 'Resources/keyboard_layouts.json').read_text(encoding='utf-8'))
+    layouts = json.loads((extension_resources / 'keyboard_layouts.json').read_text(encoding='utf-8'))
     hold = layouts.get('hold_map') or {}
     require(isinstance(hold.get('ا'), list) and set(['أ','إ','آ']).issubset(hold.get('ا') or []), 'Arabic long-press for alef in layouts JSON')
     require('و' in hold and 'ي' in hold and 'a' in hold and 'e' in hold, 'Arabic+English long-press maps present')
@@ -77,7 +80,7 @@ def main() -> None:
     require(len(arabic_shift) == len(arabic_rows) and [len(row) for row in arabic_shift] == [len(row) for row in arabic_rows], 'Arabic Shift rows match keyboard row widths')
     require(arabic_shift != arabic_rows, 'Arabic Shift layout differs from normal Arabic letters')
 
-    emoji = json.loads((ext_dir / 'Resources/emoji_catalog.json').read_text(encoding='utf-8'))
+    emoji = json.loads((extension_resources / 'emoji_catalog.json').read_text(encoding='utf-8'))
     require(isinstance(emoji, list) and len(emoji) >= 8, 'emoji catalog has categories')
     require(sum(len(c.get('items', [])) for c in emoji) >= 200, 'emoji catalog has substantial items')
 
@@ -92,7 +95,7 @@ def main() -> None:
         and 'تبديل لوحة المفاتيح' in extension,
         'system next-keyboard button is conditionally wired and labeled'
     )
-    controller = (ext_dir / 'KeyboardViewController.swift').read_text(encoding='utf-8')
+    controller = (ext_dir / 'Lifecycle/KeyboardViewController.swift').read_text(encoding='utf-8')
     active_layout = re.search(r'func activeLetterLayout\(\)\s*->\s*\[\[String\]\]\s*\{(.*?)\n    \}', extension, re.S)
     require(active_layout is not None and 'return arabicRows' in active_layout.group(1) and 'isShifted ? englishUpper : englishLower' in active_layout.group(1), 'Arabic layout stays fixed while English Shift changes case')
     lifecycle = re.search(r'override func viewWillDisappear\(_ animated: Bool\) \{(.*?)\n    \}', controller, re.S)
@@ -103,16 +106,16 @@ def main() -> None:
     require('language == .english' in extension and 'UITextChecker' in extension, 'English spelling path present')
     require('misspelling.location != NSNotFound' in extension, 'English autocorrect limited to misspellings')
 
-    sound = (ext_dir / 'TapSoundEngine.swift').read_text(encoding='utf-8')
+    sound = (ext_dir / 'Features/TapSoundEngine.swift').read_text(encoding='utf-8')
     require('AudioServicesPlaySystemSound' in sound or 'AVAudioEngine' in sound, 'sound engine present')
     none_branch = re.search(r'if choice == "none"\s*\{([^}]*)\}', sound)
     require(none_branch is not None and 'return' in none_branch.group(1) and 'AudioServicesPlaySystemSound' not in none_branch.group(1), 'none sound choice is silent')
     require('ThemeIO.bool("sounds") != false' in sound, 'sound engine respects disabled sound preference')
 
-    settings = (app_dir / 'SettingsTab.swift').read_text(encoding='utf-8')
-    require(not (app_dir / 'KeyboardPreviewTab.swift').exists(), 'KeyboardPreviewTab removed')
+    settings = (app_dir / 'Settings/SettingsTab.swift').read_text(encoding='utf-8')
+    require(not (app_dir / 'Settings/KeyboardPreviewTab.swift').exists(), 'KeyboardPreviewTab removed')
     require('KeyboardPreviewTab' not in app and 'MiniKeyboardView' not in app, 'app no longer embeds keyboard preview')
-    require('معاينة' not in (app_dir / 'ContentView.swift').read_text(encoding='utf-8'), 'ContentView has no preview tab')
+    require('معاينة' not in (app_dir / 'AppShell/ContentView.swift').read_text(encoding='utf-8'), 'ContentView has no preview tab')
     require('Toggle("تفعيل صوت النقر", isOn: $sounds)' in settings, 'sound toggle is exposed in settings')
     require(
         ('Picker("نوع الصوت", selection: $soundChoice)' in settings)
@@ -129,7 +132,7 @@ def main() -> None:
     require('UIApplication.openSettingsURLString' in app and 'App-Prefs:' not in app, 'Full Access uses public app settings URL')
     require('letterFont' in extension and '.systemFont(ofSize: 26, weight: .medium)' in extension, 'compact keyboard font')
     require('UIVisualEffectView(effect: nil)' in extension and 'shadowOpacity = 0' in extension, 'keyboard avoids live blur and key shadows')
-    build_ui = (ext_dir / 'KeyboardViewController+BuildUI.swift').read_text(encoding='utf-8')
+    build_ui = (ext_dir / 'UI/KeyboardViewController+BuildUI.swift').read_text(encoding='utf-8')
     require(('b.isOpaque = true' in build_ui or 'b.isOpaque = true' in extension) and 'b.opaque = true' not in extension, 'UIButton opacity uses current UIKit property')
     require('emojiPager?.delegate = nil' in extension and 'emojiPack.indices.contains' in extension, 'emoji teardown + guards')
     require('emojiPack = Self.catalog()' in extension or 'KeyboardDataLoader.emojiCatalog' in extension, 'emoji catalog load path')
@@ -158,7 +161,7 @@ def main() -> None:
     project_settings = project[project.index('ASSETCATALOG_COMPILER_APPICON_NAME'):project.index('TARGETED_DEVICE_FAMILY', project.index('ASSETCATALOG_COMPILER_APPICON_NAME'))]
     require('AppIconMorning' in project_settings and 'AppIconEvening' in project_settings, 'XcodeGen morning/evening icons')
 
-    assets = source / 'Sources/ContainerApp/Assets.xcassets'
+    assets = source / 'App/Resources/Assets.xcassets'
     for set_name, image_name in (
         ('AppIconMorning.appiconset', 'AppIconMorning.png'),
         ('AppIconEvening.appiconset', 'AppIconEvening.png'),
@@ -171,17 +174,17 @@ def main() -> None:
     require(not (assets / 'EveningArtwork.imageset').exists(), 'EveningArtwork decorative set removed')
 
     # Container split
-    require((app_dir / 'KeyboardPrototypeApp.swift').is_file(), 'App entry exists')
-    require('enum NaqraColors' not in (app_dir / 'KeyboardPrototypeApp.swift').read_text(encoding='utf-8'), 'App entry is slim')
-    require((app_dir / 'SettingsTab.swift').is_file() and (app_dir / 'ThemesTab.swift').is_file(), 'settings/themes split')
+    require((app_dir / 'AppShell/KeyboardPrototypeApp.swift').is_file(), 'App entry exists')
+    require('enum NaqraColors' not in (app_dir / 'AppShell/KeyboardPrototypeApp.swift').read_text(encoding='utf-8'), 'App entry is slim')
+    require((app_dir / 'Settings/SettingsTab.swift').is_file() and (app_dir / 'Themes/ThemesTab.swift').is_file(), 'settings/themes split')
     require('sounds' in app, 'sounds setting exposed in app')
     require('Undo' not in (source / 'README.md').read_text(encoding='utf-8'), 'README does not claim unimplemented Undo')
 
     # App shell after preview removal
-    require('ThemesTab()' in (app_dir / 'ContentView.swift').read_text(encoding='utf-8'), 'ThemesTab is primary tab')
-    require('SetupTab' not in (app_dir / 'ContentView.swift').read_text(encoding='utf-8'), 'Setup folded into Settings (no separate tab)')
-    require('تفعيل لوحة نقرة' in (app_dir / 'SettingsTab.swift').read_text(encoding='utf-8'), 'activation guide lives in Settings')
-    require('ThemeBoardCanvas' in app and ('numberRow' in (app_dir / 'ThemesTab.swift').read_text(encoding='utf-8') or 'numberRow' in (app_dir / 'ThemeBoardCanvas.swift').read_text(encoding='utf-8')), 'themes tab has full 4-row board canvas')
+    require('ThemesTab()' in (app_dir / 'AppShell/ContentView.swift').read_text(encoding='utf-8'), 'ThemesTab is primary tab')
+    require('SetupTab' not in (app_dir / 'AppShell/ContentView.swift').read_text(encoding='utf-8'), 'Setup folded into Settings (no separate tab)')
+    require('تفعيل لوحة نقرة' in (app_dir / 'Settings/SettingsTab.swift').read_text(encoding='utf-8'), 'activation guide lives in Settings')
+    require('ThemeBoardCanvas' in app and ('numberRow' in (app_dir / 'Themes/ThemesTab.swift').read_text(encoding='utf-8') or 'numberRow' in (app_dir / 'Themes/ThemeBoardCanvas.swift').read_text(encoding='utf-8')), 'themes tab has full 4-row board canvas')
     require('تم اللصق' in extension and 'pasteNow()' in extension, 'paste uses toast notice like iOS')
     require('holdChoices(for:' in extension, 'long-press holdChoices helper present')
     require('func applyShiftSurface' in extension and 'letterKeyButtons' in extension, 'shift updates titles without full rebuild')

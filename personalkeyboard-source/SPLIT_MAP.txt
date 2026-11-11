@@ -1,121 +1,35 @@
-Naqra KeyboardViewController Split Map
-========================================
-Original ~1504 lines
+Naqra iOS source tree
+=====================
 
-- KeyboardExtension/ClipboardHistory.swift (33 lines)
-- KeyboardExtension/EmojiCell.swift (25 lines)
-- KeyboardExtension/KeyboardLanguage.swift (5 lines)
-- KeyboardExtension/KeyboardViewController+Actions.swift (123 lines)
-- KeyboardExtension/KeyboardViewController+BuildUI.swift (304 lines)
-- KeyboardExtension/KeyboardViewController+Emoji.swift (143 lines)
-- KeyboardExtension/KeyboardViewController+Input.swift (317 lines)
-- KeyboardExtension/KeyboardViewController.swift (333 lines)
-- KeyboardExtension/NaqraPalette.swift (190 lines)
-- KeyboardExtension/ThemeIO.swift (43 lines)
-- KeyboardExtension/TranslationBridge.swift (42 lines)
+personalkeyboard-source/
+├── App/
+│   ├── Sources/
+│   │   ├── AppShell/       # App entry, root view, icon switching
+│   │   ├── Settings/       # Settings and translation preparation
+│   │   └── Themes/         # Theme models, pack stores, theme UI
+│   ├── Resources/
+│   │   └── Assets.xcassets/
+│   └── Config/             # Info.plist and app entitlements
+├── KeyboardExtension/
+│   ├── Sources/
+│   │   ├── Lifecycle/     # KeyboardViewController lifecycle and core state
+│   │   ├── Input/         # Text input, long-press, language and data loading
+│   │   ├── UI/            # Keyboard rows, keys, toolbar and palette
+│   │   └── Features/      # Emoji, clipboard, sound, themes and translation
+│   ├── Resources/         # keyboard_layouts.json and emoji_catalog.json
+│   └── Config/            # Extension Info.plist and entitlements
+├── Shared/
+│   └── Models/            # SharedKeyboardData used by both targets
+├── Tests/NaqraTests/      # XCTest regression tests
+├── scripts/               # Version validation and release helpers
+└── project.yml            # XcodeGen source/resource/target declarations
 
-Functions:
-
-[core]
-  - viewDidLoad()
-  - viewWillAppear()
-  - textDidChange()
-  - viewWillDisappear()
-  - viewDidLayoutSubviews()
-  - playSystemClick()
-  - refreshTabs()
-  - alts()
-  - control()
-  - fallbackSymbol()
-  - knownWord()
-  - periodTapped()
-  - symbolsOrLettersTapped()
-
-[build]
-  - updateHeightForCurrentSize()
-  - armHaptics()
-  - tapHaptic()
-  - showNotice()
-  - lockHeight()
-  - configureRoot()
-  - rebuild()
-  - makeToolbar()
-  - makeRow()
-  - makeLastLetterRow()
-  - makeSymbolLastRow()
-  - makeActionRow()
-  - makeDeleteKey()
-  - makeBottom()
-  - paint()
-  - iconKey()
-
-[emoji]
-  - makeEmojiTabs()
-  - makeEmojiPager()
-  - scrollViewDidEndDecelerating()
-  - collectionView()
-  - collectionView()
-  - collectionView()
-  - collectionView()
-  - emojiTab()
-  - emojiTapped()
-  - rememberEmoji()
-
-[input]
-  - saveLanguage()
-  - makeSuggestionsRow()
-  - suggestions()
-  - refreshSuggestions()
-  - suggestionTapped()
-  - charKey()
-  - charDown()
-  - charDrag()
-  - charUp()
-  - showHoldPopup()
-  - hideHoldPopup()
-  - shiftTapped()
-  - deleteTouchDown()
-  - deleteTouchUp()
-  - deleteDrag()
-  - deleteTouchCancel()
-  - spaceTouchDown()
-  - spaceDrag()
-  - autocorrectOnSpace()
-  - spaceTouchUp()
-  - enterTapped()
-  - copyPasteHold()
-  - dismissKeyboardAction()
-
-[actions]
-  - persistAccess()
-  - loadPrefs()
-  - listenPrefs()
-  - playSystemSound()
-  - attachBridge()
-  - loadPreparedTheme()
-  - copyPasteTapped()
-  - copyNow()
-  - pasteNow()
-  - translateTapped()
-  - applyTranslation()
-
-# 2026-10-26 packs-split
-KeyboardViewController+Input.swift  -> suggestions/language/shift/delete/space/enter
-KeyboardViewController+Hold.swift   -> charKey/charDown/Up/Drag/Cancel + hold popup
-KeyboardViewController+Clipboard.swift -> clipboard panel
-KeyboardViewController+Paint.swift  -> paint/mix/iconKey
-PackStores.swift (ContainerApp)     -> ThemePackStore + SoundPackStore (independent install)
-ThemesTab                           -> per-pack download then free switch
-
-# Placement rules (team)
-# ContainerApp:
-#   PackStores.swift     — install + apply for themes/sounds (ONLY place that writes installed*)
-#   ThemesTab.swift      — pack tiles / download UX
-#   ThemeBoardCanvas.swift — live board preview only
-#   ThemeModels.swift    — ThemeCatalog + ThemeStore prefs
-#   SettingsTab.swift    — master toggles (mute, number row, haptics); NO pack picker
-# KeyboardExtension:
-#   ThemeIO.swift        — dual-write/read active prefs only
-#   NaqraPalette.swift   — real keyboard colors from themeId
-#   TapSoundEngine.swift — play from soundChoice (no install lists)
-#   +Hold / +Clipboard / +Paint / +Input / +BuildUI — behavior splits
+Placement rules
+---------------
+- Keep app-only UI and stores inside App/Sources.
+- Keep keyboard-extension runtime code inside KeyboardExtension/Sources.
+- Keep JSON extension resources outside Sources and register them explicitly in project.yml.
+- Keep Info.plist and entitlements in each target's Config directory.
+- Put code compiled by both targets in Shared, then list it for both targets.
+- Keep Tests and scripts at the project root; update CI and validators whenever paths move.
+- Folder moves must not change Swift behavior, bundle identifiers, App Group, or versions.

@@ -19,10 +19,9 @@ targets:
     type: application
     platform: iOS
     sources:
-      - path: Sources/ContainerApp
-        excludes:
-          - "Info.plist"
-      - path: Sources/SharedKeyboardData.swift
+      - path: App/Sources
+      - path: App/Resources
+      - path: Shared/Models/SharedKeyboardData.swift
     settings:
       base:
         PRODUCT_NAME: PersonalKeyboard
@@ -30,12 +29,12 @@ targets:
         MARKETING_VERSION: "0.2.9"
         CURRENT_PROJECT_VERSION: 31
         GENERATE_INFOPLIST_FILE: NO
-        INFOPLIST_FILE: Sources/ContainerApp/Info.plist
+        INFOPLIST_FILE: App/Config/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIconMorning
         ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: "AppIconEvening"
         TARGETED_DEVICE_FAMILY: "1,2"
     entitlements:
-      path: Sources/ContainerApp/PersonalKeyboard.entitlements
+      path: App/Config/PersonalKeyboard.entitlements
     dependencies:
       - target: KeyboardExtension
         embed: true
@@ -45,16 +44,13 @@ targets:
     type: app-extension
     platform: iOS
     sources:
-      - path: Sources/KeyboardExtension
-        excludes:
-          - "Info.plist"
-          - "Resources"
-      - path: Sources/SharedKeyboardData.swift
+      - path: KeyboardExtension/Sources
+      - path: Shared/Models/SharedKeyboardData.swift
     # Explicit JSON files so XcodeGen copies them into KeyboardExtension.appex
     # (folder resource alone was missing from the built unsigned IPA).
     resources:
-      - path: Sources/KeyboardExtension/Resources/emoji_catalog.json
-      - path: Sources/KeyboardExtension/Resources/keyboard_layouts.json
+      - path: KeyboardExtension/Resources/emoji_catalog.json
+      - path: KeyboardExtension/Resources/keyboard_layouts.json
     settings:
       base:
         PRODUCT_NAME: KeyboardExtension
@@ -63,10 +59,10 @@ targets:
         MARKETING_VERSION: "0.2.9"
         CURRENT_PROJECT_VERSION: 31
         GENERATE_INFOPLIST_FILE: NO
-        INFOPLIST_FILE: Sources/KeyboardExtension/Info.plist
+        INFOPLIST_FILE: KeyboardExtension/Config/Info.plist
         TARGETED_DEVICE_FAMILY: "1,2"
     entitlements:
-      path: Sources/KeyboardExtension/KeyboardExtension.entitlements
+      path: KeyboardExtension/Config/KeyboardExtension.entitlements
     dependencies:
       - sdk: Translation.framework
         weak: true

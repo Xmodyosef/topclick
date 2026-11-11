@@ -147,7 +147,7 @@ jobs:
           APPEX="$APP/PlugIns/KeyboardExtension.appex"
           test -d "$APPEX"
           for name in emoji_catalog.json keyboard_layouts.json; do
-            SOURCE="Sources/KeyboardExtension/Resources/$name"
+            SOURCE="KeyboardExtension/Resources/$name"
             test -s "$SOURCE"
             cp "$SOURCE" "$APPEX/$name"
             test -s "$APPEX/$name"
@@ -159,9 +159,9 @@ jobs:
           # xcodebuild with CODE_SIGNING_ALLOWED=NO rewrites CODE_SIGN_ENTITLEMENTS
           # source files to empty plists; restore the committed entitlements first.
           git checkout HEAD -- \
-            Sources/ContainerApp/PersonalKeyboard.entitlements \
-            Sources/KeyboardExtension/KeyboardExtension.entitlements
-          wc -c Sources/ContainerApp/PersonalKeyboard.entitlements Sources/KeyboardExtension/KeyboardExtension.entitlements
+            App/Config/PersonalKeyboard.entitlements \
+            KeyboardExtension/Config/KeyboardExtension.entitlements
+          wc -c App/Config/PersonalKeyboard.entitlements KeyboardExtension/Config/KeyboardExtension.entitlements
           APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
           test -n "$APP"
           python3 ../.github/scripts/validate_built_app.py "$APP"

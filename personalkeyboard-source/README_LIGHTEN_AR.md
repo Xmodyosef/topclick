@@ -1,17 +1,22 @@
-# تخفيف وتقسيم — جولة 2
+# تنظيم التطبيق وتقسيمه
 
-## A) تطبيق الحاوية
-`KeyboardPrototypeApp.swift` أصبح نقطة الدخول فقط. باقي الشاشات في ملفات مستقلة:
-NaqraDesign, ThemeModels, AppIconSwitcher, ContentView, KeyboardPreviewTab, ThemesTab, SettingsTab, TranslationPrepCard.
+## تطبيق الحاوية
 
-## B) بيانات الامتداد خارج السورس
-`Sources/KeyboardExtension/Resources/`:
-- keyboard_layouts.json
-- arabic_lexicon.json
-- emoji_catalog.json
+- `App/Sources/AppShell/` — نقطة الدخول والواجهة الجذرية وتبديل الأيقونة.
+- `App/Sources/Settings/` — الإعدادات وتجهيز الترجمة.
+- `App/Sources/Themes/` — الثيمات ومخازن حزمها ولوحة المعاينة.
+- `App/Resources/Assets.xcassets/` — الأيقونات والأصول الرسومية.
+- `App/Config/` — `Info.plist` وentitlements.
 
-التحميل عبر `KeyboardDataLoader` (كسول + كاش).
+## امتداد لوحة المفاتيح
 
-## ملاحظات
-- `UserDefaults.synchronize` أزيل حيث وُجد.
-- الهوية (Bundle / App Group) لم تُغيَّر.
+- `KeyboardExtension/Sources/Lifecycle/` — دورة حياة اللوحة.
+- `KeyboardExtension/Sources/Input/` — الإدخال والضغط المطوّل واللغة وتحميل البيانات.
+- `KeyboardExtension/Sources/UI/` — الصفوف والأزرار والرسم والألوان.
+- `KeyboardExtension/Sources/Features/` — الإيموجي والحافظة والصوت والثيمات والترجمة.
+- `KeyboardExtension/Resources/` — `keyboard_layouts.json` و`emoji_catalog.json`، ويُسجل كل منهما صراحةً في `project.yml`.
+- `KeyboardExtension/Config/` — `Info.plist` وentitlements.
+
+## المشترك والتحقق
+
+`Shared/Models/SharedKeyboardData.swift` يُضمّن في هدفي التطبيق والامتداد. الاختبارات في `Tests/NaqraTests/`، وسكربتات الإصدار في `scripts/`؛ بعد أي نقل حدّث `project.yml` والمدققات وGitHub Actions.

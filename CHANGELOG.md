@@ -28,3 +28,4 @@
 ## Unreleased
 - Added three focused skills with runnable release, skill-routing, and accessibility-audit scripts.
 - Fixed stale `references/source/` instructions and updated the skill index and CI pack-count checks.
+- Reorganized iOS sources into App, KeyboardExtension, Shared, Config, Resources, and functional Swift groups without changing app behavior.
