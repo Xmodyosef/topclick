@@ -34,9 +34,29 @@ def test_naqra_source_contracts() -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_ios_source_tree_contracts() -> None:
+    source = ROOT / "personalkeyboard-source"
+    required = (
+        source / "App/Sources/AppShell/KeyboardPrototypeApp.swift",
+        source / "App/Resources/Assets.xcassets/Contents.json",
+        source / "App/Config/Info.plist",
+        source / "KeyboardExtension/Sources/Lifecycle/KeyboardViewController.swift",
+        source / "KeyboardExtension/Resources/keyboard_layouts.json",
+        source / "KeyboardExtension/Config/Info.plist",
+        source / "Shared/Models/SharedKeyboardData.swift",
+    )
+    assert all(path.is_file() for path in required)
+    assert not (source / "Sources").exists()
+    project = (source / "project.yml").read_text(encoding="utf-8")
+    assert "path: App/Sources" in project
+    assert "path: App/Resources" in project
+    assert "path: KeyboardExtension/Sources" in project
+    assert "Shared/Models/SharedKeyboardData.swift" in project
+
+
 def test_clipboard_privacy_default_does_not_destroy_existing_history() -> None:
     source = (
-        ROOT / "personalkeyboard-source/Sources/KeyboardExtension/ClipboardHistory.swift"
+        ROOT / "personalkeyboard-source/KeyboardExtension/Sources/Features/ClipboardHistory.swift"
     ).read_text(encoding="utf-8")
     block = source.split("func ensurePrivacyDefault()", 1)[1].split("\n    }", 1)[0]
     assert 'ThemeIO.set("clipboardHistoryEnabled", value: false)' in block

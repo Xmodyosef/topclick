@@ -30,7 +30,7 @@ def main() -> None:
     # walking upward from the script location for local/manual invocations.
     cwd = Path.cwd().resolve()
     source_root = next(
-        (parent for parent in (cwd, *cwd.parents) if (parent / "project.yml").is_file() and (parent / "Sources").is_dir()),
+        (parent for parent in (cwd, *cwd.parents) if (parent / "project.yml").is_file() and (parent / "App").is_dir() and (parent / "KeyboardExtension").is_dir()),
         None,
     )
     if source_root is None:
@@ -57,8 +57,8 @@ def main() -> None:
     expected_build = build_match.group(1) if build_match else ""
     require(info.get("CFBundleVersion") == expected_build, "built app build number matches project.yml")
 
-    app_entitlements_path = source_root / "Sources/ContainerApp/PersonalKeyboard.entitlements"
-    extension_entitlements_path = source_root / "Sources/KeyboardExtension/KeyboardExtension.entitlements"
+    app_entitlements_path = source_root / "App/Config/PersonalKeyboard.entitlements"
+    extension_entitlements_path = source_root / "KeyboardExtension/Config/KeyboardExtension.entitlements"
     require(app_entitlements_path.is_file(), f"app entitlements exist at {app_entitlements_path}")
     require(extension_entitlements_path.is_file(), f"extension entitlements exist at {extension_entitlements_path}")
 
@@ -97,8 +97,8 @@ def main() -> None:
         import subprocess
         repo_root = source_root.parent if (source_root.parent / ".git").exists() or (source_root.parent / ".github").exists() else source_root
         for rel in (
-            "personalkeyboard-source/Sources/ContainerApp/PersonalKeyboard.entitlements",
-            "personalkeyboard-source/Sources/KeyboardExtension/KeyboardExtension.entitlements",
+            "personalkeyboard-source/App/Config/PersonalKeyboard.entitlements",
+            "personalkeyboard-source/KeyboardExtension/Config/KeyboardExtension.entitlements",
         ):
             subprocess.run(
                 ["git", "checkout", "HEAD", "--", rel],

@@ -116,8 +116,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="validate version consistency without changing files")
     parser.add_argument("--project", type=Path, default=root / "project.yml")
-    parser.add_argument("--app-info", type=Path, default=root / "Sources/ContainerApp/Info.plist")
-    parser.add_argument("--extension-info", type=Path, default=root / "Sources/KeyboardExtension/Info.plist")
+    parser.add_argument("--app-info", type=Path, default=root / "App/Config/Info.plist")
+    parser.add_argument("--extension-info", type=Path, default=root / "KeyboardExtension/Config/Info.plist")
     args = parser.parse_args()
 
     project_path = args.project.resolve()

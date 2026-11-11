@@ -82,7 +82,7 @@
 ### P0 — hold_map حرف ل
 - كان: `"ل": ["ڵ","ّ"]` فقط
 - صار: `"ل": ["لا","لأ","لإ","لآ","ڵ","ّ"]`
-- الملف: `Sources/KeyboardExtension/Resources/keyboard_layouts.json`
+- الملف: `KeyboardExtension/Resources/keyboard_layouts.json`
 
 ### P0 — مزامنة App Group (suite أولاً)
 - ThemeIO / ThemeStore / PackStores: القراءة والكتابة تفضّل `UserDefaults(suiteName:)` قبل `standard`

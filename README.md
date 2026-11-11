@@ -23,6 +23,10 @@ xcodebuild -project PersonalKeyboard.xcodeproj -scheme PersonalKeyboard \
 
 يفحص GitHub Actions موارد الامتداد قبل بناء IPA؛ لا يُستخدم Workflow مستقل لنقل ملفات JSON إلى مسار مختلف.
 
+## هيكل ملفات التطبيق
+
+تُقسم مصادر iOS حسب الهدف والوظيفة: `personalkeyboard-source/App/Sources/` للتطبيق، و`KeyboardExtension/Sources/` للوحة، و`Shared/Models/` للكود المشترك. توجد ملفات الإعداد في مجلدي `Config/`، وموارد الامتداد في `KeyboardExtension/Resources/`، والاختبارات في `Tests/NaqraTests/`. خريطة تفصيلية في [`SPLIT_MAP.txt`](personalkeyboard-source/SPLIT_MAP.txt).
+
 ## الإصدار الحالي
 
 - **v0.2.8.1** — [Release](https://github.com/Xmodyosef/topclick/releases/tag/v0.2.8.1)
