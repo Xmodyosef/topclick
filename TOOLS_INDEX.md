@@ -6,9 +6,9 @@ Quick reference for all tools in this repo. Search by keyword to find fast.
 
 | Script | Path | Purpose |
 |---|---|---|
-| check_keyboard_release.py | scripts/ | App Group / signing / version gate before release |
-| a11y_static_audit.py | scripts/ | Finds buttons missing accessibilityLabel |
-| verify_skill_links.py | scripts/ | Checks skill index + link integrity |
+| check_keyboard_release.py | skills/ios-keyboard-release-gate/scripts/ | App Group / signing / version gate before release |
+| a11y_static_audit.py | skills/iphone-keyboard-accessibility-qa/scripts/ | Finds buttons missing accessibilityLabel |
+| verify_skill_links.py | skills/skill-routing-integrity/scripts/ | Checks skill index + link integrity |
 
 ## 2) CI Workflows
 
