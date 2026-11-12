@@ -10,8 +10,8 @@ extension KeyboardViewController {
         static let delete: CGFloat = 42
         static let enter: CGFloat = 42
         static let period: CGFloat = 32
-        static let spaceMin: CGFloat = 58
-        static let spaceMinCrowded: CGFloat = 44
+        static let spaceMin: CGFloat = 48
+        static let spaceMinCrowded: CGFloat = 40
     }
 
     /// Title that must not bidi-reorder (e.g. ؟+#).
@@ -80,6 +80,8 @@ extension KeyboardViewController {
         paint(emoji, chrome: .emoji)
         emoji.addTarget(self, action: #selector(emojiTapped), for: .touchUpInside)
         emoji.widthAnchor.constraint(equalToConstant: BottomWidth.emoji).isActive = true
+        emoji.setContentCompressionResistancePriority(.required, for: .horizontal)
+        emoji.setContentHuggingPriority(.required, for: .horizontal)
         emoji.accessibilityLabel = "لوحة الرموز التعبيرية"
 
         let space = control("", #selector(spaceTouchUp), font: 14)
@@ -88,9 +90,10 @@ extension KeyboardViewController {
         space.addTarget(self, action: #selector(spaceDrag(_:event:)), for: .touchDragOutside)
         space.setContentHuggingPriority(.defaultLow, for: .horizontal)
         space.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        // Min width is a preference only. Priority 999 fought the side keys and crushed the emoji key.
         let minSpace = showsNextKeyboard ? BottomWidth.spaceMinCrowded : BottomWidth.spaceMin
         let minimumSpaceConstraint = space.widthAnchor.constraint(greaterThanOrEqualToConstant: minSpace)
-        minimumSpaceConstraint.priority = UILayoutPriority(999)
+        minimumSpaceConstraint.priority = UILayoutPriority(750)
         minimumSpaceConstraint.isActive = true
         space.accessibilityLabel = "مسافة"
 
