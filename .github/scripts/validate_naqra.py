@@ -153,7 +153,7 @@ def main() -> None:
     require('UIVisualEffectView(effect: nil)' in extension and 'shadowOpacity = 0' in extension, 'keyboard avoids live blur and key shadows')
     build_ui = (ext_dir / 'UI/KeyboardViewController+BuildUI.swift').read_text(encoding='utf-8')
     require(('b.isOpaque = true' in build_ui or 'b.isOpaque = true' in extension) and 'b.opaque = true' not in extension, 'UIButton opacity uses current UIKit property')
-    require('emojiPager?.delegate = nil' in extension and 'emojiPack.indices.contains' in extension, 'emoji teardown + guards')
+    require('emojiPager = nil' in extension and 'emojiPack.indices.contains' in extension, 'emoji teardown + guards')
     require('emojiPack = Self.catalog()' in extension or 'KeyboardDataLoader.emojiCatalog' in extension, 'emoji catalog load path')
     require('KeyboardDataLoader' in extension, 'data loader wired')
     require('textDocumentProxy.selectedText' in extension, 'copy uses selected text')
