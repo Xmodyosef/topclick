@@ -120,7 +120,7 @@ jobs:
           legacy = list(root.rglob("SKILL.reference.md")) + list(
               root.rglob("references/source")
           )
-          if len(packs) != 4 or len(bundles) != 1 or len(archives) != 1 or legacy:
+          if len(packs) != 4 or len(bundles) != 0 or len(archives) != 1 or legacy:
               raise SystemExit(
                   f"Invalid skill layout: packs={len(packs)}, bundles={len(bundles)}, archives={len(archives)}, legacy={len(legacy)}"
               )
@@ -141,7 +141,7 @@ jobs:
               "# Agent Review Report\n\n"
               f"- Changed files: {len(changed)}\n"
               "- Active skill packs: 4\n"
-              "- Integrated bundles: 1\n"
+              "- Integrated bundles: 0\n"
               "- Resource archives: 1\n"
               "- Legacy individual skill files: 0\n"
               "- Conflict markers: 0\n"
