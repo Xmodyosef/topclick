@@ -59,9 +59,9 @@ jobs:
           else
             echo "XcodeGen restored from cache"
           fi
+          # GITHUB_PATH only applies to *later* steps — always invoke via absolute path here.
           echo "$DEST" >> "$GITHUB_PATH"
-          hash -r || true
-          xcodegen --version | grep -F "2.46.0"
+          "$DEST/xcodegen" --version | grep -F "2.46.0"
 
       - name: Select Xcode with installed iOS simulator runtime
         run: |
