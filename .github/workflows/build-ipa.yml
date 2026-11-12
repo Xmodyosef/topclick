@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 25
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -33,9 +33,11 @@ jobs:
       - name: Remove Agent Folder
         run: rm -rf .agent
 
-      # Cache the XcodeGen binary only (not DerivedData / not test-build).
+      # Cache XcodeGen binary only (not DerivedData / not test-build).
+      # continue-on-error: cache service blips must never fail the IPA job.
       - name: Cache XcodeGen 2.46.0
         id: cache-xcodegen
+        continue-on-error: true
         uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: .ci-tools/xcodegen
@@ -46,12 +48,16 @@ jobs:
           set -euo pipefail
           DEST="${GITHUB_WORKSPACE}/.ci-tools/xcodegen"
           mkdir -p "$DEST"
-          if [ ! -x "$DEST/xcodegen" ]; then
+          # Cache miss, corrupt restore, or cache step failure → brew fallback.
+          if [ ! -x "$DEST/xcodegen" ] || ! "$DEST/xcodegen" --version 2>/dev/null | grep -qF "2.46.0"; then
+            echo "XcodeGen cache miss or invalid; installing via Homebrew"
             brew install xcodegen
             SRC="$(command -v xcodegen)"
             test -x "$SRC"
             cp "$SRC" "$DEST/xcodegen"
             chmod +x "$DEST/xcodegen"
+          else
+            echo "XcodeGen restored from cache"
           fi
           echo "$DEST" >> "$GITHUB_PATH"
           hash -r || true
@@ -144,5 +150,79 @@ jobs:
             personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa
             personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa.sha256
 
-      # XCTest lives in .github/workflows/tests.yml so simulator hangs never
-      # delay or fail IPA delivery on this workflow.
+
+      # Soft gate only: IPA is already uploaded above. Hang/timeout here does not
+      # remove the artifact. Paths/xcodebuild flags unchanged from pre-split CI.
+      - name: Run XCTest regression suite
+        id: xctest
+        continue-on-error: true
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          cd personalkeyboard-source
+          PROJECT=$(find . -name "*.xcodeproj" -print -quit)
+          test -n "$PROJECT"
+
+          echo "Available simulators:"
+          xcrun simctl list devices available || true
+
+          DEST_LINE=$(
+            xcodebuild -showdestinations -project "$PROJECT" -scheme PersonalKeyboard 2>/dev/null \
+              | grep "platform:iOS Simulator" | grep "OS:26.0.1" | grep "iPhone" | head -1 || true
+          )
+          if [ -z "$DEST_LINE" ]; then
+            DEST_LINE=$(
+              xcodebuild -showdestinations -project "$PROJECT" -scheme PersonalKeyboard 2>/dev/null \
+                | grep "platform:iOS Simulator" | grep "iPhone" | head -1 || true
+            )
+          fi
+          echo "Destination line: ${DEST_LINE:-<none>}"
+          UDID=$(echo "$DEST_LINE" | sed -n 's/.*id:\([A-Fa-f0-9-]*\).*/\1/p')
+          if [ -z "$UDID" ]; then
+            echo "ERROR: no iOS Simulator destination found for PersonalKeyboard"
+            exit 1
+          fi
+          echo "Using simulator UDID=$UDID"
+
+          # Avoid bootstatus -b (blocks until step timeout). Poll boot state instead.
+          xcrun simctl shutdown all >/dev/null 2>&1 || true
+          xcrun simctl boot "$UDID" >/dev/null 2>&1 || true
+          booted=0
+          for _ in $(seq 1 45); do
+            if xcrun simctl list devices | grep -F "$UDID" | grep -q "(Booted)"; then
+              booted=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$booted" -ne 1 ]; then
+            echo "ERROR: simulator $UDID did not reach Booted within 90s"
+            xcrun simctl list devices || true
+            exit 1
+          fi
+          echo "Simulator is Booted"
+
+          # Ad-hoc simulator signing is required for host-app unit tests.
+          # CODE_SIGN_IDENTITY="" / CODE_SIGNING_ALLOWED=NO hangs install on
+          # macos-15 (root cause of run 180 timeout after compile).
+          xcodebuild test \
+            -project "$PROJECT" \
+            -scheme PersonalKeyboard \
+            -destination "platform=iOS Simulator,id=$UDID" \
+            -derivedDataPath test-build \
+            -resultBundlePath test-results.xcresult \
+            -only-testing:NaqraTests \
+            -parallel-testing-enabled NO \
+            -maximum-concurrent-test-simulator-destinations 1 \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=- \
+            DEVELOPMENT_TEAM=
+
+      - name: Upload XCTest result bundle on failure
+        if: steps.xctest.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: xctest-results
+          path: personalkeyboard-source/test-results.xcresult
+          if-no-files-found: ignore
