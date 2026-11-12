@@ -70,19 +70,29 @@ jobs:
       - name: Ensure keyboard resources are embedded
         working-directory: personalkeyboard-source
         run: |
+          set -euo pipefail
           APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
           test -n "$APP"
           APPEX="$APP/PlugIns/KeyboardExtension.appex"
           test -d "$APPEX"
-          # Copy every file in Resources/ to the appex root. Folder references
-          # were dropped from unsigned IPAs before, so do not rely on type: folder.
-          find KeyboardExtension/Resources -type f -print | while read -r source; do
+          # Copy every file (not folders) to the appex root. Do not use type: folder
+          # in project.yml — that path was missing from unsigned IPAs before.
+          # Avoid `cp -R` and avoid piping into a while-subshell so failures abort.
+          copied=0
+          while IFS= read -r -d '' source; do
             test -s "$source"
-            cp "$source" "$APPEX/$(basename "$source")"
-            test -s "$APPEX/$(basename "$source")"
-          done
+            name=$(basename "$source")
+            cp "$source" "$APPEX/$name"
+            test -s "$APPEX/$name"
+            copied=$((copied + 1))
+            echo "embedded resource: $name"
+          done < <(find KeyboardExtension/Resources -type f -print0)
+          test "$copied" -ge 2
           test -s "$APPEX/emoji_catalog.json"
           test -s "$APPEX/keyboard_layouts.json"
+          test -f "$APPEX/emoji_catalog.json"
+          test -f "$APPEX/keyboard_layouts.json"
+          echo "keyboard resources embedded count=$copied"
 
       - name: Verify built app bundle
         working-directory: personalkeyboard-source

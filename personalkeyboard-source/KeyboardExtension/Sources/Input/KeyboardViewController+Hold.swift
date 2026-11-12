@@ -54,8 +54,12 @@ extension KeyboardViewController {
         for v in popup.subviews {
             guard let b = v as? UIButton else { continue }
             let inside = b.frame.insetBy(dx: -4, dy: -10).contains(p)
-            b.backgroundColor = inside ? palette.accent.withAlphaComponent(0.40) : .clear
-            if inside { holdChoice = b.title(for: .normal) ?? holdChoice }
+            let idle = mix(palette.key, palette.background, t: 0.18)
+            b.backgroundColor = inside ? palette.accent.withAlphaComponent(0.40) : idle
+            if inside {
+                let title = b.title(for: .normal) ?? ""
+                if !title.isEmpty { holdChoice = title }
+            }
         }
     }
 
@@ -130,17 +134,22 @@ extension KeyboardViewController {
         bar.layer.borderColor = (palette.blurDark ? UIColor.white.withAlphaComponent(0.18) : UIColor.black.withAlphaComponent(0.12)).cgColor
         bar.isLayoutMarginsRelativeArrangement = true
         bar.layoutMargins = UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6)
+        // Solid opaque bar so letter keys never show through (ى/ي looked "random").
+        bar.isOpaque = true
+        bar.clipsToBounds = true
         holdChoice = items[0]
         for (i, item) in items.enumerated() {
+            // Classic title path only — UIButton.Configuration wipes setTitle and
+            // breaks drag selection (wrong highlight for ى → س, empty titles).
             let b = UIButton(type: .system)
             b.setTitle(item, for: .normal)
             b.titleLabel?.font = .systemFont(ofSize: 24, weight: .medium)
             b.setTitleColor(popupFG, for: .normal)
-            b.backgroundColor = i == 0 ? palette.accent.withAlphaComponent(0.35) : .clear
+            b.backgroundColor = i == 0 ? palette.accent.withAlphaComponent(0.35) : popupBG
+            b.isOpaque = true
             b.layer.cornerRadius = 10
-            var config = UIButton.Configuration.plain()
-            config.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8)
-            b.configuration = config
+            b.contentEdgeInsets = UIEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
+            b.accessibilityLabel = item
             bar.addArrangedSubview(b)
         }
         view.addSubview(bar)
@@ -159,6 +168,8 @@ extension KeyboardViewController {
         center.isActive = true
         bar.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 6).isActive = true
         bar.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -6).isActive = true
+        // Frames are zero until the first layout pass; drag uses frame.contains.
+        bar.layoutIfNeeded()
         holdPopup = bar
         tapHaptic()
     }
