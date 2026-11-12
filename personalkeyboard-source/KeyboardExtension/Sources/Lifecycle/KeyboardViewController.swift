@@ -28,6 +28,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var pendingInserted = false
     var holdPopup: UIView?
     var holdChoice = ""
+    /// One reused magnified-key bubble. Never allocated per key.
+    var keyPreview: UILabel?
 
     let translationModel = TranslationBridgeModel()
     var translationHost: UIHostingController<TranslationBridgeView>?
@@ -146,6 +148,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         holdTimer?.invalidate()
         holdTimer = nil
         hideHoldPopup()
+        hideKeyPreview()
         hideClipboardPanel()
         pendingInserted = false
     }
