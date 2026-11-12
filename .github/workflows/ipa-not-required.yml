@@ -1,0 +1,35 @@
+name: IPA not required
+
+# build-ipa.yml uses paths-ignore, which skips that whole workflow (including
+# any job inside it). This file is the stamp that still reports success when
+# a PR only touches docs, skills, or .grok. Agent Guard and security review
+# are unchanged and still run on every pull request.
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**/*.md'
+      - 'skills/**'
+      - 'docs/**'
+      - '.grok/**'
+      - '.github/workflows/ipa-not-required.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**/*.md'
+      - 'skills/**'
+      - 'docs/**'
+      - '.grok/**'
+      - '.github/workflows/ipa-not-required.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: No application change
+        run: echo "Docs, skills, or .grok only. Unsigned IPA build is intentionally not required."
