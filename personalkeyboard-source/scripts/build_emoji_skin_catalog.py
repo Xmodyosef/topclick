@@ -63,7 +63,8 @@ def tone_candidate_for_mod(base_form: str, base: str, forms: set[str], mod: str)
     if simple in forms:
         return simple
 
-    matches = [f for f in forms if strip_skin(f) == base and primary_mod(f) == mod]
+    # Sort for stable picks (forms is a set; iteration order is otherwise undefined).
+    matches = [f for f in sorted(forms) if strip_skin(f) == base and primary_mod(f) == mod]
     if matches:
         matches.sort(key=lambda x: (sum(x.count(mm) for mm in MODS), len(x)))
         return matches[0]
