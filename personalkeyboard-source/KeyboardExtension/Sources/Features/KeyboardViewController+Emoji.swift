@@ -3,6 +3,12 @@ import Translation
 import UIKit
 import AudioToolbox
 
+// MARK: - LTR emoji grid layout (never mirror cell order under Arabic UI)
+final class LTREmojiFlowLayout: UICollectionViewFlowLayout {
+    /// Keep leading→trailing order fixed even when the keyboard is Arabic RTL.
+    override var flipsHorizontallyInOppositeLayoutDirection: Bool { false }
+}
+
 // MARK: - KeyboardViewController + Emoji
 extension KeyboardViewController {
     /// One grid only (current category). Multiple CollectionViews exhaust keyboard-extension memory
@@ -51,11 +57,10 @@ extension KeyboardViewController {
         host.semanticContentAttribute = .forceLeftToRight
         lockHeight(host, emojiPagerHeight())
 
-        let layout = UICollectionViewFlowLayout()
+        let layout = LTREmojiFlowLayout()
         layout.minimumInteritemSpacing = 0
         layout.minimumLineSpacing = 0
         layout.sectionInset = .zero
-        layout.flipsForRightToLeftLayoutDirection = false
         let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
         cv.backgroundColor = .clear
         cv.dataSource = self
