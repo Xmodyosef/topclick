@@ -65,8 +65,10 @@ def main() -> None:
     require((ext_dir / 'Input/KeyboardDataLoader.swift').is_file(), 'KeyboardDataLoader exists')
     require((extension_resources / 'keyboard_layouts.json').is_file(), 'layouts JSON exists')
     require((extension_resources / 'emoji_catalog.json').is_file(), 'emoji JSON exists')
+    require((extension_resources / 'emoji_skin_map.json').is_file(), 'emoji skin map JSON exists')
     # arabic_lexicon.json is optional: suggestions fall back inside KeyboardDataLoader.
     require('path: KeyboardExtension/Resources' in project, 'project.yml registers Resources')
+    require('emoji_skin_map.json' in project, 'project.yml registers emoji_skin_map.json')
 
     layouts = json.loads((extension_resources / 'keyboard_layouts.json').read_text(encoding='utf-8'))
     hold = layouts.get('hold_map') or {}
@@ -83,6 +85,16 @@ def main() -> None:
     emoji = json.loads((extension_resources / 'emoji_catalog.json').read_text(encoding='utf-8'))
     require(isinstance(emoji, list) and len(emoji) >= 8, 'emoji catalog has categories')
     require(sum(len(c.get('items', [])) for c in emoji) >= 200, 'emoji catalog has substantial items')
+    skin_mods = {chr(c) for c in (0x1F3FB, 0x1F3FC, 0x1F3FD, 0x1F3FE, 0x1F3FF)}
+    skinned_left = sum(1 for cat in emoji for item in (cat.get('items') or []) if any(m in item for m in skin_mods))
+    require(skinned_left == 0, 'emoji catalog items must be base forms without skin modifiers')
+    skin_map = json.loads((extension_resources / 'emoji_skin_map.json').read_text(encoding='utf-8'))
+    require(isinstance(skin_map, dict) and len(skin_map) >= 50, 'emoji skin map has substantial bases')
+    wave = skin_map.get('👋') or []
+    require(isinstance(wave, list) and len(wave) >= 6 and wave[0] == '👋', 'skin map wave has default + tones')
+    require('emojiSkinTone' in extension, 'emojiSkinTone preference key present')
+    require('emojiSkinLongPressed' in extension, 'emoji skin long-press handler present')
+    require('hideEmojiSkinBar' in extension, 'emoji skin bar hide present')
 
     require('func makeBottom' in extension, 'makeBottom present')
     require('greaterThanOrEqualToConstant: 74' in extension or '>= 74' in extension or '74' in extension, 'bottom-row space sizing present')

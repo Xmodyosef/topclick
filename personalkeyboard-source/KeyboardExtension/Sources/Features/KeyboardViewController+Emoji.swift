@@ -88,6 +88,15 @@ extension KeyboardViewController {
         pan.maximumNumberOfTouches = 1
         pan.cancelsTouchesInView = false
         cv.addGestureRecognizer(pan)
+
+        let longPress = UILongPressGestureRecognizer(target: self, action: #selector(emojiSkinLongPressed(_:)))
+        longPress.minimumPressDuration = 0.40
+        longPress.allowableMovement = 10
+        longPress.delegate = self
+        longPress.cancelsTouchesInView = true
+        cv.addGestureRecognizer(longPress)
+        emojiSkinLongPress = longPress
+
         return host
     }
 
@@ -116,7 +125,9 @@ extension KeyboardViewController {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         guard emojiPack.indices.contains(emojiCategoryIndex),
               emojiPack[emojiCategoryIndex].items.indices.contains(indexPath.item) else { return }
-        let item = emojiPack[emojiCategoryIndex].items[indexPath.item]
+        let base = emojiPack[emojiCategoryIndex].items[indexPath.item]
+        hideEmojiSkinBar()
+        let item = KeyboardDataLoader.resolvedEmoji(base)
         textDocumentProxy.insertText(item)
         playSystemClick(.emoji)
         rememberEmoji(item)
@@ -132,6 +143,7 @@ extension KeyboardViewController {
 
     @objc func emojiTab(_ sender: UIButton) {
         guard emojiPack.indices.contains(sender.tag) else { return }
+        hideEmojiSkinBar()
         emojiCategoryIndex = sender.tag
         refreshTabs()
         resetEmojiGridTransform(animated: false)
@@ -190,6 +202,7 @@ extension KeyboardViewController {
 
         switch gesture.state {
         case .began:
+            hideEmojiSkinBar()
             emojiCollection?.isScrollEnabled = false
             // Lightweight snapshot rides with the pan; live grid reloads only after the swipe ends.
             if emojiSwipeSnapshot == nil, let snap = host.snapshotView(afterScreenUpdates: false) {
@@ -264,13 +277,186 @@ extension KeyboardViewController {
     }
 
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
-        let v = pan.velocity(in: pan.view)
-        let tr = pan.translation(in: pan.view)
-        if abs(v.x) + abs(v.y) > 0 {
-            return abs(v.x) > abs(v.y) * 1.25
+        if gestureRecognizer is UILongPressGestureRecognizer {
+            // Allow long-press only when the grid is not mid-deceleration.
+            if let cv = emojiCollection, cv.isDragging || cv.isDecelerating { return false }
+            return true
         }
-        return abs(tr.x) > abs(tr.y) * 1.25
+        guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
+        // Category pan must not steal vertical scroll.
+        if gestureRecognizer !== emojiSkinLongPress {
+            let v = pan.velocity(in: pan.view)
+            let tr = pan.translation(in: pan.view)
+            if abs(v.x) + abs(v.y) > 0 {
+                return abs(v.x) > abs(v.y) * 1.25
+            }
+            return abs(tr.x) > abs(tr.y) * 1.25
+        }
+        return true
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        // Skin long-press never shares with scroll/pan.
+        if gestureRecognizer is UILongPressGestureRecognizer || otherGestureRecognizer is UILongPressGestureRecognizer {
+            return false
+        }
+        return false
+    }
+
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        if scrollView === emojiCollection {
+            hideEmojiSkinBar()
+        }
+    }
+
+    // MARK: - Emoji skin tones (Apple-like long-press)
+
+    @objc func emojiSkinLongPressed(_ gesture: UILongPressGestureRecognizer) {
+        guard page == .emoji, let cv = emojiCollection else { return }
+        let loc = gesture.location(in: cv)
+        switch gesture.state {
+        case .began:
+            guard let indexPath = cv.indexPathForItem(at: loc),
+                  emojiPack.indices.contains(emojiCategoryIndex),
+                  emojiPack[emojiCategoryIndex].items.indices.contains(indexPath.item) else {
+                return
+            }
+            let base = emojiPack[emojiCategoryIndex].items[indexPath.item]
+            guard let tones = KeyboardDataLoader.skinTones(for: base) else { return }
+            emojiSkinBase = base
+            cv.isScrollEnabled = false
+            showEmojiSkinBar(tones: tones, from: indexPath, in: cv)
+            tapHaptic(.action)
+        case .changed:
+            guard let bar = emojiSkinBar else { return }
+            let p = gesture.location(in: bar)
+            highlightSkinTone(at: p, in: bar)
+        case .ended, .cancelled:
+            defer {
+                emojiCollection?.isScrollEnabled = true
+            }
+            guard let bar = emojiSkinBar else { return }
+            let p = gesture.location(in: bar)
+            if gesture.state == .ended, let idx = skinToneIndex(at: p, in: bar),
+               let tones = KeyboardDataLoader.skinTones(for: emojiSkinBase),
+               tones.indices.contains(idx) {
+                KeyboardDataLoader.setPreferredSkinToneIndex(idx)
+                let chosen = tones[idx]
+                textDocumentProxy.insertText(chosen)
+                playSystemClick(.emoji)
+                rememberEmoji(chosen)
+                tapHaptic()
+            }
+            hideEmojiSkinBar()
+        default:
+            break
+        }
+    }
+
+    func showEmojiSkinBar(tones: [String], from indexPath: IndexPath, in cv: UICollectionView) {
+        hideEmojiSkinBar()
+        guard let cell = cv.cellForItem(at: indexPath) else { return }
+        let host = view!
+        let bar = UIView()
+        bar.backgroundColor = palette.key
+        bar.isOpaque = true
+        bar.layer.cornerRadius = 12
+        bar.layer.cornerCurve = .continuous
+        bar.layer.borderWidth = 1
+        bar.layer.borderColor = palette.accent.withAlphaComponent(0.35).cgColor
+        bar.layer.shadowColor = UIColor.black.cgColor
+        bar.layer.shadowOpacity = 0.18
+        bar.layer.shadowRadius = 6
+        bar.layer.shadowOffset = CGSize(width: 0, height: 2)
+        bar.translatesAutoresizingMaskIntoConstraints = true
+
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.alignment = .center
+        stack.distribution = .fillEqually
+        stack.spacing = 2
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        bar.addSubview(stack)
+
+        var buttons: [UIButton] = []
+        let preferred = KeyboardDataLoader.preferredSkinToneIndex()
+        for (i, tone) in tones.prefix(6).enumerated() {
+            let b = UIButton(type: .system)
+            b.setTitle(tone, for: .normal)
+            b.titleLabel?.font = .systemFont(ofSize: 28)
+            b.tag = i
+            b.backgroundColor = (i == min(preferred, tones.count - 1))
+                ? palette.accent.withAlphaComponent(0.28)
+                : .clear
+            b.layer.cornerRadius = 8
+            b.addTarget(self, action: #selector(emojiSkinToneTapped(_:)), for: .touchUpInside)
+            stack.addArrangedSubview(b)
+            buttons.append(b)
+        }
+        emojiSkinButtons = buttons
+
+        let pad: CGFloat = 6
+        let barW = min(host.bounds.width - 16, CGFloat(max(tones.count, 1)) * 44 + pad * 2)
+        let barH: CGFloat = 48
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: bar.leadingAnchor, constant: pad),
+            stack.trailingAnchor.constraint(equalTo: bar.trailingAnchor, constant: -pad),
+            stack.topAnchor.constraint(equalTo: bar.topAnchor, constant: 4),
+            stack.bottomAnchor.constraint(equalTo: bar.bottomAnchor, constant: -4)
+        ])
+
+        let cellFrame = cell.convert(cell.bounds, to: host)
+        var x = cellFrame.midX - barW / 2
+        x = max(8, min(x, host.bounds.width - barW - 8))
+        // Prefer above the cell; if not enough room (top row), place below.
+        var y = cellFrame.minY - barH - 6
+        if y < 4 {
+            y = min(cellFrame.maxY + 6, host.bounds.height - barH - 4)
+        }
+        bar.frame = CGRect(x: x, y: y, width: barW, height: barH)
+        host.addSubview(bar)
+        emojiSkinBar = bar
+    }
+
+    @objc func emojiSkinToneTapped(_ sender: UIButton) {
+        let idx = sender.tag
+        guard let tones = KeyboardDataLoader.skinTones(for: emojiSkinBase),
+              tones.indices.contains(idx) else {
+            hideEmojiSkinBar()
+            return
+        }
+        KeyboardDataLoader.setPreferredSkinToneIndex(idx)
+        let chosen = tones[idx]
+        textDocumentProxy.insertText(chosen)
+        playSystemClick(.emoji)
+        rememberEmoji(chosen)
+        tapHaptic()
+        emojiCollection?.isScrollEnabled = true
+        hideEmojiSkinBar()
+    }
+
+    func highlightSkinTone(at point: CGPoint, in bar: UIView) {
+        guard let idx = skinToneIndex(at: point, in: bar) else { return }
+        for (i, b) in emojiSkinButtons.enumerated() {
+            b.backgroundColor = (i == idx)
+                ? palette.accent.withAlphaComponent(0.28)
+                : .clear
+        }
+    }
+
+    func skinToneIndex(at point: CGPoint, in bar: UIView) -> Int? {
+        for b in emojiSkinButtons {
+            let f = b.convert(b.bounds, to: bar).insetBy(dx: -4, dy: -4)
+            if f.contains(point) { return b.tag }
+        }
+        return nil
+    }
+
+    func hideEmojiSkinBar() {
+        emojiSkinBar?.removeFromSuperview()
+        emojiSkinBar = nil
+        emojiSkinButtons = []
+        emojiSkinBase = ""
     }
 
     func rememberEmoji(_ item: String) {
