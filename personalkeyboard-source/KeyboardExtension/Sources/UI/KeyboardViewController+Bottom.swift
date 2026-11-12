@@ -23,9 +23,12 @@ extension KeyboardViewController {
             back.accessibilityLabel = "العودة إلى لوحة الحروف"
             leading.append(back)
         } else {
-            // Letters → single symbols page (icon only).
-            let symbols = iconKey("textformat.123", #selector(symbolsOrLettersTapped))
-            paint(symbols, chrome: .symbols)
+            // Letters → single symbols page (titles match iOS style; force LTR so ؟+# never mirrors).
+            let symbolsTitle = language == .arabic ? "؟+#" : "#+="
+            let symbols = control(symbolsTitle, #selector(symbolsOrLettersTapped), font: 13, chrome: .symbols)
+            symbols.semanticContentAttribute = .forceLeftToRight
+            symbols.titleLabel?.semanticContentAttribute = .forceLeftToRight
+            symbols.titleLabel?.textAlignment = .center
             symbols.accessibilityLabel = "لوحة الرموز والأرقام"
             leading.append(symbols)
         }

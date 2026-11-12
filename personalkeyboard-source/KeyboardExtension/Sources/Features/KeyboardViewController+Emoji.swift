@@ -67,6 +67,12 @@ extension KeyboardViewController {
         ])
         emojiCollection = cv
         emojiPager = nil
+        // Horizontal pan switches emoji categories without building multiple collection views.
+        let pan = UIPanGestureRecognizer(target: self, action: #selector(emojiCategoryPanned(_:)))
+        pan.delegate = self
+        pan.maximumNumberOfTouches = 1
+        pan.cancelsTouchesInView = false
+        cv.addGestureRecognizer(pan)
         return host
     }
 
@@ -144,6 +150,36 @@ extension KeyboardViewController {
                 : palette.key.withAlphaComponent(0.55)
             button.accessibilityTraits = index == emojiCategoryIndex ? [.button, .selected] : [.button]
         }
+    }
+
+    @objc func emojiCategoryPanned(_ gesture: UIPanGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        let translation = gesture.translation(in: gesture.view)
+        let velocity = gesture.velocity(in: gesture.view)
+        // Prefer velocity when the flick is decisive; otherwise use total translation.
+        let dx = abs(velocity.x) > 280 ? velocity.x : translation.x
+        guard abs(dx) >= 48 else { return }
+        let delta = dx < 0 ? 1 : -1
+        let next = emojiCategoryIndex + delta
+        guard emojiPack.indices.contains(next) else { return }
+        emojiCategoryIndex = next
+        refreshTabs()
+        emojiCollection?.setContentOffset(.zero, animated: false)
+        emojiCollection?.collectionViewLayout.invalidateLayout()
+        emojiCollection?.reloadData()
+        tapHaptic(.action)
+        UIAccessibility.post(notification: .announcement, argument: emojiPack[next].icon)
+    }
+
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
+        let v = pan.velocity(in: pan.view)
+        let t = pan.translation(in: pan.view)
+        // Horizontal category swipe only; vertical motion stays with the emoji grid scroll.
+        if abs(v.x) + abs(v.y) > 0 {
+            return abs(v.x) > abs(v.y)
+        }
+        return abs(t.x) > abs(t.y)
     }
 
     func rememberEmoji(_ item: String) {

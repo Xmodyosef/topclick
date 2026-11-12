@@ -3,7 +3,7 @@ import Translation
 import UIKit
 import AudioToolbox
 
-// MARK: - KeyboardViewController + Input (suggestions, language, shift, delete, space, enter)
+// MARK: - KeyboardViewController + Input (suggestions, language, shift, delete, space, enter; no autocorrect)
 extension KeyboardViewController {
     func saveLanguage() { ThemeIO.set("lastLanguage", value: language == .english ? "en" : "ar") }
 
@@ -170,73 +170,6 @@ extension KeyboardViewController {
         }
     }
 
-    static func arabicLexiconFix(_ token: String) -> String? {
-        let folded = fold(token)
-        guard folded.count >= 3 else { return nil }
-        let words = arabicLexicon
-        if words.contains(where: { fold($0) == folded }) { return nil }
-        let prefixHits = words.filter {
-            let word = fold($0)
-            return word.hasPrefix(folded) && word != folded && word.count - folded.count <= 2
-        }
-        if prefixHits.count == 1 { return prefixHits[0] }
-        let near = words.filter {
-            let word = fold($0)
-            return word != folded && abs(word.count - folded.count) <= 1 && editDistance(word, folded) == 1
-        }
-        if near.count == 1 { return near[0] }
-        return nil
-    }
-
-    static func editDistance(_ a: String, _ b: String) -> Int {
-        let left = Array(a)
-        let right = Array(b)
-        if abs(left.count - right.count) > 1 { return 2 }
-        var prev = Array(0...right.count)
-        for i in 1...left.count {
-            var cur = [i]
-            var rowMin = i
-            for j in 1...right.count {
-                let cost = left[i - 1] == right[j - 1] ? 0 : 1
-                let value = min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost)
-                cur.append(value)
-                rowMin = min(rowMin, value)
-            }
-            if rowMin > 1 { return 2 }
-            prev = cur
-        }
-        return prev[right.count]
-    }
-
-    func autocorrectOnSpace() {
-        guard ThemeIO.bool("autocorrect") ?? true else { return }
-        let before = textDocumentProxy.documentContextBeforeInput ?? ""
-        let token = before.split(whereSeparator: { !$0.isLetter && !$0.isNumber && $0 != "'" }).last.map(String.init) ?? ""
-        guard token.count >= 2 else { return }
-        let fix: String?
-        if language == .english {
-            let checker = UITextChecker()
-            let range = NSRange(location: 0, length: token.utf16.count)
-            let misspelling = checker.rangeOfMisspelledWord(in: token, range: range, startingAt: 0, wrap: false, language: "en_US")
-            fix = misspelling.location != NSNotFound ? checker.guesses(forWordRange: range, in: token, language: "en_US")?.first : nil
-        } else {
-            let arabicFixes = [
-                "هاذا": "هذا", "هاذه": "هذه", "هاذ": "هذا", "هذة": "هذه",
-                "الذيي": "الذي", "اللذي": "الذي", "الذى": "الذي",
-                "انشاءالله": "إن شاء الله", "ماشاءالله": "ما شاء الله", "الحمدلله": "الحمد لله",
-                "شكراا": "شكرًا", "مساءا": "مساءً", "لاكن": "لكن",
-                "انت": "أنت", "انتا": "أنت", "انتي": "أنتِ",
-                "فى": "في", "الى": "إلى"
-            ]
-            fix = arabicFixes[token] ?? Self.arabicLexiconFix(token)
-        }
-        guard let fix, fix.caseInsensitiveCompare(token) != .orderedSame else { return }
-        for _ in 0..<token.count { textDocumentProxy.deleteBackward() }
-        textDocumentProxy.insertText(fix)
-        tapHaptic(.action)
-        refreshSuggestions()
-    }
-
     @objc func spaceTouchUp() {
         if spaceIsTrackpad { spaceIsTrackpad = false; return }
         let now = Date()
@@ -254,7 +187,6 @@ extension KeyboardViewController {
             return
         }
         lastSpaceTap = now
-        autocorrectOnSpace()
         textDocumentProxy.insertText(" ")
         playSystemClick(.space)
         tapHaptic()
