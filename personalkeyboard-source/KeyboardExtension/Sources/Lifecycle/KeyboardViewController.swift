@@ -42,6 +42,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var emojiSkinBar: UIView?
     var emojiSkinButtons: [UIButton] = []
     var emojiSkinBase: String = ""
+    /// Tone under the finger during the same long-press. Committed on lift.
+    var emojiSkinArmedIndex: Int?
     weak var emojiSkinLongPress: UILongPressGestureRecognizer?
     var suggestionButtons: [UIButton] = []
     var appliedThemeId = ""
