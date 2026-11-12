@@ -3,7 +3,7 @@ import Translation
 import UIKit
 import AudioToolbox
 
-final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UIInputViewAudioFeedback {
+final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UIGestureRecognizerDelegate, UIInputViewAudioFeedback {
     var enableInputClicksWhenVisible: Bool { return true }
     var language: KeyboardLanguage = .arabic
     var page: KeyboardPage = .letters

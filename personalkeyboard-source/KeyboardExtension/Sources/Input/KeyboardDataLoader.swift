@@ -29,7 +29,8 @@ enum KeyboardDataLoader {
     private static let fallbackHoldMap: [String: [String]] = [
         "ا": ["أ","إ","آ"], "و": ["ؤ"], "ي": ["ئ","ى"], "ه": ["ة"],
         "ل": ["لا","لأ","لإ","لآ"], "س": ["ش"], "ص": ["ض"], "ط": ["ظ"],
-        "ع": ["غ"], "ج": ["چ"], "ح": ["خ"], "ز": ["ژ"], "د": ["ذ"]
+        "ع": ["غ"], "ج": ["چ"], "ح": ["خ"], "ز": ["ژ"], "د": ["ذ"],
+        "٪": ["%"], "﷼": ["$"]
     ]
 
     struct Layouts {
@@ -53,19 +54,8 @@ enum KeyboardDataLoader {
         if let url = bundle.url(forResource: n, withExtension: "json", subdirectory: "Resources") {
             return try? Data(contentsOf: url)
         }
-        // Last resort: scan bundle for the file name (handles odd copy layouts)
-        if let root = bundle.resourceURL {
-            let direct = root.appendingPathComponent("\(n).json")
-            if FileManager.default.fileExists(atPath: direct.path),
-               let data = try? Data(contentsOf: direct) {
-                return data
-            }
-            if let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) {
-                for case let url as URL in enumerator where url.lastPathComponent == "\(n).json" {
-                    return try? Data(contentsOf: url)
-                }
-            }
-        }
+        // No FileManager.enumerator: keyboard extensions have a ~50MB memory ceiling
+        // and full-bundle scans can freeze the keyboard under load.
         return nil
     }
 
@@ -128,27 +118,28 @@ enum KeyboardDataLoader {
         return value
     }
 
-    /// Single uncrowded symbols page: 3 solid rows + faces row (#11).
+    /// Single uncrowded symbols page: 5×10, no duplicates.
     static let builtinArabicSymbols: [[[String]]] = [
         [
             ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
             ["-", "/", ":", "؛", "(", ")", "﷼", "&", "@", "\""],
-            [".", "،", "؟", "!", "[", "]", "{", "}", "=", "_"],
-            ["[", "]", "{", "}", "=", "_", "\\", "|", "~", "^"],
+            [".", "،", "؟", "!", "'", "`", "+", "=", "٪", "*"],
+            ["[", "]", "{", "}", "\", "|", "~", "^", "#", "_"],
             ["<", ">", "€", "£", "¥", "•", "°", "×", "÷", "∞"]
         ]
     ]
 
-    /// English: same packing — 3 solid + faces (#11).
+    /// English: same packing — 5×10, no duplicates.
     static let builtinEnglishSymbols: [[[String]]] = [
         [
             ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
             ["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""],
-            [".", ",", "?", "!", "[", "]", "{", "}", "=", "_"],
-            ["[", "]", "{", "}", "=", "_", "\\", "|", "~", "^"],
+            [".", ",", "?", "!", "'", "`", "#", "%", "*", "+"],
+            ["[", "]", "{", "}", "=", "_", "\", "|", "~", "^"],
             ["<", ">", "€", "£", "¥", "•", "°", "×", "÷", "∞"]
         ]
     ]
+
 
     static func arabicLexicon() -> [String] {
         lock.lock(); defer { lock.unlock() }

@@ -102,9 +102,28 @@ def main() -> None:
     require(lifecycle is not None and all(token in lifecycle.group(1) for token in ['holdTimer?.invalidate()', 'holdTimer = nil', 'hideHoldPopup()', 'pendingInserted = false']), 'viewWillDisappear cleans long-press state')
     require('showNumberRow' in extension and 'showNumberRow' in app, 'number-row setting shared')
     require('numberRow' in extension, 'number row keys defined')
-    require('func autocorrectOnSpace' in extension and 'arabicFixes' in extension, 'autocorrect supports Arabic fixes')
-    require('language == .english' in extension and 'UITextChecker' in extension, 'English spelling path present')
-    require('misspelling.location != NSNotFound' in extension, 'English autocorrect limited to misspellings')
+    # Autocorrect removed by design — keep suggestions only.
+    require('autocorrectOnSpace' not in extension, 'autocorrectOnSpace must be absent')
+    require('arabicLexiconFix' not in extension, 'arabicLexiconFix must be absent')
+    require('arabicFixes' not in extension, 'arabicFixes must be absent')
+
+    # Emoji category swipe (pan) contract
+    require('UIPanGestureRecognizer' in extension, 'emoji pan uses UIPanGestureRecognizer')
+    require('emojiCategoryPanned' in extension, 'emojiCategoryPanned handler present')
+    require('gestureRecognizerShouldBegin' in extension, 'gestureRecognizerShouldBegin present for pan vs scroll')
+
+    # Long-press alternates for percent / riyal
+    require(hold.get('٪') == ['%'], 'hold_map maps ٪ to %')
+    require(hold.get('﷼') == ['$'], 'hold_map maps ﷼ to $')
+
+    # Symbol pages: 5×10 and no duplicate symbols within a page
+    for pages_key in ('arabic_symbol_pages', 'english_symbol_pages'):
+        pages = layouts.get(pages_key) or []
+        require(len(pages) >= 1, f'{pages_key} present')
+        for page_index, page in enumerate(pages):
+            require(len(page) == 5 and all(len(row) == 10 for row in page), f'{pages_key}[{page_index}] is 5 rows of 10')
+            flat = [sym for row in page for sym in row]
+            require(len(flat) == len(set(flat)), f'{pages_key}[{page_index}] has no duplicate symbols')
 
     sound = (ext_dir / 'Features/TapSoundEngine.swift').read_text(encoding='utf-8')
     require('AudioServicesPlaySystemSound' in sound or 'AVAudioEngine' in sound, 'sound engine present')
