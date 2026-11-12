@@ -76,6 +76,9 @@ targets:
       - target: PersonalKeyboard
     settings:
       base:
+        # Explicit product name: empty PRODUCT_NAME produced
+        # PersonalKeyboard.app/PlugIns/.xctest and "Multiple commands produce" under xcodebuild test.
+        PRODUCT_NAME: NaqraTests
         PRODUCT_BUNDLE_IDENTIFIER: app.personal.PersonalKeyboardTests
         GENERATE_INFOPLIST_FILE: YES
         TEST_TARGET_NAME: PersonalKeyboard
