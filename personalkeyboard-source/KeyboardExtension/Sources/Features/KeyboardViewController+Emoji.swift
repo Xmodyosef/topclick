@@ -11,12 +11,15 @@ extension KeyboardViewController {
         let wrap = UIStackView()
         wrap.axis = .horizontal
         wrap.spacing = 6
-        wrap.semanticContentAttribute = .forceLeftToRight
+        // Tabs follow keyboard language (RTL Arabic, LTR English).
+        wrap.semanticContentAttribute = language == .arabic ? .forceRightToLeft : .forceLeftToRight
         let scroller = UIScrollView()
         scroller.showsHorizontalScrollIndicator = false
+        scroller.semanticContentAttribute = wrap.semanticContentAttribute
         let s = UIStackView()
         s.axis = .horizontal
         s.spacing = 4
+        s.semanticContentAttribute = wrap.semanticContentAttribute
         s.translatesAutoresizingMaskIntoConstraints = false
         scroller.addSubview(s)
         emojiTabs = s
@@ -44,6 +47,7 @@ extension KeyboardViewController {
     func makeEmojiPager() -> UIView {
         let host = UIView()
         host.translatesAutoresizingMaskIntoConstraints = false
+        host.clipsToBounds = true
         lockHeight(host, emojiPagerHeight())
 
         let layout = UICollectionViewFlowLayout()
@@ -56,6 +60,8 @@ extension KeyboardViewController {
         cv.delegate = self
         cv.tag = 0
         cv.alwaysBounceVertical = true
+        // Grid stays LTR in every language (stable cell order; owner request).
+        cv.semanticContentAttribute = .forceLeftToRight
         cv.register(EmojiCell.self, forCellWithReuseIdentifier: "e")
         cv.translatesAutoresizingMaskIntoConstraints = false
         host.addSubview(cv)
@@ -66,8 +72,8 @@ extension KeyboardViewController {
             cv.trailingAnchor.constraint(equalTo: host.trailingAnchor)
         ])
         emojiCollection = cv
-        emojiPager = nil
-        // Horizontal pan switches emoji categories without building multiple collection views.
+        emojiPager = host
+        // Horizontal pan switches categories — single CV only (no multi-CV / Jetsam).
         let pan = UIPanGestureRecognizer(target: self, action: #selector(emojiCategoryPanned(_:)))
         pan.delegate = self
         pan.maximumNumberOfTouches = 1
@@ -77,7 +83,7 @@ extension KeyboardViewController {
     }
 
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        // Reserved for future horizontal emoji paging; single grid needs no index sync.
+        // Single vertical grid — no page index sync.
     }
 
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -109,9 +115,6 @@ extension KeyboardViewController {
     }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        // iOS-like dense grid (8–9 columns); never leave sparse holes.
-        // Use the collection view's real width, not the full screen width. Using
-        // UIScreen.main.bounds here made cells wider than the keyboard on compact layouts.
         let width = max(collectionView.bounds.width - collectionView.adjustedContentInset.left - collectionView.adjustedContentInset.right, 1)
         let columns = max(1, Int(floor(width / 42)))
         let side = floor(width / CGFloat(columns))
@@ -122,6 +125,7 @@ extension KeyboardViewController {
         guard emojiPack.indices.contains(sender.tag) else { return }
         emojiCategoryIndex = sender.tag
         refreshTabs()
+        resetEmojiGridTransform(animated: false)
         emojiCollection?.setContentOffset(.zero, animated: false)
         emojiCollection?.collectionViewLayout.invalidateLayout()
         emojiCollection?.reloadData()
@@ -132,7 +136,6 @@ extension KeyboardViewController {
             page = .letters
         } else {
             page = .emoji
-            // Always reload full catalog from JSON so all categories/items appear.
             emojiPack = Self.catalog()
             emojiCategoryIndex = min(emojiCategoryIndex, max(emojiPack.count - 1, 0))
         }
@@ -140,7 +143,6 @@ extension KeyboardViewController {
         tapHaptic()
     }
 
-    /// Update category selection without rebuilding the collection view.
     func refreshTabs() {
         guard let emojiTabs else { return }
         for (index, view) in emojiTabs.arrangedSubviews.enumerated() {
@@ -150,32 +152,87 @@ extension KeyboardViewController {
                 : palette.key.withAlphaComponent(0.55)
             button.accessibilityTraits = index == emojiCategoryIndex ? [.button, .selected] : [.button]
         }
+        // Keep the selected tab visible in the horizontal strip.
+        guard emojiTabs.arrangedSubviews.indices.contains(emojiCategoryIndex),
+              let button = emojiTabs.arrangedSubviews[emojiCategoryIndex] as? UIButton,
+              let scroll = button.superview?.superview as? UIScrollView else { return }
+        let frame = button.convert(button.bounds, to: scroll)
+        scroll.scrollRectToVisible(frame.insetBy(dx: -12, dy: 0), animated: true)
     }
 
+    private func resetEmojiGridTransform(animated: Bool) {
+        guard let host = emojiPager else { return }
+        let apply = { host.transform = .identity }
+        if animated {
+            UIView.animate(withDuration: 0.22, delay: 0, usingSpringWithDamping: 0.86, initialSpringVelocity: 0.4, options: [.allowUserInteraction]) {
+                apply()
+            }
+        } else {
+            apply()
+        }
+    }
+
+    /// Interactive horizontal scrub: follow finger with rubber-band, snap + reload only on end.
     @objc func emojiCategoryPanned(_ gesture: UIPanGestureRecognizer) {
-        guard gesture.state == .ended else { return }
-        let translation = gesture.translation(in: gesture.view)
-        let velocity = gesture.velocity(in: gesture.view)
-        // Prefer velocity when the flick is decisive; otherwise use total translation.
-        let dx = abs(velocity.x) > 280 ? velocity.x : translation.x
-        guard abs(dx) >= 48 else { return }
-        let delta = dx < 0 ? 1 : -1
-        let next = emojiCategoryIndex + delta
-        guard emojiPack.indices.contains(next) else { return }
-        emojiCategoryIndex = next
-        refreshTabs()
-        emojiCollection?.setContentOffset(.zero, animated: false)
-        emojiCollection?.collectionViewLayout.invalidateLayout()
-        emojiCollection?.reloadData()
-        tapHaptic(.action)
-        UIAccessibility.post(notification: .announcement, argument: emojiPack[next].icon)
+        guard let host = emojiPager else { return }
+        let translation = gesture.translation(in: host)
+        let velocity = gesture.velocity(in: host)
+        let width = max(host.bounds.width, 1)
+
+        switch gesture.state {
+        case .changed:
+            var tx = translation.x
+            let atStart = emojiCategoryIndex <= 0
+            let atEnd = emojiCategoryIndex >= emojiPack.count - 1
+            // Rubber-band when dragging past first/last category (finger direction).
+            if (atStart && tx > 0) || (atEnd && tx < 0) {
+                tx = tx * 0.28
+            }
+            host.transform = CGAffineTransform(translationX: tx, y: 0)
+            // No reloadData during drag.
+
+        case .ended, .cancelled:
+            let dx = abs(velocity.x) > 280 ? velocity.x : translation.x
+            let threshold = min(56, width * 0.18)
+            var next = emojiCategoryIndex
+            if dx <= -threshold, emojiCategoryIndex < emojiPack.count - 1 {
+                next = emojiCategoryIndex + 1
+            } else if dx >= threshold, emojiCategoryIndex > 0 {
+                next = emojiCategoryIndex - 1
+            }
+
+            if next != emojiCategoryIndex {
+                // Finish the swipe off-screen, then swap category once.
+                let outX: CGFloat = dx < 0 ? -width * 0.35 : width * 0.35
+                UIView.animate(withDuration: 0.12, delay: 0, options: [.curveEaseOut]) {
+                    host.transform = CGAffineTransform(translationX: outX, y: 0)
+                } completion: { [weak self] _ in
+                    guard let self else { return }
+                    self.emojiCategoryIndex = next
+                    self.refreshTabs()
+                    self.emojiCollection?.setContentOffset(.zero, animated: false)
+                    self.emojiCollection?.collectionViewLayout.invalidateLayout()
+                    self.emojiCollection?.reloadData() // only on ended path
+                    host.transform = CGAffineTransform(translationX: -outX * 0.35, y: 0)
+                    self.resetEmojiGridTransform(animated: true)
+                    self.tapHaptic(.action)
+                    if self.emojiPack.indices.contains(next) {
+                        UIAccessibility.post(notification: .announcement, argument: self.emojiPack[next].icon)
+                    }
+                }
+            } else {
+                resetEmojiGridTransform(animated: true)
+            }
+
+        default:
+            break
+        }
     }
 
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
         let v = pan.velocity(in: pan.view)
         let t = pan.translation(in: pan.view)
-        // Horizontal category swipe only; vertical motion stays with the emoji grid scroll.
         if abs(v.x) + abs(v.y) > 0 {
             return abs(v.x) > abs(v.y)
         }
