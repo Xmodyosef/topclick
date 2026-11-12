@@ -1,7 +1,7 @@
 # Deep Review Rules
 
 - Build a complete file inventory before editing.
-- Read the relevant `bundle-XX.md` files and cite the bundle names in the report.
+- Read the relevant `skills/*/SKILL.md` files and cite the skill names in the report. Do not require `bundle-XX.md` unless SKILLS.md lists one.
 - Trace every changed feature across UI, shared settings, App Groups, extension code, configuration, and CI.
 - Compare requirements, source, project.yml, Info.plist, entitlements, workflows, and tests.
 - Make the smallest safe change, then run focused checks followed by the full available validation.

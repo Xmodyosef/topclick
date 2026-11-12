@@ -12,11 +12,24 @@ BUTTON_CREATION = re.compile(r"\b(?:UIButton|KeyButton)\s*\(\s*type\s*:")
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("source", type=Path, help="directory containing Swift sources")
+    parser.add_argument(
+        "source",
+        nargs="?",
+        type=Path,
+        default=None,
+        help="directory containing Swift sources (default: personalkeyboard-source)",
+    )
     parser.add_argument("--context-lines", type=int, default=16, help="following lines to search for a nearby label")
     parser.add_argument("--strict", action="store_true", help="return non-zero when review candidates are found")
     args = parser.parse_args()
-    source = args.source.resolve()
+    if args.source is None:
+        candidates = [
+            Path("personalkeyboard-source"),
+            Path(__file__).resolve().parents[3] / "personalkeyboard-source",
+        ]
+        source = next((item.resolve() for item in candidates if item.is_dir()), candidates[0].resolve())
+    else:
+        source = args.source.resolve()
     if not source.is_dir():
         print(f"FAIL: source directory does not exist: {source}", file=sys.stderr)
         return 2

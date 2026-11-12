@@ -9,7 +9,7 @@ description: Audit accessibility and VoiceOver behavior in custom iPhone keyboar
 
 ## سير العمل
 
-1. من جذر المستودع شغّل `python3 skills/iphone-keyboard-accessibility-qa/scripts/a11y_static_audit.py personalkeyboard-source/Sources`.
+1. من جذر المستودع شغّل `python3 skills/iphone-keyboard-accessibility-qa/scripts/a11y_static_audit.py personalkeyboard-source`.
 2. تعامل مع كل سطر `REVIEW` كمرشح للمراجعة، لا كإثبات أن الزر غير قابل للوصول؛ فقد يُعيَّن اسمه في موضع استدعاء المصنع.
 3. على iPhone، فعّل VoiceOver واختبر زر 🌐، تبديل العربية/الإنجليزية، الحروف، Shift، الحذف، المسافة، الرموز والإيموجي.
 4. اختبر تكبير النص، RTL، VoiceOver focus order، وأحجام الشاشات الصغيرة، ثم سجّل طراز الجهاز وإصدار iOS والنتيجة.

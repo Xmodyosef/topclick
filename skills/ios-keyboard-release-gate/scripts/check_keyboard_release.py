@@ -48,10 +48,10 @@ def main() -> int:
         print(f"FAIL: Cannot read {project_path}: {error}", file=sys.stderr)
         return 2
 
-    app_info = read_plist(checks, source / "Sources/ContainerApp/Info.plist")
-    ext_info = read_plist(checks, source / "Sources/KeyboardExtension/Info.plist")
-    app_entitlements = read_plist(checks, source / "Sources/ContainerApp/PersonalKeyboard.entitlements")
-    ext_entitlements = read_plist(checks, source / "Sources/KeyboardExtension/KeyboardExtension.entitlements")
+    app_info = read_plist(checks, source / "App/Config/Info.plist")
+    ext_info = read_plist(checks, source / "KeyboardExtension/Config/Info.plist")
+    app_entitlements = read_plist(checks, source / "App/Config/PersonalKeyboard.entitlements")
+    ext_entitlements = read_plist(checks, source / "KeyboardExtension/Config/KeyboardExtension.entitlements")
 
     app_group = app_entitlements.get(APP_GROUP_KEY, [])
     ext_group = ext_entitlements.get(APP_GROUP_KEY, [])
@@ -84,7 +84,7 @@ def main() -> int:
     if builds:
         checks.require(app_info.get("CFBundleVersion") == builds[0] == ext_info.get("CFBundleVersion"), "source Info.plist build numbers match project.yml")
 
-    resource_paths = re.findall(r"- path:\s*(Sources/KeyboardExtension/Resources/[^\s]+\.json)", project)
+    resource_paths = re.findall(r"- path:\s*(KeyboardExtension/Resources/[^\s]+\.json)", project)
     resource_names = {Path(item).name for item in resource_paths}
     checks.require(REQUIRED_RESOURCES <= resource_names, "project.yml registers all required keyboard JSON resources")
     for relative in resource_paths:
@@ -95,8 +95,17 @@ def main() -> int:
         except (OSError, json.JSONDecodeError) as error:
             checks.require(False, f"resource JSON is invalid: {relative}: {error}")
 
-    swift_files = list((source / "Sources").rglob("*.swift"))
+    swift_roots = [
+        source / "KeyboardExtension" / "Sources",
+        source / "App" / "Sources",
+        source / "Shared",
+    ]
+    swift_files: list[Path] = []
+    for root in swift_roots:
+        if root.is_dir():
+            swift_files.extend(root.rglob("*.swift"))
     swift = "\n".join(path.read_text(encoding="utf-8") for path in swift_files)
+    checks.require(bool(swift_files), "keyboard and app Swift sources were found")
     checks.require("needsInputModeSwitchKey" in swift, "system switch key is gated by needsInputModeSwitchKey")
     checks.require("handleInputModeList(from:with:)" in swift and "for: .allTouchEvents" in swift, "system switch key invokes the UIKit input-mode handler")
 
