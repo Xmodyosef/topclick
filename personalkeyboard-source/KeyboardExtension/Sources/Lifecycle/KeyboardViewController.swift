@@ -33,6 +33,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var translationHost: UIHostingController<TranslationBridgeView>?
     var emojiPager: UIView?
     weak var emojiCollection: UICollectionView?
+    /// Transient snapshot while scrubbing emoji categories (single CV, low memory).
+    var emojiSwipeSnapshot: UIView?
     var emojiTabs: UIStackView?
     var suggestionButtons: [UIButton] = []
     var appliedThemeId = ""
@@ -235,11 +237,11 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         return []
     }
 
-    /// Long-press menu: base key first, then alternates (no duplicates). iOS-style.
+    /// Long-press menu: alternates only (no base key — avoids visual duplicate of the pressed letter).
     func holdChoices(for key: String) -> [String] {
         let extras = alts(for: key)
         guard !extras.isEmpty else { return [] }
-        var out: [String] = [key]
+        var out: [String] = []
         for item in extras where item != key && !out.contains(item) {
             out.append(item)
         }

@@ -48,19 +48,21 @@ extension KeyboardViewController {
         let host = UIView()
         host.translatesAutoresizingMaskIntoConstraints = false
         host.clipsToBounds = true
+        host.semanticContentAttribute = .forceLeftToRight
         lockHeight(host, emojiPagerHeight())
 
         let layout = UICollectionViewFlowLayout()
         layout.minimumInteritemSpacing = 0
         layout.minimumLineSpacing = 0
         layout.sectionInset = .zero
+        layout.flipsForRightToLeftLayoutDirection = false
         let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
         cv.backgroundColor = .clear
         cv.dataSource = self
         cv.delegate = self
         cv.tag = 0
         cv.alwaysBounceVertical = true
-        // Grid stays LTR in every language (stable cell order; owner request).
+        // Grid stays LTR in every language (Apple-like; never mirror in Arabic).
         cv.semanticContentAttribute = .forceLeftToRight
         cv.register(EmojiCell.self, forCellWithReuseIdentifier: "e")
         cv.translatesAutoresizingMaskIntoConstraints = false
@@ -172,7 +174,7 @@ extension KeyboardViewController {
         }
     }
 
-    /// Interactive horizontal scrub: follow finger with rubber-band, snap + reload only on end.
+    /// Interactive horizontal scrub: full-width exit/enter, single CV, no reload while dragging.
     @objc func emojiCategoryPanned(_ gesture: UIPanGestureRecognizer) {
         guard let host = emojiPager else { return }
         let translation = gesture.translation(in: host)
@@ -180,16 +182,24 @@ extension KeyboardViewController {
         let width = max(host.bounds.width, 1)
 
         switch gesture.state {
+        case .began:
+            emojiCollection?.isScrollEnabled = false
+            // Lightweight snapshot rides with the pan; live grid reloads only after the swipe ends.
+            if emojiSwipeSnapshot == nil, let snap = host.snapshotView(afterScreenUpdates: false) {
+                snap.frame = host.bounds
+                snap.isUserInteractionEnabled = false
+                host.addSubview(snap)
+                emojiSwipeSnapshot = snap
+            }
+
         case .changed:
             var tx = translation.x
             let atStart = emojiCategoryIndex <= 0
             let atEnd = emojiCategoryIndex >= emojiPack.count - 1
-            // Rubber-band when dragging past first/last category (finger direction).
             if (atStart && tx > 0) || (atEnd && tx < 0) {
                 tx = tx * 0.28
             }
             host.transform = CGAffineTransform(translationX: tx, y: 0)
-            // No reloadData during drag.
 
         case .ended, .cancelled:
             let dx = abs(velocity.x) > 280 ? velocity.x : translation.x
@@ -201,10 +211,17 @@ extension KeyboardViewController {
                 next = emojiCategoryIndex - 1
             }
 
+            let finish = { [weak self] in
+                guard let self else { return }
+                self.emojiSwipeSnapshot?.removeFromSuperview()
+                self.emojiSwipeSnapshot = nil
+                self.emojiCollection?.isScrollEnabled = true
+            }
+
             if next != emojiCategoryIndex {
-                // Finish the swipe off-screen, then swap category once.
-                let outX: CGFloat = dx < 0 ? -width * 0.35 : width * 0.35
-                UIView.animate(withDuration: 0.12, delay: 0, options: [.curveEaseOut]) {
+                // Full-width exit, then enter from the opposite side (one reload only).
+                let outX: CGFloat = dx < 0 ? -width : width
+                UIView.animate(withDuration: 0.16, delay: 0, options: [.curveEaseIn]) {
                     host.transform = CGAffineTransform(translationX: outX, y: 0)
                 } completion: { [weak self] _ in
                     guard let self else { return }
@@ -212,16 +229,26 @@ extension KeyboardViewController {
                     self.refreshTabs()
                     self.emojiCollection?.setContentOffset(.zero, animated: false)
                     self.emojiCollection?.collectionViewLayout.invalidateLayout()
-                    self.emojiCollection?.reloadData() // only on ended path
-                    host.transform = CGAffineTransform(translationX: -outX * 0.35, y: 0)
-                    self.resetEmojiGridTransform(animated: true)
-                    self.tapHaptic(.action)
-                    if self.emojiPack.indices.contains(next) {
-                        UIAccessibility.post(notification: .announcement, argument: self.emojiPack[next].icon)
+                    self.emojiCollection?.reloadData()
+                    self.emojiSwipeSnapshot?.removeFromSuperview()
+                    self.emojiSwipeSnapshot = nil
+                    host.transform = CGAffineTransform(translationX: -outX, y: 0)
+                    UIView.animate(withDuration: 0.22, delay: 0, usingSpringWithDamping: 0.9, initialSpringVelocity: 0.35, options: [.curveEaseOut]) {
+                        host.transform = .identity
+                    } completion: { _ in
+                        self.emojiCollection?.isScrollEnabled = true
+                        self.tapHaptic(.action)
+                        if self.emojiPack.indices.contains(next) {
+                            UIAccessibility.post(notification: .announcement, argument: self.emojiPack[next].icon)
+                        }
                     }
                 }
             } else {
-                resetEmojiGridTransform(animated: true)
+                UIView.animate(withDuration: 0.2, delay: 0, usingSpringWithDamping: 0.86, initialSpringVelocity: 0.4, options: [.allowUserInteraction]) {
+                    host.transform = .identity
+                } completion: { _ in
+                    finish()
+                }
             }
 
         default:
@@ -232,11 +259,11 @@ extension KeyboardViewController {
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
         let v = pan.velocity(in: pan.view)
-        let t = pan.translation(in: pan.view)
+        let tr = pan.translation(in: pan.view)
         if abs(v.x) + abs(v.y) > 0 {
-            return abs(v.x) > abs(v.y)
+            return abs(v.x) > abs(v.y) * 1.25
         }
-        return abs(t.x) > abs(t.y)
+        return abs(tr.x) > abs(tr.y) * 1.25
     }
 
     func rememberEmoji(_ item: String) {

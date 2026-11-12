@@ -12,7 +12,7 @@ extension KeyboardViewController {
         b.tag = rowIdx
         b.accessibilityLabel = t
         let alts = holdChoices(for: t)
-        if alts.count > 1 {
+        if !holdChoices(for: t).isEmpty {
             b.accessibilityHint = language == .arabic
                 ? "اضغط مطولاً لبدائل وحركات"
                 : "Long press for alternates"
@@ -40,7 +40,7 @@ extension KeyboardViewController {
         let sound: TapSoundEngine.Sound = row == 0 ? .rowTop : (row == 1 ? .rowMid : .rowBot)
         playSystemClick(sound)
         tapHaptic()
-        guard holdChoices(for: key).count > 1 else { return }
+        guard !holdChoices(for: key).isEmpty else { return }
         let timer = Timer(timeInterval: SharedKeyboardData.holdDelaySeconds(), repeats: false) { [weak self] _ in
             self?.showHoldPopup(from: sender)
         }
@@ -54,8 +54,9 @@ extension KeyboardViewController {
         for v in popup.subviews {
             guard let b = v as? UIButton else { continue }
             let inside = b.frame.insetBy(dx: -4, dy: -10).contains(p)
-            let idle = mix(palette.key, palette.background, t: 0.18)
-            b.backgroundColor = inside ? palette.accent.withAlphaComponent(0.40) : idle
+            let idle = holdPopupIdleColor()
+            let active = holdPopupActiveColor()
+            b.backgroundColor = inside ? active : idle
             if inside {
                 let title = b.title(for: .normal) ?? ""
                 if !title.isEmpty { holdChoice = title }
@@ -114,10 +115,19 @@ extension KeyboardViewController {
         pendingInserted = false
     }
 
+    func holdPopupIdleColor() -> UIColor {
+        // Distinct solid surface above key chrome (not a near-transparent mix).
+        mix(palette.key, palette.background, t: 0.42).withAlphaComponent(1)
+    }
+
+    func holdPopupActiveColor() -> UIColor {
+        palette.accent.withAlphaComponent(1)
+    }
+
     func showHoldPopup(from button: UIButton) {
         guard let key = button.title(for: .normal) else { return }
         let items = holdChoices(for: key)
-        guard items.count > 1 else { return }
+        guard !items.isEmpty else { return }
         undoProvisionalInsert()
         hideHoldPopup()
         let bar = UIStackView()
@@ -125,36 +135,36 @@ extension KeyboardViewController {
         bar.spacing = 4
         bar.alignment = .center
         bar.translatesAutoresizingMaskIntoConstraints = false
-        let popupBG = mix(palette.key, palette.background, t: 0.18).withAlphaComponent(1)
+        let popupBG = holdPopupIdleColor()
         let popupFG = palette.text
+        let activeBG = holdPopupActiveColor()
         bar.backgroundColor = popupBG
         bar.layer.cornerRadius = 10
         bar.layer.cornerCurve = .continuous
         bar.layer.borderWidth = 1
-        bar.layer.borderColor = (palette.blurDark ? UIColor.white.withAlphaComponent(0.18) : UIColor.black.withAlphaComponent(0.12)).cgColor
+        bar.layer.borderColor = (palette.blurDark ? UIColor.white.withAlphaComponent(0.22) : UIColor.black.withAlphaComponent(0.14)).cgColor
         bar.isLayoutMarginsRelativeArrangement = true
         bar.layoutMargins = UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6)
-        // Solid opaque bar so letter keys never show through (ى/ي looked "random").
         bar.isOpaque = true
         bar.clipsToBounds = true
         holdChoice = items[0]
         for (i, item) in items.enumerated() {
-            // Classic title path only — UIButton.Configuration wipes setTitle and
-            // breaks drag selection (wrong highlight for ى → س, empty titles).
+            // Classic title path only — never UIButton.Configuration (wipes setTitle).
             let b = UIButton(type: .system)
             b.setTitle(item, for: .normal)
             b.titleLabel?.font = .systemFont(ofSize: 24, weight: .medium)
-            b.setTitleColor(popupFG, for: .normal)
-            b.backgroundColor = i == 0 ? palette.accent.withAlphaComponent(0.35) : popupBG
+            b.setTitleColor(i == 0 ? .white : popupFG, for: .normal)
+            b.backgroundColor = i == 0 ? activeBG : popupBG
             b.isOpaque = true
             b.layer.cornerRadius = 10
             b.contentEdgeInsets = UIEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
             b.accessibilityLabel = item
+            b.addTarget(self, action: #selector(holdAltTapped(_:)), for: .touchUpInside)
             bar.addArrangedSubview(b)
         }
         view.addSubview(bar)
         let frame = button.convert(button.bounds, to: view)
-        let popupH: CGFloat = 46
+        let popupH: CGFloat = 52
         var top = frame.minY - 8 - popupH
         if top < 4 {
             top = min(frame.maxY + 6, max(view.bounds.height - popupH - 4, 4))
@@ -168,10 +178,25 @@ extension KeyboardViewController {
         center.isActive = true
         bar.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 6).isActive = true
         bar.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -6).isActive = true
-        // Frames are zero until the first layout pass; drag uses frame.contains.
         bar.layoutIfNeeded()
         holdPopup = bar
         tapHaptic()
+    }
+
+    /// Tap an alternate (not only drag-select). Marks pending so charUp does not double-insert.
+    @objc func holdAltTapped(_ sender: UIButton) {
+        let text = sender.title(for: .normal) ?? holdChoice
+        holdChoice = text
+        holdTimer?.invalidate()
+        holdTimer = nil
+        hideHoldPopup()
+        undoProvisionalInsert()
+        if !text.isEmpty {
+            textDocumentProxy.insertText(text)
+            tapHaptic(.action)
+        }
+        // Block charUp from inserting the base key again.
+        pendingInserted = true
     }
 
     func hideHoldPopup() {
