@@ -31,7 +31,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     let translationModel = TranslationBridgeModel()
     var translationHost: UIHostingController<TranslationBridgeView>?
-    var emojiPager: UIScrollView?
+    var emojiPager: UIView?
     weak var emojiCollection: UICollectionView?
     var emojiTabs: UIStackView?
     var suggestionButtons: [UIButton] = []

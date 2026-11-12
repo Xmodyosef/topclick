@@ -164,7 +164,10 @@ extension KeyboardViewController {
         guard spaceIsTrackpad else { return }
         let delta = p.x - lastTrackpadX
         if abs(delta) >= 8 {
-            textDocumentProxy.adjustTextPosition(byCharacterOffset: delta > 0 ? 1 : -1)
+            // Dynamic sign: Arabic/RTL keyboard flips visual drag vs logical caret offset.
+            let writingDirectionSign = language == .arabic ? -1 : 1
+            let step = (delta > 0 ? 1 : -1) * writingDirectionSign
+            textDocumentProxy.adjustTextPosition(byCharacterOffset: step)
             lastTrackpadX = p.x
             tapHaptic(.move)
         }

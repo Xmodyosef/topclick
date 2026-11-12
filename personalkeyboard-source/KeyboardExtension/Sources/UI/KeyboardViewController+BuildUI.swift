@@ -151,7 +151,6 @@ extension KeyboardViewController {
     }
     func rebuild() {
         hideClipboardPanel()
-        emojiPager?.delegate = nil
         emojiPager = nil
         emojiCollection?.dataSource = nil
         emojiCollection?.delegate = nil
