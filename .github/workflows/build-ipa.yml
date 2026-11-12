@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 40
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -33,9 +33,34 @@ jobs:
       - name: Remove Agent Folder
         run: rm -rf .agent
 
+      # Cache XcodeGen binary only (not DerivedData / not test-build).
+      # continue-on-error: cache service blips must never fail the IPA job.
+      - name: Cache XcodeGen 2.46.0
+        id: cache-xcodegen
+        continue-on-error: true
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: .ci-tools/xcodegen
+          key: naqra-xcodegen-2.46.0-${{ runner.os }}-${{ runner.arch }}
+
       - name: Install pinned XcodeGen
         run: |
-          brew install xcodegen
+          set -euo pipefail
+          DEST="${GITHUB_WORKSPACE}/.ci-tools/xcodegen"
+          mkdir -p "$DEST"
+          # Cache miss, corrupt restore, or cache step failure → brew fallback.
+          if [ ! -x "$DEST/xcodegen" ] || ! "$DEST/xcodegen" --version 2>/dev/null | grep -qF "2.46.0"; then
+            echo "XcodeGen cache miss or invalid; installing via Homebrew"
+            brew install xcodegen
+            SRC="$(command -v xcodegen)"
+            test -x "$SRC"
+            cp "$SRC" "$DEST/xcodegen"
+            chmod +x "$DEST/xcodegen"
+          else
+            echo "XcodeGen restored from cache"
+          fi
+          echo "$DEST" >> "$GITHUB_PATH"
+          hash -r || true
           xcodegen --version | grep -F "2.46.0"
 
       - name: Select Xcode with installed iOS simulator runtime
@@ -125,13 +150,13 @@ jobs:
             personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa
             personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa.sha256
 
-      # XCTest needs a simulator host app and can hang intermittently on
-      # macos-15 (20m timeout blocked the IPA on main after #102). Ship the IPA
-      # first; tests still run and upload results without blocking the artifact.
+
+      # Soft gate only: IPA is already uploaded above. Hang/timeout here does not
+      # remove the artifact. Paths/xcodebuild flags unchanged from pre-split CI.
       - name: Run XCTest regression suite
         id: xctest
         continue-on-error: true
-        timeout-minutes: 12
+        timeout-minutes: 5
         run: |
           set -euo pipefail
           cd personalkeyboard-source
