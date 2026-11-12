@@ -150,6 +150,7 @@ extension KeyboardViewController {
         rootStack.setContentCompressionResistancePriority(.required, for: .vertical)
     }
     func rebuild() {
+        hideKeyPreview()
         hideClipboardPanel()
         emojiPager = nil
         emojiCollection?.dataSource = nil

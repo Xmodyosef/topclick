@@ -40,6 +40,9 @@ extension KeyboardViewController {
         let sound: TapSoundEngine.Sound = row == 0 ? .rowTop : (row == 1 ? .rowMid : .rowBot)
         playSystemClick(sound)
         tapHaptic()
+        // Visual only, after the insert. charKey is letters, digits, and symbols — not shift, space, delete, or emoji.
+        pulseKeyDown(sender)
+        showKeyPreview(key, from: sender)
         guard !holdChoices(for: key).isEmpty else { return }
         let timer = Timer(timeInterval: SharedKeyboardData.holdDelaySeconds(), repeats: false) { [weak self] _ in
             self?.showHoldPopup(from: sender)
@@ -87,6 +90,8 @@ extension KeyboardViewController {
     @objc func charUp(_ sender: UIButton) {
         holdTimer?.invalidate()
         holdTimer = nil
+        hideKeyPreview()
+        pulseKeyUp(sender)
         if holdPopup != nil {
             let text = holdChoice.isEmpty ? downText : holdChoice
             hideHoldPopup()
@@ -107,6 +112,8 @@ extension KeyboardViewController {
     @objc func charCancel(_ sender: UIButton) {
         holdTimer?.invalidate()
         holdTimer = nil
+        hideKeyPreview()
+        pulseKeyUp(sender)
         let restore = holdPopup != nil && !pendingInserted
         hideHoldPopup()
         if restore, !downText.isEmpty {
@@ -128,6 +135,7 @@ extension KeyboardViewController {
         guard let key = button.title(for: .normal) else { return }
         let items = holdChoices(for: key)
         guard !items.isEmpty else { return }
+        hideKeyPreview()
         undoProvisionalInsert()
         hideHoldPopup()
         let bar = UIStackView()
@@ -202,5 +210,64 @@ extension KeyboardViewController {
     func hideHoldPopup() {
         holdPopup?.removeFromSuperview()
         holdPopup = nil
+    }
+
+    func pulseKeyDown(_ button: UIButton) {
+        UIView.animate(withDuration: 0.08, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseOut]) {
+            button.transform = CGAffineTransform(scaleX: 1.10, y: 1.10)
+        }
+    }
+
+    func pulseKeyUp(_ button: UIButton) {
+        UIView.animate(withDuration: 0.08, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseOut]) {
+            button.transform = .identity
+        }
+    }
+
+    func ensureKeyPreview() -> UILabel {
+        if let keyPreview { return keyPreview }
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 32, weight: .medium)
+        label.textAlignment = .center
+        label.isUserInteractionEnabled = false
+        label.isOpaque = true
+        label.clipsToBounds = true
+        label.layer.cornerRadius = 14
+        label.layer.cornerCurve = .continuous
+        label.layer.borderWidth = 1
+        keyPreview = label
+        return label
+    }
+
+    /// One bubble, moved onto the pressed key. Stays inside the keyboard bounds.
+    func showKeyPreview(_ text: String, from button: UIButton) {
+        let label = ensureKeyPreview()
+        label.text = text
+        label.textColor = palette.text
+        label.backgroundColor = palette.key
+        label.layer.borderColor = (palette.blurDark ? UIColor.white.withAlphaComponent(0.22) : UIColor.black.withAlphaComponent(0.14)).cgColor
+        if label.superview !== view {
+            view.addSubview(label)
+        }
+        view.bringSubviewToFront(label)
+        label.isHidden = false
+        let key = button.convert(button.bounds, to: view)
+        let width = min(max(key.width + 18, 52), 88)
+        let height: CGFloat = 58
+        let bounds = view.bounds
+        let x = min(max(4, key.midX - width / 2), max(4, bounds.width - width - 4))
+        let above = key.minY - height - 4
+        let y: CGFloat
+        if above >= 4 {
+            y = above
+        } else {
+            // Top row: sit on the toolbar inside the board instead of drawing outside it.
+            y = 4
+        }
+        label.frame = CGRect(x: x, y: y, width: width, height: height)
+    }
+
+    func hideKeyPreview() {
+        keyPreview?.isHidden = true
     }
 }
