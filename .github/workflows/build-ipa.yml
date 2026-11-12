@@ -3,8 +3,22 @@ name: Build Fresh Unsigned IPA
 on:
   push:
     branches: [ main ]
+    # Docs/skills only. Any other file (personalkeyboard-source/** including
+    # Shared, Config, Resources, project.yml and scripts; .github/workflows/build-ipa.yml;
+    # .github/scripts/**) still starts this workflow.
+    paths-ignore:
+      - '**/*.md'
+      - 'skills/**'
+      - 'docs/**'
+      - '.grok/**'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - '**/*.md'
+      - 'skills/**'
+      - 'docs/**'
+      - '.grok/**'
+  # Manual builds are never filtered.
   workflow_dispatch:
 
 permissions:
