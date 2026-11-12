@@ -35,6 +35,9 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
     entitlements:
       path: App/Config/PersonalKeyboard.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.app.personal.PersonalKeyboard
     dependencies:
       - target: KeyboardExtension
         embed: true
@@ -52,6 +55,9 @@ targets:
       - path: KeyboardExtension/Resources/emoji_catalog.json
       - path: KeyboardExtension/Resources/emoji_skin_map.json
       - path: KeyboardExtension/Resources/keyboard_layouts.json
+      - path: KeyboardExtension/Resources/soft.caf
+      - path: KeyboardExtension/Resources/thocky.caf
+      - path: KeyboardExtension/Resources/creamy.caf
     settings:
       base:
         PRODUCT_NAME: KeyboardExtension
@@ -64,6 +70,9 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
     entitlements:
       path: KeyboardExtension/Config/KeyboardExtension.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.app.personal.PersonalKeyboard
     dependencies:
       - sdk: Translation.framework
         weak: true

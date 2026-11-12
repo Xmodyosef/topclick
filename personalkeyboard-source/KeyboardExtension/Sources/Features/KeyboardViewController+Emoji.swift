@@ -97,6 +97,9 @@ extension KeyboardViewController {
         longPress.cancelsTouchesInView = true
         cv.addGestureRecognizer(longPress)
         emojiSkinLongPress = longPress
+        // Collection-view scroll must not steal the finger while choosing a skin tone.
+        cv.panGestureRecognizer.require(toFail: longPress)
+        pan.require(toFail: longPress)
 
         return host
     }
@@ -127,7 +130,7 @@ extension KeyboardViewController {
         guard emojiPack.indices.contains(emojiCategoryIndex),
               emojiPack[emojiCategoryIndex].items.indices.contains(indexPath.item) else { return }
         let base = emojiPack[emojiCategoryIndex].items[indexPath.item]
-        hideEmojiSkinBar()
+        closeSkinPicker()
         let item = KeyboardDataLoader.resolvedEmoji(base)
         textDocumentProxy.insertText(item)
         playSystemClick(.emoji)
@@ -144,7 +147,7 @@ extension KeyboardViewController {
 
     @objc func emojiTab(_ sender: UIButton) {
         guard emojiPack.indices.contains(sender.tag) else { return }
-        hideEmojiSkinBar()
+        closeSkinPicker()
         emojiCategoryIndex = sender.tag
         refreshTabs()
         resetEmojiGridTransform(animated: false)
@@ -203,7 +206,7 @@ extension KeyboardViewController {
 
         switch gesture.state {
         case .began:
-            hideEmojiSkinBar()
+            closeSkinPicker()
             emojiCollection?.isScrollEnabled = false
             // Lightweight snapshot rides with the pan; live grid reloads only after the swipe ends.
             if emojiSwipeSnapshot == nil, let snap = host.snapshotView(afterScreenUpdates: false) {
@@ -306,7 +309,7 @@ extension KeyboardViewController {
 
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
         if scrollView === emojiCollection {
-            hideEmojiSkinBar()
+            closeSkinPicker()
         }
     }
 
@@ -324,35 +327,43 @@ extension KeyboardViewController {
             }
             let base = emojiPack[emojiCategoryIndex].items[indexPath.item]
             guard let tones = KeyboardDataLoader.skinTones(for: base) else { return }
+            // Session is independent of the bar. dismissSkinBar must not clear it.
+            skinSession = SkinSession(base: base, tones: Array(tones.prefix(6)), armedIndex: nil)
             emojiSkinBase = base
             cv.isScrollEnabled = false
-            showEmojiSkinBar(tones: tones, from: indexPath, in: cv)
+            showEmojiSkinBar(tones: skinSession?.tones ?? [], from: indexPath, in: cv)
             tapHaptic(.action)
         case .changed:
-            guard let bar = emojiSkinBar else { return }
+            guard let bar = emojiSkinBar, skinSession != nil else { return }
             let p = gesture.location(in: bar)
-            emojiSkinArmedIndex = skinToneIndex(at: p, in: bar)
-            highlightSkinTone(emojiSkinArmedIndex)
+            let idx = skinToneIndex(at: p, in: bar)
+            skinSession?.armedIndex = idx
+            emojiSkinArmedIndex = idx
+            highlightSkinTone(idx)
         case .ended:
-            // Same finger's lift. Commit only when it is over a tone (Apple drag-and-release).
-            defer {
-                emojiCollection?.isScrollEnabled = true
-                hideEmojiSkinBar()
+            // Insert from the session first, then tear the bar and the session down.
+            emojiCollection?.isScrollEnabled = true
+            let idx: Int?
+            if let bar = emojiSkinBar {
+                let p = gesture.location(in: bar)
+                idx = skinToneIndex(at: p, in: bar) ?? skinSession?.armedIndex
+            } else {
+                idx = skinSession?.armedIndex
             }
-            guard let bar = emojiSkinBar else { return }
-            let p = gesture.location(in: bar)
-            let idx = skinToneIndex(at: p, in: bar) ?? emojiSkinArmedIndex
             commitSkinTone(idx)
+            dismissSkinBar()
+            endSkinSession()
         case .cancelled, .failed:
             emojiCollection?.isScrollEnabled = true
-            hideEmojiSkinBar()
+            dismissSkinBar()
+            endSkinSession()
         default:
             break
         }
     }
 
     func showEmojiSkinBar(tones: [String], from indexPath: IndexPath, in cv: UICollectionView) {
-        hideEmojiSkinBar()
+        dismissSkinBar()
         guard let cell = cv.cellForItem(at: indexPath) else { return }
         let host = view!
         let bar = UIView()
@@ -420,13 +431,11 @@ extension KeyboardViewController {
         emojiSkinArmedIndex = nil
     }
 
-    /// Inserts the tone under the lifted finger. No-op when the lift missed the strip.
+    /// Inserts the tone stored on the live SkinSession. Never re-looks up emojiSkinBase.
     func commitSkinTone(_ idx: Int?) {
-        guard let idx,
-              let tones = KeyboardDataLoader.skinTones(for: emojiSkinBase),
-              tones.indices.contains(idx) else { return }
+        guard let session = skinSession, let idx, session.tones.indices.contains(idx) else { return }
         KeyboardDataLoader.setPreferredSkinToneIndex(idx)
-        let chosen = tones[idx]
+        let chosen = session.tones[idx]
         textDocumentProxy.insertText(chosen)
         playSystemClick(.emoji)
         rememberEmoji(chosen)
@@ -455,12 +464,29 @@ extension KeyboardViewController {
         return emojiSkinButtons[idx].tag
     }
 
-    func hideEmojiSkinBar() {
+    /// UI only. Does not touch SkinSession.
+    func dismissSkinBar() {
         emojiSkinBar?.removeFromSuperview()
         emojiSkinBar = nil
         emojiSkinButtons = []
+    }
+
+    /// Clears the long-press session after a commit or a real cancel.
+    func endSkinSession() {
+        skinSession = nil
         emojiSkinBase = ""
         emojiSkinArmedIndex = nil
+    }
+
+    /// Back-compat name: dismiss the strip without wiping the session.
+    func hideEmojiSkinBar() {
+        dismissSkinBar()
+    }
+
+    /// Dismiss the strip and end the session (tab change, scroll, cancel).
+    func closeSkinPicker() {
+        dismissSkinBar()
+        endSkinSession()
     }
 
     func rememberEmoji(_ item: String) {

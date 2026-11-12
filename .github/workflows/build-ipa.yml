@@ -126,10 +126,13 @@ jobs:
             copied=$((copied + 1))
             echo "embedded resource: $name"
           done < <(find KeyboardExtension/Resources -type f -print0)
-          test "$copied" -ge 3
+          test "$copied" -ge 6
           test -s "$APPEX/emoji_catalog.json"
           test -s "$APPEX/emoji_skin_map.json"
           test -s "$APPEX/keyboard_layouts.json"
+          test -s "$APPEX/soft.caf"
+          test -s "$APPEX/thocky.caf"
+          test -s "$APPEX/creamy.caf"
           test -f "$APPEX/emoji_catalog.json"
           test -f "$APPEX/emoji_skin_map.json"
           test -f "$APPEX/keyboard_layouts.json"
