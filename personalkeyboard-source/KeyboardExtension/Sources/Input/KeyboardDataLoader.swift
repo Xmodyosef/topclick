@@ -6,6 +6,7 @@ enum KeyboardDataLoader {
     private static var layoutsCache: Layouts?
     private static var lexiconCache: [String]?
     private static var emojiCache: [(icon: String, items: [String])]?
+    private static var skinMapCache: [String: [String]]?
     private static let arabicFallbackRows = [
         ["ض","ص","ث","ق","ف","غ","ع","ه","خ","ح","ج"],
         ["ش","س","ي","ب","ل","ا","ت","ن","م","ك","ة"],
@@ -156,6 +157,7 @@ enum KeyboardDataLoader {
     static func clearEmojiCache() {
         lock.lock(); defer { lock.unlock() }
         emojiCache = nil
+        skinMapCache = nil
     }
 
     static func emojiCatalog(frequent: [String] = []) -> [(icon: String, items: [String])] {
@@ -203,4 +205,42 @@ enum KeyboardDataLoader {
         }
         return packs
     }
+
+    /// Bases that support Fitzpatrick skin tones → ordered tones [default, light…dark].
+    static func skinMap() -> [String: [String]] {
+        lock.lock(); defer { lock.unlock() }
+        if let skinMapCache { return skinMapCache }
+        if let data = data(named: "emoji_skin_map"),
+           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: [String]] {
+            let cleaned = obj.filter { !$0.key.isEmpty && $0.value.count >= 2 }
+            skinMapCache = cleaned
+            return cleaned
+        }
+        skinMapCache = [:]
+        return [:]
+    }
+
+    static func skinTones(for base: String) -> [String]? {
+        let tones = skinMap()[base]
+        guard let tones, tones.count >= 2 else { return nil }
+        return tones
+    }
+
+    /// Global preferred tone index 0…5 (0 = default yellow).
+    static func preferredSkinToneIndex() -> Int {
+        let raw = ThemeIO.string("emojiSkinTone") ?? "0"
+        return min(max(Int(raw) ?? 0, 0), 5)
+    }
+
+    static func setPreferredSkinToneIndex(_ index: Int) {
+        ThemeIO.set("emojiSkinTone", value: "\(min(max(index, 0), 5))")
+    }
+
+    /// Resolve base emoji to the user's preferred skin tone when supported.
+    static func resolvedEmoji(_ base: String) -> String {
+        guard let tones = skinTones(for: base), !tones.isEmpty else { return base }
+        let idx = min(preferredSkinToneIndex(), tones.count - 1)
+        return tones[idx]
+    }
+
 }

@@ -38,6 +38,11 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     /// Transient snapshot while scrubbing emoji categories (single CV, low memory).
     var emojiSwipeSnapshot: UIView?
     var emojiTabs: UIStackView?
+    /// One reused skin-tone strip (6 tones). Never allocated per cell.
+    var emojiSkinBar: UIView?
+    var emojiSkinButtons: [UIButton] = []
+    var emojiSkinBase: String = ""
+    weak var emojiSkinLongPress: UILongPressGestureRecognizer?
     var suggestionButtons: [UIButton] = []
     var appliedThemeId = ""
     var noticeLabel: UILabel?
@@ -148,6 +153,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         holdTimer?.invalidate()
         holdTimer = nil
         hideHoldPopup()
+        hideEmojiSkinBar()
         hideKeyPreview()
         hideClipboardPanel()
         pendingInserted = false

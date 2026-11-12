@@ -50,6 +50,7 @@ targets:
     # (folder resource alone was missing from the built unsigned IPA).
     resources:
       - path: KeyboardExtension/Resources/emoji_catalog.json
+      - path: KeyboardExtension/Resources/emoji_skin_map.json
       - path: KeyboardExtension/Resources/keyboard_layouts.json
     settings:
       base:
