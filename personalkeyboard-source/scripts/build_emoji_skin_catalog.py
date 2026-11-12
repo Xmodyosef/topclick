@@ -32,7 +32,8 @@ def primary_mod(s: str) -> str | None:
     return None
 
 
-def build(catalog: list) -> tuple[list, dict[str, list[str]], dict]:
+def group_forms(catalog: list) -> tuple[list[dict], dict[str, set[str]]]:
+    """Collapse each category to base forms; collect every full form per base."""
     global_forms: dict[str, set[str]] = {}
     new_catalog: list[dict] = []
 
@@ -53,30 +54,57 @@ def build(catalog: list) -> tuple[list, dict[str, list[str]], dict]:
                 bases_order.append(base)
         new_catalog.append({"icon": icon, "items": bases_order})
 
+    return new_catalog, global_forms
+
+
+def tone_candidate_for_mod(base_form: str, base: str, forms: set[str], mod: str) -> str | None:
+    """Pick the catalog string for one Fitzpatrick modifier (same rules as before)."""
+    simple = base_form + mod
+    if simple in forms:
+        return simple
+
+    matches = [f for f in forms if strip_skin(f) == base and primary_mod(f) == mod]
+    if matches:
+        matches.sort(key=lambda x: (sum(x.count(mm) for mm in MODS), len(x)))
+        return matches[0]
+
+    if "\u200d" not in base_form:
+        return base_form + mod
+    return None
+
+
+def ordered_tones(base: str, forms: set[str]) -> list[str] | None:
+    """Default + tones for a base, or None if the base has no skinned variants."""
+    skinned = [f for f in forms if has_skin(f)]
+    if not skinned:
+        return None
+
+    base_form = base
+    tones = [base_form]
+    for m in MODS:
+        candidate = tone_candidate_for_mod(base_form, base, forms, m)
+        if candidate and candidate not in tones:
+            tones.append(candidate)
+
+    if len(tones) < 2:
+        return None
+    return tones
+
+
+def build_skin_map(global_forms: dict[str, set[str]]) -> dict[str, list[str]]:
     skin_map: dict[str, list[str]] = {}
     for base, forms in global_forms.items():
-        skinned = [f for f in forms if has_skin(f)]
-        if not skinned:
-            continue
-        base_form = base
-        tones = [base_form]
-        for m in MODS:
-            candidate = None
-            simple = base_form + m
-            if simple in forms:
-                candidate = simple
-            else:
-                matches = [f for f in forms if strip_skin(f) == base and primary_mod(f) == m]
-                if matches:
-                    matches.sort(key=lambda x: (sum(x.count(mm) for mm in MODS), len(x)))
-                    candidate = matches[0]
-                elif "\u200d" not in base_form:
-                    candidate = base_form + m
-            if candidate and candidate not in tones:
-                tones.append(candidate)
-        if len(tones) >= 2:
-            skin_map[base_form] = tones
+        tones = ordered_tones(base, forms)
+        if tones is not None:
+            skin_map[base] = tones
+    return skin_map
 
+
+def order_skin_map(
+    new_catalog: list[dict],
+    skin_map: dict[str, list[str]],
+) -> dict[str, list[str]]:
+    """Stable map order: first appearance in the collapsed catalog, then leftovers."""
     ordered: dict[str, list[str]] = {}
     for cat in new_catalog:
         for b in cat["items"]:
@@ -85,13 +113,23 @@ def build(catalog: list) -> tuple[list, dict[str, list[str]], dict]:
     for k, v in skin_map.items():
         if k not in ordered:
             ordered[k] = v
+    return ordered
 
-    stats = {
+
+def build_stats(new_catalog: list[dict], ordered: dict[str, list[str]]) -> dict:
+    return {
         "categories": len(new_catalog),
         "items_after": sum(len(c["items"]) for c in new_catalog),
         "skin_keys": len(ordered),
         "skinned_left": sum(1 for c in new_catalog for e in c["items"] if has_skin(e)),
     }
+
+
+def build(catalog: list) -> tuple[list, dict[str, list[str]], dict]:
+    new_catalog, global_forms = group_forms(catalog)
+    skin_map = build_skin_map(global_forms)
+    ordered = order_skin_map(new_catalog, skin_map)
+    stats = build_stats(new_catalog, ordered)
     return new_catalog, ordered, stats
 
 
@@ -120,7 +158,10 @@ def main() -> int:
         json.dumps(skin_map, ensure_ascii=False, separators=(",", ":")) + "\n",
         encoding="utf-8",
     )
-    print(f"before_items={before} after_items={stats['items_after']} skin_keys={stats['skin_keys']} skinned_left={stats['skinned_left']}")
+    print(
+        f"before_items={before} after_items={stats['items_after']} "
+        f"skin_keys={stats['skin_keys']} skinned_left={stats['skinned_left']}"
+    )
     if stats["skinned_left"] != 0:
         raise SystemExit("catalog still contains skin-tone modifiers")
     if "👋" not in skin_map or len(skin_map["👋"]) < 2:
