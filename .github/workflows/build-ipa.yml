@@ -134,21 +134,28 @@ jobs:
 
       - name: Create IPA
         run: |
+          set -euo pipefail
           cd personalkeyboard-source
           mkdir -p Payload
           APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
           test -n "$APP"
           cp -R "$APP" Payload/
-          zip -r PersonalKeyboard-unsigned-fresh.ipa Payload
-          shasum -a 256 PersonalKeyboard-unsigned-fresh.ipa > PersonalKeyboard-unsigned-fresh.ipa.sha256
+          # Display name only. Do not rewrite MARKETING_VERSION or CURRENT_PROJECT_VERSION.
+          ROLLING=$(python3 -c "import re, pathlib; t=pathlib.Path('project.yml').read_text(); m=re.search(r'(?m)^\\s+ROLLING_VERSION:\\s*[\"\']?([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)', t); assert m, 'ROLLING_VERSION missing'; print(m.group(1))")
+          test -n "$ROLLING"
+          IPA="PersonalKeyboard-${ROLLING}.ipa"
+          zip -r "$IPA" Payload
+          shasum -a 256 "$IPA" > "${IPA}.sha256"
+          echo "IPA_NAME=$IPA" >> "$GITHUB_ENV"
+          echo "named ipa: $IPA"
 
       - name: Upload IPA
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: Fresh-Unsigned-IPA
           path: |
-            personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa
-            personalkeyboard-source/PersonalKeyboard-unsigned-fresh.ipa.sha256
+            personalkeyboard-source/PersonalKeyboard-*.ipa
+            personalkeyboard-source/PersonalKeyboard-*.ipa.sha256
 
 
       # Soft gate only: IPA is already uploaded above. Hang/timeout here does not
