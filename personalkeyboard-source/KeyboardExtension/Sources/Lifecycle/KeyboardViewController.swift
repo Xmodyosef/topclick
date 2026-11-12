@@ -3,6 +3,12 @@ import Translation
 import UIKit
 import AudioToolbox
 
+struct SkinSession {
+    let base: String
+    let tones: [String]
+    var armedIndex: Int?
+}
+
 final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UIGestureRecognizerDelegate, UIInputViewAudioFeedback {
     var enableInputClicksWhenVisible: Bool { return true }
     var language: KeyboardLanguage = .arabic
@@ -44,6 +50,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var emojiSkinBase: String = ""
     /// Tone under the finger during the same long-press. Committed on lift.
     var emojiSkinArmedIndex: Int?
+    /// Long-press session. Survives dismissSkinBar(); cleared only by endSkinSession().
+    var skinSession: SkinSession?
     weak var emojiSkinLongPress: UILongPressGestureRecognizer?
     var suggestionButtons: [UIButton] = []
     var appliedThemeId = ""
@@ -156,6 +164,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         holdTimer = nil
         hideHoldPopup()
         hideEmojiSkinBar()
+        endSkinSession()
         hideKeyPreview()
         hideClipboardPanel()
         pendingInserted = false
