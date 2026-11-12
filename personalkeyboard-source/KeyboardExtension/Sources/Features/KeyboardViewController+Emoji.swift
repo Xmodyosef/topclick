@@ -91,7 +91,8 @@ extension KeyboardViewController {
 
         let longPress = UILongPressGestureRecognizer(target: self, action: #selector(emojiSkinLongPressed(_:)))
         longPress.minimumPressDuration = 0.40
-        longPress.allowableMovement = 10
+        // Finger must travel from the cell up onto the strip. 10pt cancels the gesture first.
+        longPress.allowableMovement = 10_000
         longPress.delegate = self
         longPress.cancelsTouchesInView = true
         cv.addGestureRecognizer(longPress)
@@ -330,23 +331,20 @@ extension KeyboardViewController {
         case .changed:
             guard let bar = emojiSkinBar else { return }
             let p = gesture.location(in: bar)
-            highlightSkinTone(at: p, in: bar)
-        case .ended, .cancelled:
+            emojiSkinArmedIndex = skinToneIndex(at: p, in: bar)
+            highlightSkinTone(emojiSkinArmedIndex)
+        case .ended:
+            // Same finger's lift. Commit only when it is over a tone (Apple drag-and-release).
             defer {
                 emojiCollection?.isScrollEnabled = true
+                hideEmojiSkinBar()
             }
             guard let bar = emojiSkinBar else { return }
             let p = gesture.location(in: bar)
-            if gesture.state == .ended, let idx = skinToneIndex(at: p, in: bar),
-               let tones = KeyboardDataLoader.skinTones(for: emojiSkinBase),
-               tones.indices.contains(idx) {
-                KeyboardDataLoader.setPreferredSkinToneIndex(idx)
-                let chosen = tones[idx]
-                textDocumentProxy.insertText(chosen)
-                playSystemClick(.emoji)
-                rememberEmoji(chosen)
-                tapHaptic()
-            }
+            let idx = skinToneIndex(at: p, in: bar) ?? emojiSkinArmedIndex
+            commitSkinTone(idx)
+        case .cancelled, .failed:
+            emojiCollection?.isScrollEnabled = true
             hideEmojiSkinBar()
         default:
             break
@@ -389,7 +387,8 @@ extension KeyboardViewController {
                 ? palette.accent.withAlphaComponent(0.28)
                 : .clear
             b.layer.cornerRadius = 8
-            b.addTarget(self, action: #selector(emojiSkinToneTapped(_:)), for: .touchUpInside)
+            // Visual only. The long-press owns the finger; buttons must not eat the drag.
+            b.isUserInteractionEnabled = false
             stack.addArrangedSubview(b)
             buttons.append(b)
         }
@@ -408,48 +407,52 @@ extension KeyboardViewController {
         let cellFrame = cell.convert(cell.bounds, to: host)
         var x = cellFrame.midX - barW / 2
         x = max(8, min(x, host.bounds.width - barW - 8))
-        // Prefer above the cell; if not enough room (top row), place below.
+        // Always above the cell, even over the category tabs. Never drop below.
+        // If the strip would leave the keyboard, pin it to the top edge.
+        let inset: CGFloat = 4
         var y = cellFrame.minY - barH - 6
-        if y < 4 {
-            y = min(cellFrame.maxY + 6, host.bounds.height - barH - 4)
-        }
+        y = min(max(inset, y), max(inset, host.bounds.height - barH - inset))
         bar.frame = CGRect(x: x, y: y, width: barW, height: barH)
         host.addSubview(bar)
+        host.bringSubviewToFront(bar)
+        bar.layoutIfNeeded()
         emojiSkinBar = bar
+        emojiSkinArmedIndex = nil
     }
 
-    @objc func emojiSkinToneTapped(_ sender: UIButton) {
-        let idx = sender.tag
-        guard let tones = KeyboardDataLoader.skinTones(for: emojiSkinBase),
-              tones.indices.contains(idx) else {
-            hideEmojiSkinBar()
-            return
-        }
+    /// Inserts the tone under the lifted finger. No-op when the lift missed the strip.
+    func commitSkinTone(_ idx: Int?) {
+        guard let idx,
+              let tones = KeyboardDataLoader.skinTones(for: emojiSkinBase),
+              tones.indices.contains(idx) else { return }
         KeyboardDataLoader.setPreferredSkinToneIndex(idx)
         let chosen = tones[idx]
         textDocumentProxy.insertText(chosen)
         playSystemClick(.emoji)
         rememberEmoji(chosen)
         tapHaptic()
-        emojiCollection?.isScrollEnabled = true
-        hideEmojiSkinBar()
     }
 
-    func highlightSkinTone(at point: CGPoint, in bar: UIView) {
-        guard let idx = skinToneIndex(at: point, in: bar) else { return }
+    func highlightSkinTone(_ idx: Int?) {
         for (i, b) in emojiSkinButtons.enumerated() {
             b.backgroundColor = (i == idx)
-                ? palette.accent.withAlphaComponent(0.28)
+                ? palette.accent.withAlphaComponent(0.45)
                 : .clear
         }
     }
 
     func skinToneIndex(at point: CGPoint, in bar: UIView) -> Int? {
+        guard !emojiSkinButtons.isEmpty else { return nil }
+        bar.layoutIfNeeded()
         for b in emojiSkinButtons {
-            let f = b.convert(b.bounds, to: bar).insetBy(dx: -4, dy: -4)
-            if f.contains(point) { return b.tag }
+            let f = b.convert(b.bounds, to: bar).insetBy(dx: -4, dy: -10)
+            if f.width > 1, f.contains(point) { return b.tag }
         }
-        return nil
+        // Band fallback: finger may sit slightly above the glyphs while still on the strip.
+        guard point.y >= -16, point.y <= bar.bounds.height + 16, bar.bounds.width > 1 else { return nil }
+        let idx = Int(floor(point.x / (bar.bounds.width / CGFloat(emojiSkinButtons.count))))
+        guard emojiSkinButtons.indices.contains(idx) else { return nil }
+        return emojiSkinButtons[idx].tag
     }
 
     func hideEmojiSkinBar() {
@@ -457,6 +460,7 @@ extension KeyboardViewController {
         emojiSkinBar = nil
         emojiSkinButtons = []
         emojiSkinBase = ""
+        emojiSkinArmedIndex = nil
     }
 
     func rememberEmoji(_ item: String) {
