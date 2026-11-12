@@ -139,19 +139,22 @@ jobs:
           PROJECT=$(find . -name "*.xcodeproj" -print -quit)
           xcodebuild -project "$PROJECT" -scheme "PersonalKeyboard" -sdk iphoneos -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
 
-      - name: Ensure keyboard JSON resources are embedded
+      - name: Ensure keyboard resources are embedded
         working-directory: personalkeyboard-source
         run: |
           APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
           test -n "$APP"
           APPEX="$APP/PlugIns/KeyboardExtension.appex"
           test -d "$APPEX"
-          for name in emoji_catalog.json keyboard_layouts.json; do
-            SOURCE="KeyboardExtension/Resources/$name"
-            test -s "$SOURCE"
-            cp "$SOURCE" "$APPEX/$name"
-            test -s "$APPEX/$name"
+          # Copy every file in Resources/ to the appex root. Folder references
+          # were dropped from unsigned IPAs before, so do not rely on type: folder.
+          find KeyboardExtension/Resources -type f -print | while read -r source; do
+            test -s "$source"
+            cp "$source" "$APPEX/$(basename "$source")"
+            test -s "$APPEX/$(basename "$source")"
           done
+          test -s "$APPEX/emoji_catalog.json"
+          test -s "$APPEX/keyboard_layouts.json"
 
       - name: Verify built app bundle
         working-directory: personalkeyboard-source
