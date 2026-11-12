@@ -5,8 +5,10 @@ import AudioToolbox
 
 // MARK: - LTR emoji grid layout (never mirror cell order under Arabic UI)
 final class LTREmojiFlowLayout: UICollectionViewFlowLayout {
-    /// Keep leading→trailing order fixed even when the keyboard is Arabic RTL.
+    /// Keep leading→trailing order fixed even when the keyboard is Arabic RTL
+    /// (PrefersRightToLeft=true on the extension does not mirror the emoji grid).
     override var flipsHorizontallyInOppositeLayoutDirection: Bool { false }
+    override var developmentLayoutDirection: UIUserInterfaceLayoutDirection { .leftToRight }
 }
 
 // MARK: - KeyboardViewController + Emoji

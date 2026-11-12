@@ -27,8 +27,8 @@ enum KeyboardDataLoader {
         ["Z","X","C","V","B","N","M"]
     ]
     private static let fallbackHoldMap: [String: [String]] = [
-        // Clean Arabic long-press: no row-pair duplicates (س/ش…), no Persian (چ/ژ).
-        "ا": ["أ","إ","آ"], "و": ["ؤ"], "ي": ["ئ","ى"], "ى": ["ئ"],
+        // Clean Arabic long-press: no row-pair duplicates; ي has no alts (owner).
+        "ا": ["أ","إ","آ"], "و": ["ؤ"], "ي": [], "ى": ["ئ"],
         "ل": ["لا","لأ","لإ","لآ"], "ء": ["أ","إ","ؤ","ئ"],
         "٪": ["%"], "﷼": ["$"]
     ]
