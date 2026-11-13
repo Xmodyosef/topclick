@@ -200,7 +200,7 @@ struct ThemesTab: View {
 
     private func onThemeTap(_ theme: ThemeSwatch, requestID: UUID) async {
         guard !Task.isCancelled, await themeGate.isCurrent(requestID) else { return }
-        // Themes ship with the app; first tap writes themeId (suite + standard for sideload).
+        // Themes ship with the app; first tap writes naqra.themeId (suite + standard for sideload).
         if ThemePackStore.apply(theme.id) {
             themeID = theme.id
             recordThemeTrace(wrote: theme.id)
@@ -293,7 +293,7 @@ struct ThemesTab: View {
             themeTraceLine = ""
             return
         }
-        let suiteRead = UserDefaults(suiteName: ThemeStore.suiteName)?.string(forKey: "themeId") ?? "-"
+        let suiteRead = UserDefaults(suiteName: ThemeStore.suiteName)?.string(forKey: "naqra.themeId") ?? "-"
         themeTraceLine = "wrote=\(wrote) | suiteRead=\(suiteRead) | build=\(NaqraBuildStamp.short)"
     }
 

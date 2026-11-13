@@ -192,8 +192,8 @@ jobs:
             --entitlements "$APP_ENT" \
             --generate-entitlement-der \
             "$APP"
-          codesign --display --entitlements :- "$APP/PersonalKeyboard" | tee "$RUNNER_TEMP/app-entitlements.txt" | grep -F 'group.app.personal.PersonalKeyboard'
-          codesign --display --entitlements :- "$APPEX/KeyboardExtension" | tee "$RUNNER_TEMP/extension-entitlements.txt" | grep -F 'group.app.personal.PersonalKeyboard'
+          codesign --display --entitlements :- "$APP/PersonalKeyboard" | tee "$RUNNER_TEMP/app-entitlements.txt" | grep -F 'group.Mark1'
+          codesign --display --entitlements :- "$APPEX/KeyboardExtension" | tee "$RUNNER_TEMP/extension-entitlements.txt" | grep -F 'group.Mark1'
           echo "App Group present in PersonalKeyboard and KeyboardExtension"
 
       - name: Create IPA

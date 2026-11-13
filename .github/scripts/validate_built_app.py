@@ -78,7 +78,7 @@ def main() -> None:
     app_entitlements = load_entitlements(app_entitlements_path)
     extension_entitlements = load_entitlements(extension_entitlements_path)
     entitlement_key = "com.apple.security.application-groups"
-    expected_group = "group.app.personal.PersonalKeyboard"
+    expected_group = "group.Mark1"
 
     # xcodebuild with CODE_SIGNING_ALLOWED=NO can rewrite CODE_SIGN_ENTITLEMENTS
     # source files to an empty dict. Fall back to the expected group contract and

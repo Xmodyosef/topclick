@@ -164,7 +164,7 @@ enum TimeTheme {
 // MARK: - Shared preferences
 
 enum ThemeStore {
-    static let suiteName = "group.app.personal.PersonalKeyboard"
+    static let suiteName = "group.Mark1"
     static let notificationName = "app.personal.PersonalKeyboard.prefs"
     static var suite: UserDefaults { UserDefaults(suiteName: suiteName) ?? .standard }
 
@@ -184,7 +184,7 @@ enum ThemeStore {
     }
 
     static var themeID: String {
-        let raw = string("themeId") ?? "auto"
+        let raw = string("naqra.themeId") ?? "auto"
         let legacy: [String: String] = [
             "charcoal": "dark", "smoke": "dark", "catppuccin_frappe": "dark", "catppuccin_macchiato": "dark",
             "teal": "ocean", "midnight": "cobalt", "midnight_gold": "cobalt", "neon_nights": "cobalt", "tron": "cobalt",

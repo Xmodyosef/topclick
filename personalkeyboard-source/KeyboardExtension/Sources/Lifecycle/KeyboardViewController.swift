@@ -81,7 +81,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     }
     var showNumberRow: Bool { ThemeIO.bool("showNumberRow") ?? true }
     var themeSignature: String {
-        let id = ThemeIO.string("themeId") ?? "auto"
+        let id = ThemeIO.string("naqra.themeId") ?? "auto"
         return id == "auto" ? "auto-\(TimeTheme.preferredThemeId())" : id
     }
 
