@@ -25,7 +25,7 @@ struct ThemesTab: View {
                         Text("حزم الثيمات والأصوات")
                             .font(.system(size: 23, weight: .bold, design: .rounded))
                             .foregroundStyle(NaqraColors.textPrimary)
-                        Text("كل حزمة تُحمَّل لوحدها. بعد التحميل يمكنك التبديل بينها بحرية دون فقدان الحزم الأخرى.")
+                        Text("كل الثيمات جاهزة داخل التطبيق. اضغط مرة واحدة للتطبيق على لوحة المفاتيح.")
                             .font(.system(size: 13))
                             .foregroundStyle(NaqraColors.textSecondary)
                     }
@@ -191,20 +191,7 @@ struct ThemesTab: View {
 
     private func onThemeTap(_ theme: ThemeSwatch, requestID: UUID) async {
         guard !Task.isCancelled, await themeGate.isCurrent(requestID) else { return }
-        if ThemePackStore.isInstalled(theme.id) {
-            if ThemePackStore.apply(theme.id) { themeID = theme.id }
-            return
-        }
-
-        loadingThemeIDs.insert(theme.id)
-        // The packs are bundled locally; yield once for cancellation without faking a download delay.
-        await Task.yield()
-        guard !Task.isCancelled, await themeGate.isCurrent(requestID) else { return }
-
-        ThemePackStore.markInstalled(theme.id)
-        guard !Task.isCancelled, await themeGate.isCurrent(requestID) else { return }
-        loadingThemeIDs.remove(theme.id)
-        installedThemesTick += 1
+        // Themes ship with the app; first tap writes themeId (suite + standard for sideload).
         if ThemePackStore.apply(theme.id) { themeID = theme.id }
     }
 

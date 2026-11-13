@@ -2,7 +2,75 @@ import UIKit
 
 // MARK: - NaqraPalette presets
 extension NaqraPalette {
+    /// Exact key colors from the shipping old app (m1…m20 light, e1…e3 dark).
+    /// Painted with the old formula: key = RGB, background = RGB − (dark ? 0.05 : 0.08).
+    static let legacyRGB: [String: (CGFloat, CGFloat, CGFloat, Bool)] = [
+        "m1":  (0.93, 0.86, 0.72, false),
+        "m2":  (0.90, 0.82, 0.62, false),
+        "m3":  (0.96, 0.78, 0.68, false),
+        "m4":  (0.96, 0.72, 0.48, false),
+        "m5":  (0.95, 0.92, 0.84, false),
+        "m6":  (0.96, 0.94, 0.90, false),
+        "m7":  (0.74, 0.90, 0.82, false),
+        "m8":  (0.70, 0.80, 0.72, false),
+        "m9":  (0.70, 0.84, 0.94, false),
+        "m10": (0.55, 0.78, 0.86, false),
+        "m11": (0.82, 0.76, 0.90, false),
+        "m12": (0.94, 0.74, 0.80, false),
+        "m13": (0.90, 0.76, 0.40, false),
+        "m14": (0.88, 0.68, 0.36, false),
+        "m15": (0.62, 0.66, 0.40, false),
+        "m16": (0.72, 0.52, 0.40, false),
+        "m17": (0.78, 0.84, 0.72, false),
+        "m18": (0.82, 0.84, 0.86, false),
+        "m19": (0.92, 0.55, 0.50, false),
+        "m20": (0.70, 0.82, 0.58, false),
+        "e1":  (0.12, 0.12, 0.13, true),
+        "e2":  (0.08, 0.12, 0.22, true),
+        "e3":  (0.07, 0.09, 0.16, true)
+    ]
+
+    static func isLegacyTheme(_ id: String) -> Bool {
+        legacyRGB[id] != nil
+    }
+
+    /// Old app paint path — key stays raw; background uses the historical delta only once.
+    static func legacyPalette(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat, dark: Bool) -> NaqraPalette {
+        let delta: CGFloat = dark ? 0.05 : 0.08
+        let key = UIColor(red: r, green: g, blue: b, alpha: 1)
+        let background = UIColor(
+            red: max(0, r - delta),
+            green: max(0, g - delta),
+            blue: max(0, b - delta),
+            alpha: 1
+        )
+        // Readable ink/accent derived from the same base (old snippet had no separate text RGB).
+        let text: UIColor
+        let accent: UIColor
+        if dark {
+            text = UIColor(white: 0.96, alpha: 1)
+            accent = UIColor(
+                red: min(1, r + 0.35),
+                green: min(1, g + 0.30),
+                blue: min(1, b + 0.40),
+                alpha: 1
+            )
+        } else {
+            text = UIColor(red: max(0, r - 0.55), green: max(0, g - 0.55), blue: max(0, b - 0.50), alpha: 1)
+            accent = UIColor(
+                red: max(0.2, r - 0.25),
+                green: max(0.15, g - 0.30),
+                blue: max(0.1, b - 0.20),
+                alpha: 1
+            )
+        }
+        return .init(background: background, key: key, text: text, accent: accent, blurDark: dark)
+    }
+
     static func preset(_ id: String) -> NaqraPalette {
+        if let (r, g, b, dark) = legacyRGB[id] {
+            return legacyPalette(r, g, b, dark: dark)
+        }
         switch id {
         case "dark": return .init(background: .clear, key: UIColor(red: 0.10, green: 0.16, blue: 0.28, alpha: 0.62), text: UIColor(red: 0.93, green: 0.96, blue: 1.0, alpha: 1), accent: UIColor(red: 0.36, green: 0.60, blue: 1.0, alpha: 1), blurDark: true)
         case "light": return .init(background: .clear, key: UIColor(red: 0.90, green: 0.95, blue: 0.99, alpha: 0.82), text: UIColor(red: 0.14, green: 0.27, blue: 0.40, alpha: 1), accent: UIColor(red: 0.28, green: 0.52, blue: 0.86, alpha: 1), blurDark: false)
@@ -16,29 +84,9 @@ extension NaqraPalette {
         case "forest": return .init(background: .clear, key: UIColor(red: 0.06, green: 0.18, blue: 0.12, alpha: 0.58), text: UIColor(red: 0.70, green: 0.96, blue: 0.76, alpha: 1), accent: UIColor(red: 0.22, green: 0.78, blue: 0.42, alpha: 1), blurDark: true)
         case "matrix": return .init(background: .clear, key: UIColor(red: 0.02, green: 0.07, blue: 0.03, alpha: 0.62), text: UIColor(red: 0.28, green: 0.98, blue: 0.36, alpha: 1), accent: UIColor(red: 0.12, green: 0.78, blue: 0.22, alpha: 1), blurDark: true)
         case "nord": return .init(background: .clear, key: UIColor(red: 0.78, green: 0.82, blue: 0.86, alpha: 0.72), text: UIColor(red: 0.16, green: 0.20, blue: 0.26, alpha: 1), accent: UIColor(red: 0.36, green: 0.56, blue: 0.70, alpha: 1), blurDark: false)
-        case "morning","m1": return Self.tone(0.96, 0.90, 0.78, dark: false)
-        case "m2": return Self.tone(0.94, 0.89, 0.72, dark: false)
-        case "m3": return Self.tone(0.98, 0.86, 0.76, dark: false)
-        case "m4": return Self.tone(0.97, 0.82, 0.64, dark: false)
-        case "m5": return Self.tone(0.96, 0.94, 0.88, dark: false)
-        case "m6": return Self.tone(0.93, 0.94, 0.96, dark: false)
-        case "m7": return Self.tone(0.84, 0.93, 0.88, dark: false)
-        case "m8": return Self.tone(0.78, 0.86, 0.76, dark: false)
-        case "m9": return Self.tone(0.78, 0.88, 0.96, dark: false)
-        case "m10": return Self.tone(0.72, 0.86, 0.90, dark: false)
-        case "m11": return Self.tone(0.90, 0.86, 0.96, dark: false)
-        case "m12": return Self.tone(0.96, 0.86, 0.90, dark: false)
-        case "m13": return Self.tone(0.93, 0.86, 0.68, dark: false)
-        case "m14": return Self.tone(0.92, 0.78, 0.52, dark: false)
-        case "m15": return Self.tone(0.82, 0.84, 0.68, dark: false)
-        case "m16": return Self.tone(0.86, 0.74, 0.62, dark: false)
-        case "m17": return Self.tone(0.95, 0.93, 0.89, dark: false)
-        case "m18": return Self.tone(0.86, 0.88, 0.90, dark: false)
-        case "m19": return Self.tone(0.96, 0.78, 0.74, dark: false)
-        case "m20": return Self.tone(0.80, 0.90, 0.78, dark: false)
-        case "evening","e2": return Self.tone(0.08, 0.12, 0.24, dark: true, amber: true)
-        case "e1": return Self.tone(0.22, 0.23, 0.26, dark: true)
-        case "e3": return Self.tone(0.07, 0.09, 0.16, dark: true, amber: true)
+        // morning / evening stay on the modern tone path (not in the legacy table).
+        case "morning": return Self.tone(0.96, 0.90, 0.78, dark: false)
+        case "evening": return Self.tone(0.08, 0.12, 0.24, dark: true, amber: true)
         case "e4": return Self.tone(0.10, 0.12, 0.18, dark: true)
         case "e5": return Self.tone(0.18, 0.10, 0.22, dark: true)
         case "e6": return Self.tone(0.24, 0.08, 0.14, dark: true)

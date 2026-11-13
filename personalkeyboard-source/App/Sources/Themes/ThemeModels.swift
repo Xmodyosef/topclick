@@ -20,19 +20,23 @@ struct ThemeGroup: Identifiable {
 }
 
 enum ThemeCatalog {
-    /// Arabic titles aligned with extension NaqraPalette.titles
+    /// Arabic titles aligned with extension NaqraPalette.titles + legacy names.
     private static let titles: [String: String] = [
         "auto": "يتبدّل مع الوقت", "light": "لؤلؤي", "dark": "فحمي", "glass": "منشور",
         "ocean": "محيط", "cobalt": "كوبالت", "violet": "بنفسج", "orchid": "أوركيد",
         "hailey": "دم", "ember": "جمر", "forest": "غابة", "matrix": "ماتريكس", "nord": "نورد",
         "morning": "صباح هادئ", "evening": "مساء مخملي",
-        "m7": "نعناع", "m12": "ورد", "m4": "مشمش", "m9": "سماء",
-        "e5": "برقوق", "e11": "جمر ليلي", "e2": "كحلي", "e8": "زمرد",
+        "m1": "رملي", "m2": "قش", "m3": "خوخ", "m4": "مشمش", "m5": "عاج",
+        "m6": "حليب", "m7": "نعناع", "m8": "مريمية", "m9": "سماء", "m10": "بحيرة",
+        "m11": "لافندر", "m12": "ورد", "m13": "ذهب", "m14": "عسل", "m15": "زيتون",
+        "m16": "طين", "m17": "ورق", "m18": "ضباب", "m19": "مرجان", "m20": "فستق",
+        "e1": "فحم", "e2": "كحلي", "e3": "ليل",
+        "e5": "برقوق", "e8": "زمرد", "e11": "جمر ليلي",
         "aurora": "شفق", "lavender": "لافندر", "sunset": "غروب", "mint": "نعناع ليلي",
         "rose": "وردي", "mono": "أحادي"
     ]
 
-    /// Distinct surfaces only — no near-duplicates.
+    /// Swatch RGB must match keyboard legacyRGB for m1…m20 / e1…e3.
     private static let rgb: [String: (Double, Double, Double, Bool)] = [
         "auto": (0.16, 0.18, 0.23, true),
         "light": (0.90, 0.95, 0.99, false),
@@ -49,20 +53,50 @@ enum ThemeCatalog {
         "nord": (0.78, 0.82, 0.86, false),
         "morning": (0.96, 0.90, 0.78, false),
         "evening": (0.08, 0.12, 0.24, true),
-        "m4": (0.97, 0.82, 0.64, false), "m7": (0.84, 0.93, 0.88, false),
-        "m9": (0.78, 0.88, 0.96, false), "m12": (0.96, 0.86, 0.90, false),
-        "e2": (0.08, 0.12, 0.24, true), "e5": (0.18, 0.10, 0.22, true),
-        "e8": (0.06, 0.18, 0.16, true), "e11": (0.22, 0.10, 0.08, true),
-        "aurora": (0.10, 0.28, 0.30, true), "lavender": (0.28, 0.20, 0.42, true),
-        "sunset": (0.38, 0.14, 0.16, true), "mint": (0.08, 0.24, 0.22, true),
-        "rose": (0.36, 0.12, 0.24, true), "mono": (0.22, 0.23, 0.25, true)
+        // Legacy soft (owner table)
+        "m1": (0.93, 0.86, 0.72, false),
+        "m2": (0.90, 0.82, 0.62, false),
+        "m3": (0.96, 0.78, 0.68, false),
+        "m4": (0.96, 0.72, 0.48, false),
+        "m5": (0.95, 0.92, 0.84, false),
+        "m6": (0.96, 0.94, 0.90, false),
+        "m7": (0.74, 0.90, 0.82, false),
+        "m8": (0.70, 0.80, 0.72, false),
+        "m9": (0.70, 0.84, 0.94, false),
+        "m10": (0.55, 0.78, 0.86, false),
+        "m11": (0.82, 0.76, 0.90, false),
+        "m12": (0.94, 0.74, 0.80, false),
+        "m13": (0.90, 0.76, 0.40, false),
+        "m14": (0.88, 0.68, 0.36, false),
+        "m15": (0.62, 0.66, 0.40, false),
+        "m16": (0.72, 0.52, 0.40, false),
+        "m17": (0.78, 0.84, 0.72, false),
+        "m18": (0.82, 0.84, 0.86, false),
+        "m19": (0.92, 0.55, 0.50, false),
+        "m20": (0.70, 0.82, 0.58, false),
+        // Legacy night
+        "e1": (0.12, 0.12, 0.13, true),
+        "e2": (0.08, 0.12, 0.22, true),
+        "e3": (0.07, 0.09, 0.16, true),
+        // Extra dark accents still shown in catalog
+        "e5": (0.18, 0.10, 0.22, true),
+        "e8": (0.06, 0.18, 0.16, true),
+        "e11": (0.22, 0.10, 0.08, true),
+        "aurora": (0.10, 0.28, 0.30, true),
+        "lavender": (0.28, 0.20, 0.42, true),
+        "sunset": (0.38, 0.14, 0.16, true),
+        "mint": (0.08, 0.24, 0.22, true),
+        "rose": (0.36, 0.12, 0.24, true),
+        "mono": (0.22, 0.23, 0.25, true)
     ]
 
     static let all: [ThemeSwatch] = {
         let order = [
             "auto", "morning", "evening", "light", "dark", "glass",
             "ocean", "cobalt", "forest", "violet", "orchid", "ember", "hailey", "matrix", "nord",
-            "m4", "m7", "m9", "m12", "e2", "e5", "e8", "e11",
+            "m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "m10",
+            "m11", "m12", "m13", "m14", "m15", "m16", "m17", "m18", "m19", "m20",
+            "e1", "e2", "e3", "e5", "e8", "e11",
             "aurora", "lavender", "sunset", "mint", "rose", "mono"
         ]
         return order.compactMap { make($0) }
@@ -79,7 +113,11 @@ enum ThemeCatalog {
             "cobalt", "violet", "orchid", "hailey", "matrix", "lavender", "mono"
         ])),
         .init(id: "soft", title: "ناعم مميز", themes: selected([
-            "m4", "m7", "m9", "m12", "e2", "e5", "e8", "e11"
+            "m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "m10",
+            "m11", "m12", "m13", "m14", "m15", "m16", "m17", "m18", "m19", "m20"
+        ])),
+        .init(id: "night", title: "ليلي كلاسيكي", themes: selected([
+            "e1", "e2", "e3", "e5", "e8", "e11"
         ]))
     ]
 
@@ -93,7 +131,6 @@ enum ThemeCatalog {
     private static func make(_ id: String) -> ThemeSwatch? {
         guard let (r, g, b, dark) = rgb[id] else { return nil }
         let key = Color(red: r, green: g, blue: b)
-        // Distinct ink + accent per theme so tiles don't look repeated
         let ink: Color = dark
             ? Color(red: min(1, r + 0.75), green: min(1, g + 0.75), blue: min(1, b + 0.78))
             : Color(red: max(0, r - 0.55), green: max(0, g - 0.55), blue: max(0, b - 0.50))
@@ -133,7 +170,6 @@ enum ThemeStore {
 
     static func write(_ key: String, value: Any) {
         // App Group suite first (extension sync), then standard fallback for sideload.
-        // Connectors review 2026-10-29: suite-first matches ThemeIO and PowerToys/Wispr patterns.
         suite.set(value, forKey: key)
         UserDefaults.standard.set(value, forKey: key)
         CFNotificationCenterPostNotification(
@@ -177,4 +213,3 @@ enum ThemeStore {
 
     static func clearClipboardHistory() { write("clipboardHistory", value: "") }
 }
-
