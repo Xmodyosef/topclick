@@ -310,6 +310,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     @objc func periodTapped() {
         textDocumentProxy.insertText(".")
+        playSystemClick(.rowMid)
         tapHaptic(.action)
     }
 

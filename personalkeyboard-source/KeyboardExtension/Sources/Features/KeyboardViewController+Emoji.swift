@@ -97,8 +97,7 @@ extension KeyboardViewController {
         longPress.cancelsTouchesInView = true
         cv.addGestureRecognizer(longPress)
         emojiSkinLongPress = longPress
-        // Collection-view scroll must not steal the finger while choosing a skin tone.
-        cv.panGestureRecognizer.require(toFail: longPress)
+        // Category swipe waits on skin long-press. Vertical scroll must not — that lag is what made emoji feel sticky.
         pan.require(toFail: longPress)
 
         return host
@@ -140,7 +139,8 @@ extension KeyboardViewController {
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let width = max(collectionView.bounds.width - collectionView.adjustedContentInset.left - collectionView.adjustedContentInset.right, 1)
-        let columns = max(1, Int(floor(width / 42)))
+        // Match 0.1 density: eight columns, larger glyphs.
+        let columns = 8
         let side = floor(width / CGFloat(columns))
         return CGSize(width: side, height: side)
     }
