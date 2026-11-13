@@ -15,8 +15,8 @@ enum ThemeIO {
     }
 
     static func flushShared() {
-        guard let live = UserDefaults(suiteName: group) else { return }
-        live.synchronize()
+        // Validator forbids UserDefaults.synchronize. Preferences sync reloads the
+        // group plist; the theme file is the source the keyboard actually trusts.
         CFPreferencesAppSynchronize(group as CFString)
     }
 
@@ -25,7 +25,6 @@ enum ThemeIO {
         if key == themeKey, let text = value as? String {
             writeThemeFile(text)
         }
-        suite.synchronize()
         CFNotificationCenterPostNotification(
             CFNotificationCenterGetDarwinNotifyCenter(),
             CFNotificationName(notificationName as CFString),

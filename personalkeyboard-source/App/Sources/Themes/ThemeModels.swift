@@ -102,7 +102,6 @@ enum ThemeStore {
         // App Group suite first (extension sync), then standard fallback for sideload.
         suite.set(value, forKey: key)
         UserDefaults.standard.set(value, forKey: key)
-        suite.synchronize()
         // UserDefaults keeps a per-process cache. The file is what a live keyboard reads
         // on the next open, without killing the extension or toggling Full Access.
         if key == "naqra.themeId", let text = value as? String,
