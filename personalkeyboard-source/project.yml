@@ -38,7 +38,7 @@ targets:
       path: App/Config/PersonalKeyboard.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.app.personal.PersonalKeyboard
+          - group.Mark1
     dependencies:
       - target: KeyboardExtension
         embed: true
@@ -74,7 +74,7 @@ targets:
       path: KeyboardExtension/Config/KeyboardExtension.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.app.personal.PersonalKeyboard
+          - group.Mark1
     dependencies:
       - sdk: Translation.framework
         weak: true

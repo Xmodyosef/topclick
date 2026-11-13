@@ -33,10 +33,10 @@ struct NaqraPalette {
     ]
 
     static func current() -> NaqraPalette {
-        let raw = ThemeIO.string("themeId") ?? "auto"
+        let raw = ThemeIO.string("naqra.themeId") ?? "auto"
         let id = normalizeThemeId(raw)
-        // DEBUG: confirm App Group / suite delivery of themeId (remove after phone verify).
-        print("[NaqraTheme] themeId raw=\(raw) normalized=\(id) legacy=\(isLegacyTheme(id))")
+        // DEBUG: confirm App Group / suite delivery of naqra.themeId (remove after phone verify).
+        print("[NaqraTheme] naqra.themeId raw=\(raw) normalized=\(id) legacy=\(isLegacyTheme(id))")
         if id == "custom" { return solid(customPalette()) }
         if id == "auto" { return solid(preset(TimeTheme.preferredThemeId())) }
         // Legacy m1…m20 / e1…e3: exact key RGB and old delta; never pass through solid().
@@ -89,7 +89,7 @@ static func customPalette() -> NaqraPalette {
         color.getRed(&r, green: &g, blue: &b, alpha: &a)
         ThemeIO.write(key, value: "\(r),\(g),\(b),\(a)")
     }
-    static func saveTheme(_ id: String) { ThemeIO.write("themeId", value: id) }
+    static func saveTheme(_ id: String) { ThemeIO.write("naqra.themeId", value: id) }
     static func normalizeThemeId(_ raw: String) -> String {
         switch raw {
         case "charcoal","smoke","catppuccin_frappe","catppuccin_macchiato": return "dark"

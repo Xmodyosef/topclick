@@ -14,7 +14,7 @@ files = sorted(keyboard_sources.rglob("*.swift"))
 text = "\n".join(path.read_text(encoding="utf-8") for path in files)
 project = (source / "project.yml").read_text(encoding="utf-8")
 checks = [
-    ("App Group identifier remains in extension sources", "group.app.personal.PersonalKeyboard" in text),
+    ("App Group identifier remains in extension sources", "group.Mark1" in text),
     ("KeyboardViewController exists", "class KeyboardViewController" in text),
     ("split controller extensions exist", any(path.name.startswith("KeyboardViewController+") for path in files)),
     ("KeyboardDataLoader exists", "KeyboardDataLoader" in text),

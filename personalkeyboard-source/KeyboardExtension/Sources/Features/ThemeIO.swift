@@ -1,7 +1,8 @@
 import Foundation
 
 enum ThemeIO {
-    static let group = "group.app.personal.PersonalKeyboard"
+    /// Must match a group stamped by the Azor profile (group.Mark1…Mark7).
+    static let group = "group.Mark1"
     static let notificationName = "app.personal.PersonalKeyboard.prefs"
     static var suite: UserDefaults { UserDefaults(suiteName: group) ?? .standard }
 
@@ -19,7 +20,7 @@ enum ThemeIO {
         suite.set(value, forKey: key)
     }
 
-    /// Sideload fallback: app dual-writes themeId to standard when the group is dead.
+    /// Sideload fallback: app dual-writes naqra.themeId to standard when the group is dead.
     static func string(_ key: String) -> String? {
         suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
     }

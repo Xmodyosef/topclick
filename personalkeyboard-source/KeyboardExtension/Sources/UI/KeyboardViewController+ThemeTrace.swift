@@ -36,7 +36,7 @@ extension KeyboardViewController {
         guard let label = themeTraceLabel else { return }
         label.isHidden = false
         label.isUserInteractionEnabled = false
-        let raw = ThemeIO.string("themeId") ?? "-"
+        let raw = ThemeIO.string("naqra.themeId") ?? "-"
         let id = NaqraPalette.normalizeThemeId(raw)
         let legacy = NaqraPalette.isLegacyTheme(id)
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0

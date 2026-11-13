@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import sys
 
-APP_GROUP = 'group.app.personal.PersonalKeyboard'
+APP_GROUP = 'group.Mark1'
 APP_BUNDLE = 'app.personal.PersonalKeyboard'
 EXT_BUNDLE = 'app.personal.PersonalKeyboard.KeyboardExtension'
 

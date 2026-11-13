@@ -7,13 +7,13 @@ import SwiftUI
 // Architecture (team placement):
 // - ContainerApp owns install UX + installed* lists (PackStores).
 // - KeyboardExtension only reads active keys via ThemeIO:
-//     themeId, soundChoice, sounds, showNumberRow, specialKey.*
+//     naqra.themeId, soundChoice, sounds, showNumberRow, specialKey.*
 // - Applying pack B never uninstalls pack A.
 
 enum ContentPackKeys {
     static let installedThemes = "installedThemePacks"
     static let installedSounds = "installedSoundPacks"
-    static let themeId = "themeId"
+    static let themeId = "naqra.themeId"
     static let themeAppliedAt = "themeAppliedAt"
     static let soundChoice = "soundChoice"
     static let sounds = "sounds"

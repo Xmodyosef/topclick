@@ -220,7 +220,7 @@ struct SettingsTab: View {
                     .font(.system(size: 10))
                     .foregroundStyle(NaqraColors.textSecondary)
             } else {
-                Text("ملاحظة: هذا البناء غير موقّع باستحقاق App Group. الإعدادات تُحفظ محليًا؛ للمزامنة الفورية مع اللوحة وقّع التطبيق بـ App Group (group.app.personal.PersonalKeyboard).")
+                Text("ملاحظة: هذا البناء غير موقّع باستحقاق App Group. الإعدادات تُحفظ محليًا؛ للمزامنة الفورية مع اللوحة وقّع التطبيق بـ App Group (group.Mark1).")
                     .font(.system(size: 10))
                     .foregroundStyle(NaqraColors.textSecondary)
                     .multilineTextAlignment(.center)

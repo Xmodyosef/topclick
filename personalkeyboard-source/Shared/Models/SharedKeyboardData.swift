@@ -4,11 +4,11 @@ import Foundation
 /// Added from connectors review (Context7 / Exa / Firecrawl) — single source of truth.
 /// Wire this file into both targets in project.yml when ready.
 enum SharedKeyboardData {
-    static let appGroup = "group.app.personal.PersonalKeyboard"
+    static let appGroup = "group.Mark1"
     static let prefsNotification = "app.personal.PersonalKeyboard.prefs"
 
     enum PrefKey {
-        static let themeId = "themeId"
+        static let themeId = "naqra.themeId"
         static let soundChoice = "soundChoice"
         static let sounds = "sounds"
         static let showNumberRow = "showNumberRow"
