@@ -37,6 +37,8 @@ struct NaqraPalette {
         let id = normalizeThemeId(raw)
         if id == "custom" { return solid(customPalette()) }
         if id == "auto" { return solid(preset(TimeTheme.preferredThemeId())) }
+        // Legacy m1…m20 / e1…e3: exact key RGB and old delta; never pass through solid().
+        if isLegacyTheme(id) { return preset(id) }
         return solid(preset(id))
     }
 
