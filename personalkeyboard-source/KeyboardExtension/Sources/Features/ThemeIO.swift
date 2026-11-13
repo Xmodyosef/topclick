@@ -20,33 +20,21 @@ enum ThemeIO {
         )
     }
 
-    /// Always write the current process's standard defaults (works in sideload).
-    /// Also write the shared suite when the App Group is alive (signed builds).
+    /// Always write both: standard (sideload-safe) and the shared suite (signed builds).
     static func set(_ key: String, value: Any) {
         UserDefaults.standard.set(value, forKey: key)
-        if groupAlive {
-            suite.set(value, forKey: key)
-        }
+        suite.set(value, forKey: key)
     }
 
+    /// Always try the shared suite first, then fall back to standard.
+    /// This restores the pre-#115 behavior that made app-to-keyboard theme transfer work.
     static func string(_ key: String) -> String? {
-        if groupAlive {
-            // Signed: container → extension via App Group first.
-            return suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
-        }
-        // Sideload: only local standard is trustworthy for preferences.
-        return UserDefaults.standard.string(forKey: key)
+        suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
     }
 
     static func bool(_ key: String) -> Bool? {
-        if groupAlive {
-            if suite.object(forKey: key) != nil { return suite.bool(forKey: key) }
-            if UserDefaults.standard.object(forKey: key) != nil { return UserDefaults.standard.bool(forKey: key) }
-            return nil
-        }
-        if UserDefaults.standard.object(forKey: key) != nil {
-            return UserDefaults.standard.bool(forKey: key)
-        }
+        if suite.object(forKey: key) != nil { return suite.bool(forKey: key) }
+        if UserDefaults.standard.object(forKey: key) != nil { return UserDefaults.standard.bool(forKey: key) }
         return nil
     }
 }
