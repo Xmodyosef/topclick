@@ -180,6 +180,8 @@ extension KeyboardViewController {
         let isAfterSpace = before.hasSuffix(" ")
         if isAfterSpace, let last = lastSpaceTap, now.timeIntervalSince(last) <= spaceSwitchInterval {
             lastSpaceTap = nil
+            // Drop the space the first tap already inserted — language switch only.
+            textDocumentProxy.deleteBackward()
             language = language == .arabic ? .english : .arabic
             isShifted = false
             symbolPageIndex = 0

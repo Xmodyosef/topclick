@@ -128,12 +128,14 @@ def main() -> None:
     require(hold.get('٪') == ['%'], 'hold_map maps ٪ to %')
     require(hold.get('﷼') == ['$'], 'hold_map maps ﷼ to $')
 
-    # Symbol pages: 5×10 and no duplicate symbols within a page
+    # Symbol pages: two pages, 3×10 + short last row, no duplicate symbols within a page
     for pages_key in ('arabic_symbol_pages', 'english_symbol_pages'):
         pages = layouts.get(pages_key) or []
-        require(len(pages) >= 1, f'{pages_key} present')
+        require(len(pages) == 2, f'{pages_key} has two pages')
         for page_index, page in enumerate(pages):
-            require(len(page) == 5 and all(len(row) == 10 for row in page), f'{pages_key}[{page_index}] is 5 rows of 10')
+            require(len(page) == 4, f'{pages_key}[{page_index}] has 4 rows')
+            require(all(len(row) == 10 for row in page[:3]), f'{pages_key}[{page_index}] first 3 rows are 10 wide')
+            require(5 <= len(page[3]) <= 8, f'{pages_key}[{page_index}] last row is short for action+delete')
             flat = [sym for row in page for sym in row]
             require(len(flat) == len(set(flat)), f'{pages_key}[{page_index}] has no duplicate symbols')
 
@@ -228,8 +230,14 @@ def main() -> None:
     require('chrome: .symbols' in extension and 'chrome: .emoji' in extension, 'symbols/emoji keys use distinct chrome')
     require('func symbolPageToggled' in extension, 'symbols multi-page toggle')
     require('emojiCollection' in extension and 'clearEmojiCache' in extension, 'single emoji grid + cache reload')
-    require(len(layouts.get('arabic_symbol_pages') or []) == 1, 'arabic symbols single uncrowded page')
-    require(len(layouts.get('english_symbol_pages') or []) == 1, 'english symbols single uncrowded page')
+    require(len(layouts.get('arabic_symbol_pages') or []) == 2, 'arabic symbols two pages')
+    require(len(layouts.get('english_symbol_pages') or []) == 2, 'english symbols two pages')
+    require('case .symbolPage' in extension, 'symbol page toggle leading on last row')
+    require('makeSymbolLastRow' in extension and 'makeActionRow' in extension, 'symbol last row uses action row + delete')
+    bottom_src = (ext_dir / 'UI/KeyboardViewController+Bottom.swift').read_text(encoding='utf-8')
+    require('if page == .symbols' not in bottom_src or 'makeDeleteKey' not in bottom_src.split('if page == .symbols')[-1][:80] if 'if page == .symbols' in bottom_src else True, 'symbols does not put delete in bottom')
+    require('Delete lives on the last key row' in bottom_src, 'bottom documents delete-on-last-row contract')
+    require('deleteBackward()' in extension and 'spaceSwitchInterval' in extension, 'double-space language drops the prior space')
 
     require('shiftTapped' in extension and 'applyShiftSurface()' in extension, 'shiftTapped uses applyShiftSurface')
     require('emojiPagerHeight()' in extension and 'symbolRowsCount()' in extension, 'unified height helpers present')

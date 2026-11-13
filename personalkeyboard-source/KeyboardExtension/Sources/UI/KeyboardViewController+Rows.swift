@@ -48,8 +48,8 @@ extension KeyboardViewController {
         makeActionRow(keys, leading: language == .arabic ? .none : .shift)
     }
     func makeSymbolLastRow(_ keys: [String]) -> UIView {
-        // Keep symbol rows uniform; the delete action lives in the bottom action row.
-        makeRow(keys, rowIdx: 4)
+        // Same contract as letters: page toggle (or none) + keys + delete on the right.
+        makeActionRow(keys, leading: .symbolPage)
     }
     func makeActionRow(_ keys: [String], leading: RowLeading) -> UIView {
         let wrap = UIStackView()
@@ -73,6 +73,13 @@ extension KeyboardViewController {
             letters.widthAnchor.constraint(equalToConstant: 46).isActive = true
             letters.accessibilityLabel = "حروف"
             wrap.addArrangedSubview(letters)
+        case .symbolPage:
+            // Page 0 shows #+= (go to page 1); page 1 shows 123 (back to numbers).
+            let title = symbolPageIndex == 0 ? "#+=" : "123"
+            let toggle = control(title, #selector(symbolPageToggled), font: 13, chrome: .control)
+            toggle.widthAnchor.constraint(equalToConstant: 46).isActive = true
+            toggle.accessibilityLabel = symbolPageIndex == 0 ? "المزيد من الرموز" : "الأرقام والرموز اليومية"
+            wrap.addArrangedSubview(toggle)
         case .none:
             break
         }

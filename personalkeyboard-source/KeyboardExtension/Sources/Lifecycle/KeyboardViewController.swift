@@ -25,7 +25,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var deleteTimer: Timer?
     var deleteStartX: CGFloat = 0
     var lastSpaceTap: Date?
-    let spaceSwitchInterval: TimeInterval = 0.25
+    let spaceSwitchInterval: TimeInterval = 0.40
     var spaceStart: CGPoint = .zero
     var spaceIsTrackpad = false
     var lastTrackpadX: CGFloat = 0
