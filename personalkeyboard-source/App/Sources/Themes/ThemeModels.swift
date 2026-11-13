@@ -20,76 +20,6 @@ struct ThemeGroup: Identifiable {
 }
 
 enum ThemeCatalog {
-    /// Arabic titles aligned with extension NaqraPalette.titles + legacy names.
-    private static let titles: [String: String] = [
-        "auto": "يتبدّل مع الوقت", "light": "لؤلؤي", "dark": "فحمي", "glass": "منشور",
-        "ocean": "محيط", "cobalt": "كوبالت", "violet": "بنفسج", "orchid": "أوركيد",
-        "hailey": "دم", "ember": "جمر", "forest": "غابة", "matrix": "ماتريكس", "nord": "نورد",
-        "morning": "صباح هادئ", "evening": "مساء مخملي",
-        "m1": "رملي", "m2": "قش", "m3": "خوخ", "m4": "مشمش", "m5": "عاج",
-        "m6": "حليب", "m7": "نعناع", "m8": "مريمية", "m9": "سماء", "m10": "بحيرة",
-        "m11": "لافندر", "m12": "ورد", "m13": "ذهب", "m14": "عسل", "m15": "زيتون",
-        "m16": "طين", "m17": "ورق", "m18": "ضباب", "m19": "مرجان", "m20": "فستق",
-        "e1": "فحم", "e2": "كحلي", "e3": "ليل",
-        "e5": "برقوق", "e8": "زمرد", "e11": "جمر ليلي",
-        "aurora": "شفق", "lavender": "لافندر", "sunset": "غروب", "mint": "نعناع ليلي",
-        "rose": "وردي", "mono": "أحادي"
-    ]
-
-    /// Swatch RGB must match keyboard legacyRGB for m1…m20 / e1…e3.
-    private static let rgb: [String: (Double, Double, Double, Bool)] = [
-        "auto": (0.16, 0.18, 0.23, true),
-        "light": (0.90, 0.95, 0.99, false),
-        "dark": (0.10, 0.16, 0.28, true),
-        "glass": (0.86, 0.82, 0.96, false),
-        "ocean": (0.06, 0.22, 0.32, true),
-        "cobalt": (0.10, 0.18, 0.42, true),
-        "violet": (0.18, 0.10, 0.32, true),
-        "orchid": (0.32, 0.08, 0.18, true),
-        "hailey": (0.22, 0.05, 0.08, true),
-        "ember": (0.24, 0.12, 0.05, true),
-        "forest": (0.06, 0.18, 0.12, true),
-        "matrix": (0.02, 0.07, 0.03, true),
-        "nord": (0.78, 0.82, 0.86, false),
-        "morning": (0.96, 0.90, 0.78, false),
-        "evening": (0.08, 0.12, 0.24, true),
-        // Legacy soft (owner table)
-        "m1": (0.93, 0.86, 0.72, false),
-        "m2": (0.90, 0.82, 0.62, false),
-        "m3": (0.96, 0.78, 0.68, false),
-        "m4": (0.96, 0.72, 0.48, false),
-        "m5": (0.95, 0.92, 0.84, false),
-        "m6": (0.96, 0.94, 0.90, false),
-        "m7": (0.74, 0.90, 0.82, false),
-        "m8": (0.70, 0.80, 0.72, false),
-        "m9": (0.70, 0.84, 0.94, false),
-        "m10": (0.55, 0.78, 0.86, false),
-        "m11": (0.82, 0.76, 0.90, false),
-        "m12": (0.94, 0.74, 0.80, false),
-        "m13": (0.90, 0.76, 0.40, false),
-        "m14": (0.88, 0.68, 0.36, false),
-        "m15": (0.62, 0.66, 0.40, false),
-        "m16": (0.72, 0.52, 0.40, false),
-        "m17": (0.78, 0.84, 0.72, false),
-        "m18": (0.82, 0.84, 0.86, false),
-        "m19": (0.92, 0.55, 0.50, false),
-        "m20": (0.70, 0.82, 0.58, false),
-        // Legacy night
-        "e1": (0.12, 0.12, 0.13, true),
-        "e2": (0.08, 0.12, 0.22, true),
-        "e3": (0.07, 0.09, 0.16, true),
-        // Extra dark accents still shown in catalog
-        "e5": (0.18, 0.10, 0.22, true),
-        "e8": (0.06, 0.18, 0.16, true),
-        "e11": (0.22, 0.10, 0.08, true),
-        "aurora": (0.10, 0.28, 0.30, true),
-        "lavender": (0.28, 0.20, 0.42, true),
-        "sunset": (0.38, 0.14, 0.16, true),
-        "mint": (0.08, 0.24, 0.22, true),
-        "rose": (0.36, 0.12, 0.24, true),
-        "mono": (0.22, 0.23, 0.25, true)
-    ]
-
     static let all: [ThemeSwatch] = {
         let order = [
             "auto", "morning", "evening", "light", "dark", "glass",
@@ -101,7 +31,6 @@ enum ThemeCatalog {
         ]
         return order.compactMap { make($0) }
     }()
-
     static let groups: [ThemeGroup] = [
         .init(id: "daily", title: "اليومي", themes: selected([
             "auto", "morning", "evening", "light", "dark", "glass", "nord"
@@ -129,7 +58,8 @@ enum ThemeCatalog {
     }
 
     private static func make(_ id: String) -> ThemeSwatch? {
-        guard let (r, g, b, dark) = rgb[id] else { return nil }
+        guard let spec = SharedThemeCatalog.spec(id) else { return nil }
+        let r = spec.red, g = spec.green, b = spec.blue, dark = spec.dark
         let key = Color(red: r, green: g, blue: b)
         let ink: Color = dark
             ? Color(red: min(1, r + 0.75), green: min(1, g + 0.75), blue: min(1, b + 0.78))
@@ -139,7 +69,7 @@ enum ThemeCatalog {
             : Color(red: max(0.2, r - 0.25), green: max(0.15, g - 0.30), blue: max(0.1, b - 0.20))
         return ThemeSwatch(
             id: id,
-            title: titles[id] ?? id,
+            title: spec.title,
             key: key,
             ink: ink,
             accent: accent
@@ -172,6 +102,12 @@ enum ThemeStore {
         // App Group suite first (extension sync), then standard fallback for sideload.
         suite.set(value, forKey: key)
         UserDefaults.standard.set(value, forKey: key)
+        // UserDefaults keeps a per-process cache. The file is what a live keyboard reads
+        // on the next open, without killing the extension or toggling Full Access.
+        if key == "naqra.themeId", let text = value as? String,
+           let url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: suiteName) {
+            try? Data(text.utf8).write(to: url.appendingPathComponent("naqra-theme-id.txt"), options: .atomic)
+        }
         CFNotificationCenterPostNotification(
             CFNotificationCenterGetDarwinNotifyCenter(),
             CFNotificationName(notificationName as CFString),

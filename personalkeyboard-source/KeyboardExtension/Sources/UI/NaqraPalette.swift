@@ -10,27 +10,8 @@ struct NaqraPalette {
     var accent: UIColor
     var blurDark: Bool
 
-    static let order = [
-        "auto","light","dark","glass","ocean","cobalt","violet","orchid","hailey","ember","forest","matrix","nord",
-        "morning","evening",
-        "m1","m2","m3","m4","m5","m6","m7","m8","m9","m10",
-        "m11","m12","m13","m14","m15","m16","m17","m18","m19","m20",
-        "e1","e2","e3","e4","e5","e6","e7","e8","e9","e10",
-        "e11","e12","e13","e14","e15","e16","e17","e18","e19","e20",
-        "custom"
-    ]
-    static let titles = [
-        "auto":"تلقائي","light":"فاتح","dark":"داكن","glass":"منشور","ocean":"بحر","cobalt":"كوبالت",
-        "violet":"بنفسج","orchid":"أوركيد","hailey":"دم","ember":"جمر","forest":"غابة","matrix":"ماتريكس","nord":"نورد",
-        "morning":"صباح","evening":"مساء",
-        "m1":"رملي","m2":"قش","m3":"خوخ","m4":"مشمش","m5":"عاج","m6":"حليب","m7":"نعناع","m8":"مريمية",
-        "m9":"سماء","m10":"بحيرة","m11":"لافندر","m12":"ورد","m13":"ذهب","m14":"عسل","m15":"زيتون",
-        "m16":"طين","m17":"ورق","m18":"ضباب","m19":"مرجان","m20":"فستق",
-        "e1":"فحم","e2":"كحلي","e3":"ليل","e4":"حبر","e5":"برقوق","e6":"نبيذ","e7":"غابة","e8":"زمرد",
-        "e9":"محيط","e10":"كوبالت ليلي","e11":"جمر","e12":"نحاس","e13":"بنفسج ليلي","e14":"أوركيد ليلي",
-        "e15":"رماد","e16":"دخان","e17":"قهوة","e18":"صحراء","e19":"ملكي","e20":"فجر",
-        "custom":"مخصص"
-    ]
+    static var order: [String] { SharedThemeCatalog.order }
+    static var titles: [String: String] { SharedThemeCatalog.titles }
 
     static func current() -> NaqraPalette {
         let raw = ThemeIO.string("naqra.themeId") ?? "auto"

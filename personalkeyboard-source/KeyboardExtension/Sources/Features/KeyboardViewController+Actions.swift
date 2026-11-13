@@ -21,10 +21,8 @@ extension KeyboardViewController {
                 guard let observer else { return }
                 let vc = Unmanaged<KeyboardViewController>.fromOpaque(observer).takeUnretainedValue()
                 DispatchQueue.main.async {
-                    vc.appliedThemeId = vc.themeSignature
-                    vc.palette = NaqraPalette.current()
                     TapSoundEngine.shared.setEnabled(ThemeIO.bool("sounds") ?? true)
-                    vc.rebuild()
+                    vc.applyThemeFromGroupIfNeeded()
                 }
             },
             "app.personal.PersonalKeyboard.prefs" as CFString,
