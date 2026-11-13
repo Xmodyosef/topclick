@@ -123,15 +123,22 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         view.clipsToBounds = false
         syncInputModeSwitchKey()
         updateHeightForCurrentSize()
-        // Always re-read App Group theme — Darwin notify can be missed while extension was suspended.
+        // Opening the keyboard must show the theme just chosen in the app.
+        applyThemeFromGroupIfNeeded()
+    }
+
+    /// Read naqra.themeId from group.Mark1 (file first, then the suite) and recolor if it changed.
+    func applyThemeFromGroupIfNeeded() {
+        ThemeIO.flushShared()
         let sig = themeSignature
         let next = NaqraPalette.current()
         if sig != appliedThemeId || !paletteMatches(next) {
             appliedThemeId = sig
             palette = next
             rebuild()
+        } else {
+            refreshThemeTraceStrip()
         }
-        refreshThemeTraceStrip()
     }
 
     func paletteMatches(_ other: NaqraPalette) -> Bool {

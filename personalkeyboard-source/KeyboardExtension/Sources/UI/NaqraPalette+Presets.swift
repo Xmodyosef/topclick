@@ -4,31 +4,13 @@ import UIKit
 extension NaqraPalette {
     /// Exact key colors from the shipping old app (m1…m20 light, e1…e3 dark).
     /// Painted with the old formula: key = RGB, background = RGB − (dark ? 0.05 : 0.08).
-    static let legacyRGB: [String: (CGFloat, CGFloat, CGFloat, Bool)] = [
-        "m1":  (0.93, 0.86, 0.72, false),
-        "m2":  (0.90, 0.82, 0.62, false),
-        "m3":  (0.96, 0.78, 0.68, false),
-        "m4":  (0.96, 0.72, 0.48, false),
-        "m5":  (0.95, 0.92, 0.84, false),
-        "m6":  (0.96, 0.94, 0.90, false),
-        "m7":  (0.74, 0.90, 0.82, false),
-        "m8":  (0.70, 0.80, 0.72, false),
-        "m9":  (0.70, 0.84, 0.94, false),
-        "m10": (0.55, 0.78, 0.86, false),
-        "m11": (0.82, 0.76, 0.90, false),
-        "m12": (0.94, 0.74, 0.80, false),
-        "m13": (0.90, 0.76, 0.40, false),
-        "m14": (0.88, 0.68, 0.36, false),
-        "m15": (0.62, 0.66, 0.40, false),
-        "m16": (0.72, 0.52, 0.40, false),
-        "m17": (0.78, 0.84, 0.72, false),
-        "m18": (0.82, 0.84, 0.86, false),
-        "m19": (0.92, 0.55, 0.50, false),
-        "m20": (0.70, 0.82, 0.58, false),
-        "e1":  (0.12, 0.12, 0.13, true),
-        "e2":  (0.08, 0.12, 0.22, true),
-        "e3":  (0.07, 0.09, 0.16, true)
-    ]
+    static var legacyRGB: [String: (CGFloat, CGFloat, CGFloat, Bool)] {
+        var out: [String: (CGFloat, CGFloat, CGFloat, Bool)] = [:]
+        for (id, row) in SharedThemeCatalog.legacyRGB {
+            out[id] = (CGFloat(row.0), CGFloat(row.1), CGFloat(row.2), row.3)
+        }
+        return out
+    }
 
     static func isLegacyTheme(_ id: String) -> Bool {
         legacyRGB[id] != nil
