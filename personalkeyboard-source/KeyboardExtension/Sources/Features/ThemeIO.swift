@@ -14,18 +14,22 @@ enum ThemeIO {
         )
     }
 
-    /// App Group only. The container app writes themeId into this suite.
+    /// Prefer App Group. Writes stay on the suite only (CI forbids standard.set in the extension).
     static func set(_ key: String, value: Any) {
         suite.set(value, forKey: key)
     }
 
+    /// Sideload fallback: app dual-writes themeId to standard when the group is dead.
     static func string(_ key: String) -> String? {
-        suite.string(forKey: key)
+        suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
     }
 
     static func bool(_ key: String) -> Bool? {
-        guard suite.object(forKey: key) != nil else { return nil }
-        return suite.bool(forKey: key)
+        if suite.object(forKey: key) != nil { return suite.bool(forKey: key) }
+        if UserDefaults.standard.object(forKey: key) != nil {
+            return UserDefaults.standard.bool(forKey: key)
+        }
+        return nil
     }
 }
 

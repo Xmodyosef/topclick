@@ -35,8 +35,12 @@ struct NaqraPalette {
     static func current() -> NaqraPalette {
         let raw = ThemeIO.string("themeId") ?? "auto"
         let id = normalizeThemeId(raw)
+        // DEBUG: confirm App Group / suite delivery of themeId (remove after phone verify).
+        print("[NaqraTheme] themeId raw=\(raw) normalized=\(id) legacy=\(isLegacyTheme(id))")
         if id == "custom" { return solid(customPalette()) }
         if id == "auto" { return solid(preset(TimeTheme.preferredThemeId())) }
+        // Legacy m1…m20 / e1…e3: exact key RGB and old delta; never pass through solid().
+        if isLegacyTheme(id) { return preset(id) }
         return solid(preset(id))
     }
 
