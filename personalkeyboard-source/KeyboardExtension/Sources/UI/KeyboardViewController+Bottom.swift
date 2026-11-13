@@ -30,7 +30,8 @@ extension KeyboardViewController {
         let showsNextKeyboard = needsInputModeSwitchKey
         let row = UIStackView()
         row.axis = .horizontal
-        row.spacing = 4
+        // Slightly airier so ؟+# / EN / globe are harder to mis-tap.
+        row.spacing = 6
         row.distribution = .fill
         row.alignment = .fill
         row.semanticContentAttribute = .forceLeftToRight
@@ -70,7 +71,11 @@ extension KeyboardViewController {
         }
         for (idx, button) in leading.enumerated() {
             let isGlobe = showsNextKeyboard && idx == leading.count - 1 && button.image(for: .normal) != nil
-            let w = isGlobe ? BottomWidth.globe : BottomWidth.side
+            let isLang = !isGlobe && idx == (leading.count - (showsNextKeyboard ? 2 : 1))
+            let w: CGFloat
+            if isGlobe { w = BottomWidth.globe }
+            else if isLang { w = 44 } // slightly wider EN/ع — fewer mis-taps next to ؟+#
+            else { w = BottomWidth.side }
             button.widthAnchor.constraint(equalToConstant: w).isActive = true
         }
 
@@ -107,9 +112,7 @@ extension KeyboardViewController {
         if emojiOn {
             row.addArrangedSubview(makeDeleteKey(width: BottomWidth.delete))
         } else {
-            if page == .symbols {
-                row.addArrangedSubview(makeDeleteKey(width: BottomWidth.delete))
-            }
+            // Delete lives on the last key row for letters and symbols — never here.
             let period = control(".", #selector(periodTapped), font: 18, chrome: .period)
             period.widthAnchor.constraint(equalToConstant: BottomWidth.period).isActive = true
             row.addArrangedSubview(period)

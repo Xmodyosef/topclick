@@ -8,7 +8,7 @@ final class KeyButton: UIButton {
     }
 }
 
-enum RowLeading { case shift, symbols, letters, none }
+enum RowLeading { case shift, symbols, letters, symbolPage, none }
 
 // MARK: - KeyboardViewController + BuildUI (core metrics / root / rebuild)
 extension KeyboardViewController {
@@ -50,10 +50,9 @@ extension KeyboardViewController {
         return filledRowHeight(flexibleRows: flex, fixedHeight: 44, arrangedCount: flex + 1)
     }
 
-    /// How many symbol rows to show. Five rows stay inside the 324 board.
+    /// How many symbol rows to show. Four rows: three full + one action (delete).
     func symbolRowsCount() -> Int {
-        // 12 top + 5×46 + 5×6 gaps + 44 bottom = 316, under 324.
-        return 5
+        return 4
     }
 
     /// Preserve every valid symbol row in the supplied layout. Do not silently drop rows
@@ -190,10 +189,16 @@ extension KeyboardViewController {
             let allRows = pages.isEmpty ? [] : pages[pageIdx]
             var rows = packedSymbolRows(from: allRows)
             if rows.isEmpty {
-                rows = language == .arabic ? KeyboardDataLoader.builtinArabicSymbols[0] : KeyboardDataLoader.builtinEnglishSymbols[0]
+                let fallback = language == .arabic ? KeyboardDataLoader.builtinArabicSymbols : KeyboardDataLoader.builtinEnglishSymbols
+                let fi = min(pageIdx, max(fallback.count - 1, 0))
+                rows = fallback.isEmpty ? [] : fallback[fi]
             }
             for (i, row) in rows.enumerated() {
-                rootStack.addArrangedSubview(makeRow(row, rowIdx: i + 1))
+                if i == rows.count - 1 {
+                    rootStack.addArrangedSubview(makeSymbolLastRow(row))
+                } else {
+                    rootStack.addArrangedSubview(makeRow(row, rowIdx: i + 1))
+                }
             }
             rootStack.addArrangedSubview(makeBottom())
         case .emoji:
