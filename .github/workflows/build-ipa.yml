@@ -124,25 +124,26 @@ jobs:
           test -n "$APP"
           APPEX="$APP/PlugIns/KeyboardExtension.appex"
           test -d "$APPEX"
-          # Read-only. These files are Copy Bundle Resources inputs, so Xcode
-          # copied them before CodeSign. Copying now would invalidate the signature.
-          missing=0
+          # XcodeGen does not emit a Copy Bundle Resources phase for these files,
+          # so they are absent after xcodebuild. Copy them now, then the next
+          # step re-signs. Nothing may modify the bundles after that re-sign.
+          copied=0
           while IFS= read -r -d '' source; do
+            test -s "$source"
             name=$(basename "$source")
-            if [ ! -s "$APPEX/$name" ]; then
-              echo "missing from signed appex: $name"
-              missing=$((missing + 1))
-            else
-              echo "present in signed appex: $name"
-            fi
+            cp "$source" "$APPEX/$name"
+            test -s "$APPEX/$name"
+            copied=$((copied + 1))
+            echo "embedded resource: $name"
           done < <(find KeyboardExtension/Resources -type f -print0)
-          test "$missing" -eq 0
+          test "$copied" -ge 6
           test -s "$APPEX/emoji_catalog.json"
           test -s "$APPEX/emoji_skin_map.json"
           test -s "$APPEX/keyboard_layouts.json"
           test -s "$APPEX/soft.caf"
           test -s "$APPEX/thocky.caf"
           test -s "$APPEX/creamy.caf"
+          echo "keyboard resources embedded count=$copied"
 
       - name: Verify built app bundle
         working-directory: personalkeyboard-source
@@ -157,8 +158,9 @@ jobs:
           test -n "$APP"
           python3 ../.github/scripts/validate_built_app.py "$APP"
 
-      # Proof only. Do not codesign again and do not touch bundle files.
-      - name: Prove App Group is inside the signed binaries
+      # Copying resources above breaks the ad-hoc signature. Re-sign after that
+      # copy, extension first, and do not modify either bundle afterwards.
+      - name: Re-sign after resource copy and prove App Group
         working-directory: personalkeyboard-source
         run: |
           set -euo pipefail
@@ -167,6 +169,18 @@ jobs:
           APPEX="$APP/PlugIns/KeyboardExtension.appex"
           test -x "$APP/PersonalKeyboard"
           test -x "$APPEX/KeyboardExtension"
+          APP_ENT="App/Config/PersonalKeyboard.entitlements"
+          EXT_ENT="KeyboardExtension/Config/KeyboardExtension.entitlements"
+          test -s "$APP_ENT"
+          test -s "$EXT_ENT"
+          codesign --force --sign - \
+            --entitlements "$EXT_ENT" \
+            --generate-entitlement-der \
+            "$APPEX"
+          codesign --force --sign - \
+            --entitlements "$APP_ENT" \
+            --generate-entitlement-der \
+            "$APP"
           codesign --display --entitlements :- "$APP/PersonalKeyboard" | tee "$RUNNER_TEMP/app-entitlements.txt" | grep -F 'group.app.personal.PersonalKeyboard'
           codesign --display --entitlements :- "$APPEX/KeyboardExtension" | tee "$RUNNER_TEMP/extension-entitlements.txt" | grep -F 'group.app.personal.PersonalKeyboard'
           echo "App Group present in PersonalKeyboard and KeyboardExtension"
