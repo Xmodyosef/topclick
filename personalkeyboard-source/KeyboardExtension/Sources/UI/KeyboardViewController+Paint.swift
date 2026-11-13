@@ -3,12 +3,12 @@ import UIKit
 // MARK: - KeyboardViewController + Paint
 extension KeyboardViewController {
     func paint(_ b: UIButton, chrome: KeyChrome = .letter, emphasized: Bool = false) {
-        // Action keys take accent/special colors. Emoji stays neutral (letter-like).
-        let action: Set<KeyChrome> = [.shift, .language, .symbols, .enter, .danger, .period]
+        // Action keys + emoji take accent/special colors from the app ColorPicker.
+        let action: Set<KeyChrome> = [.shift, .language, .symbols, .enter, .danger, .period, .emoji]
         let isAction = action.contains(chrome)
         let bg: UIColor
         let fg: UIColor
-        if chrome == .letter || chrome == .emoji {
+        if chrome == .letter {
             bg = palette.key.withAlphaComponent(1)
             fg = palette.text
         } else if chrome == .control {
@@ -23,6 +23,7 @@ extension KeyboardViewController {
             case .danger: special = .delete
             case .symbols: special = .symbols
             case .period: special = .period
+            case .emoji: special = .emoji
             default: special = .symbols
             }
             bg = palette.color(for: special)

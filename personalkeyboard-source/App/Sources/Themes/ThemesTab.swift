@@ -5,17 +5,11 @@ import UIKit
 
 struct ThemesTab: View {
     @State private var themeID = ThemeStore.themeID
-    @State private var sounds = ThemeStore.bool("sounds") ?? true
-    @State private var soundChoice = ThemeStore.string("soundChoice") ?? "system"
     @State private var loadingThemeIDs: Set<String> = []
-    @State private var loadingSoundIDs: Set<String> = []
     @State private var installedThemesTick = 0
-    @State private var installedSoundsTick = 0
     @State private var specialColor = SpecialKeyColorStore.loadColor()
     @State private var themeTask: Task<Void, Never>?
-    @State private var soundTask: Task<Void, Never>?
     @State private var themeGate = LatestSelectionGate()
-    @State private var soundGate = LatestSelectionGate()
     /// Diagnostic line only. Does not affect apply.
     @State private var themeTraceLine = ""
 
@@ -44,43 +38,33 @@ struct ThemesTab: View {
                         }
                     }
 
-                    // STEP 3: one system ColorPicker — no 6-swatch raft
+                    // Compact ColorPicker — control keys including emoji
                     SettingsCard(
-                        title: "لون الأزرار الأساسية",
-                        subtitle: "شيفت · لغة · رموز · إدخال · حذف · نقطة — بدون إيموجي"
+                        title: "لون الأزرار",
+                        subtitle: "شيفت · لغة · رموز · إدخال · حذف · نقطة · إيموجي"
                     ) {
-                        ColorPicker("اختر اللون", selection: $specialColor, supportsOpacity: false)
-                            .onChange(of: specialColor) { _, color in
-                                SpecialKeyColorStore.applyUnified(color)
-                            }
-                        Button {
-                            SpecialKeyColorStore.clearToThemeAccent()
-                            specialColor = SpecialKeyColorStore.loadColor()
-                        } label: {
-                            Label("إرجاع للون الثيم (accent)", systemImage: "arrow.uturn.backward")
+                        HStack(spacing: 10) {
+                            ColorPicker("", selection: $specialColor, supportsOpacity: false)
+                                .labelsHidden()
+                                .scaleEffect(0.9)
+                                .frame(width: 36, height: 36)
+                                .onChange(of: specialColor) { _, color in
+                                    SpecialKeyColorStore.applyUnified(color)
+                                }
+                            Text("لون التحكم")
                                 .font(.system(size: 13, weight: .medium))
-                        }
-                        .buttonStyle(.bordered)
-                        Text("الضغطة تفتح منتقي الألوان النظامي المجاني. النقطة تتلوّن · الإيموجي يبقى محايدًا.")
-                            .font(.system(size: 11))
-                            .foregroundStyle(NaqraColors.textSecondary)
-                    }
-
-                    // Sound packs — each independent
-                    SettingsCard(title: "حزم الصوت", subtitle: "كل صوت يُحمَّل مرة ثم يُبدَّل بحرية · يحتاج الوصول الكامل داخل اللوحة") {
-                        Toggle("تفعيل صوت النقر", isOn: $sounds)
-                            .onChange(of: sounds) { _, isEnabled in
-                                SoundPackStore.setEnabled(isEnabled)
-                                soundChoice = ThemeStore.string(ContentPackKeys.soundChoice) ?? "system"
-                                sounds = soundChoice != "none"
+                                .foregroundStyle(NaqraColors.textPrimary)
+                            Spacer(minLength: 0)
+                            Button {
+                                SpecialKeyColorStore.clearToThemeAccent()
+                                specialColor = SpecialKeyColorStore.loadColor()
+                            } label: {
+                                Image(systemName: "arrow.uturn.backward")
+                                    .font(.system(size: 14, weight: .semibold))
                             }
-
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                            ForEach(SoundPackStore.catalog) { pack in
-                                soundTile(pack)
-                            }
+                            .buttonStyle(.bordered)
+                            .accessibilityLabel("إرجاع للون الثيم")
                         }
-                        .id(installedSoundsTick)
                     }
 
                     ForEach(ThemeCatalog.groups) { group in
@@ -111,16 +95,11 @@ struct ThemesTab: View {
             .navigationBarTitleDisplayMode(.inline)
             .onDisappear {
                 themeTask?.cancel()
-                soundTask?.cancel()
                 themeTask = nil
-                soundTask = nil
                 loadingThemeIDs.removeAll()
-                loadingSoundIDs.removeAll()
             }
             .onAppear {
                 themeID = ThemeStore.themeID
-                soundChoice = ThemeStore.string("soundChoice") ?? "system"
-                sounds = ThemeStore.bool("sounds") ?? true
                 specialColor = SpecialKeyColorStore.loadColor()
             }
         }
@@ -207,85 +186,6 @@ struct ThemesTab: View {
         }
     }
 
-    // MARK: Sound tile
-
-    private func soundTile(_ pack: SoundPackStore.Pack) -> some View {
-        let installed = SoundPackStore.isInstalled(pack.id)
-        let loading = loadingSoundIDs.contains(pack.id)
-        let active = soundChoice == pack.id
-
-        return Button {
-            startSoundLoad(pack)
-        } label: {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text(pack.title)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(NaqraColors.textPrimary)
-                    Spacer()
-                    if loading {
-                        ProgressView().scaleEffect(0.7)
-                    } else if active {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(NaqraColors.accent)
-                    } else if !installed {
-                        Image(systemName: "arrow.down.circle")
-                            .foregroundStyle(NaqraColors.textSecondary)
-                    }
-                }
-                Text(pack.blurb)
-                    .font(.system(size: 10))
-                    .foregroundStyle(NaqraColors.textSecondary)
-                Text(statusLabel(installed: installed, loading: loading, free: SoundPackStore.isFree(pack.id), active: active))
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(NaqraColors.textSecondary)
-            }
-            .padding(10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(NaqraColors.surface.opacity(0.9), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(active ? NaqraColors.accent : NaqraColors.border, lineWidth: active ? 1.5 : 0.5)
-            )
-        }
-        .buttonStyle(.plain)
-        .disabled(loading)
-        .accessibilityLabel("صوت \(pack.title)")
-    }
-
-    private func startSoundLoad(_ pack: SoundPackStore.Pack) {
-        soundTask?.cancel()
-        loadingSoundIDs.removeAll()
-        soundTask = Task {
-            guard !Task.isCancelled else { return }
-            guard let requestID = await soundGate.begin() else { return }
-            await onSoundTap(pack, requestID: requestID)
-        }
-    }
-
-    private func onSoundTap(_ pack: SoundPackStore.Pack, requestID: UUID) async {
-        guard !Task.isCancelled, await soundGate.isCurrent(requestID) else { return }
-        if SoundPackStore.isInstalled(pack.id) {
-            if SoundPackStore.apply(pack.id) {
-                soundChoice = pack.id
-                sounds = pack.id != "none"
-            }
-            return
-        }
-
-        loadingSoundIDs.insert(pack.id)
-        await Task.yield()
-        guard !Task.isCancelled, await soundGate.isCurrent(requestID) else { return }
-
-        SoundPackStore.markInstalled(pack.id)
-        guard !Task.isCancelled, await soundGate.isCurrent(requestID) else { return }
-        loadingSoundIDs.remove(pack.id)
-        installedSoundsTick += 1
-        if SoundPackStore.apply(pack.id) {
-            soundChoice = pack.id
-            sounds = pack.id != "none"
-        }
-    }
 
     /// Display-only. Reads the suite directly (no standard fallback) so a dead group stays visible.
     private func recordThemeTrace(wrote: String) {

@@ -78,6 +78,7 @@ extension KeyboardViewController {
         persistAccess()
         if let text = UIPasteboard.general.string, !text.isEmpty {
             textDocumentProxy.insertText(text)
+            playSystemClick(.rowMid)
             showNotice("تم اللصق")
             tapHaptic()
         } else {

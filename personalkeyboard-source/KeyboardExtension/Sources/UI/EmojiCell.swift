@@ -7,8 +7,10 @@ final class EmojiCell: UICollectionViewCell {
     let label = UILabel()
     override init(frame: CGRect) {
         super.init(frame: frame)
+        contentView.semanticContentAttribute = .forceLeftToRight
+        label.semanticContentAttribute = .forceLeftToRight
         label.textAlignment = .center
-        label.font = .systemFont(ofSize: 24)
+        label.font = .systemFont(ofSize: 30)
         label.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(label)
         NSLayoutConstraint.activate([

@@ -14,6 +14,10 @@ struct SettingsTab: View {
     @State private var clipboardHistoryEnabled = ThemeStore.bool("clipboardHistoryEnabled") ?? false
     @State private var iconMode = ThemeStore.string("iconMode") ?? "auto"
     @State private var showClearHistoryConfirmation = false
+    @State private var loadingSoundIDs: Set<String> = []
+    @State private var installedSoundsTick = 0
+    @State private var soundTask: Task<Void, Never>?
+    @State private var soundGate = LatestSelectionGate()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -33,6 +37,7 @@ struct SettingsTab: View {
                     accessCard
                     iconCard
                     keyboardCard
+                    soundCard
                     translationCard
                     feelCard
                     privacyCard
@@ -45,6 +50,11 @@ struct SettingsTab: View {
             .navigationTitle("الإعدادات")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear(perform: reload)
+            .onDisappear {
+                soundTask?.cancel()
+                soundTask = nil
+                loadingSoundIDs.removeAll()
+            }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { reload() }
             }
@@ -104,26 +114,6 @@ struct SettingsTab: View {
 
     private var keyboardCard: some View {
         SettingsCard(title: "إعدادات اللوحة", subtitle: "خيارات تنعكس على لوحة المفاتيح") {
-            // Master mute only — pack picker lives in Themes tab (single owner).
-            Toggle("تفعيل صوت النقر", isOn: $sounds)
-                .onChange(of: sounds) { _, isEnabled in
-                    SoundPackStore.setEnabled(isEnabled)
-                    soundChoice = ThemeStore.string(ContentPackKeys.soundChoice) ?? "system"
-                    sounds = soundChoice != "none"
-                    if sounds { AudioServicesPlaySystemSound(1104) }
-                }
-            HStack {
-                Text("الحزمة الحالية")
-                    .font(.system(size: 13))
-                    .foregroundStyle(NaqraColors.textPrimary)
-                Spacer()
-                Text(SoundPackStore.title(for: soundChoice))
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(NaqraColors.accent)
-            }
-            Text("اختيار وتحميل حزم الصوت من تبويب «الثيمات» — كل حزمة لوحدها ولا تُحذف عند التبديل.")
-                .font(.system(size: 11))
-                .foregroundStyle(NaqraColors.textSecondary)
             Toggle("إظهار صف الأرقام", isOn: $showNumberRow)
                 .onChange(of: showNumberRow) { _, value in ThemeStore.write("showNumberRow", value: value) }
             Toggle("حفظ سجل الحافظة", isOn: $clipboardHistoryEnabled)
@@ -131,6 +121,24 @@ struct SettingsTab: View {
                     ThemeStore.write("clipboardHistoryEnabled", value: value)
                     if !value { ThemeStore.clearClipboardHistory() }
                 }
+        }
+    }
+
+    private var soundCard: some View {
+        SettingsCard(title: "حزم الصوت", subtitle: "كل صوت يُحمَّل مرة ثم يُبدَّل بحرية · يحتاج الوصول الكامل داخل اللوحة") {
+            Toggle("تفعيل صوت النقر", isOn: $sounds)
+                .onChange(of: sounds) { _, isEnabled in
+                    SoundPackStore.setEnabled(isEnabled)
+                    soundChoice = ThemeStore.string(ContentPackKeys.soundChoice) ?? "system"
+                    sounds = soundChoice != "none"
+                    if sounds { AudioServicesPlaySystemSound(1104) }
+                }
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                ForEach(SoundPackStore.catalog) { pack in
+                    soundTile(pack)
+                }
+            }
+            .id(installedSoundsTick)
         }
     }
 
@@ -228,6 +236,95 @@ struct SettingsTab: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, NaqraSpacing.sm)
+    }
+
+
+    // MARK: Sound packs (moved from Themes for space)
+
+    private func soundTile(_ pack: SoundPackStore.Pack) -> some View {
+        let installed = SoundPackStore.isInstalled(pack.id)
+        let loading = loadingSoundIDs.contains(pack.id)
+        let active = soundChoice == pack.id
+
+        return Button {
+            startSoundLoad(pack)
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(pack.title)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(NaqraColors.textPrimary)
+                    Spacer(minLength: 0)
+                    if loading {
+                        ProgressView().scaleEffect(0.7)
+                    } else if active {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(NaqraColors.accent)
+                    } else if !installed {
+                        Image(systemName: "arrow.down.circle")
+                            .foregroundStyle(NaqraColors.textSecondary)
+                    }
+                }
+                Text(pack.blurb)
+                    .font(.system(size: 10))
+                    .foregroundStyle(NaqraColors.textSecondary)
+                Text(soundStatusLabel(installed: installed, loading: loading, free: SoundPackStore.isFree(pack.id), active: active))
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(NaqraColors.textSecondary)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(NaqraColors.surface.opacity(0.9), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(active ? NaqraColors.accent : NaqraColors.border, lineWidth: active ? 1.5 : 0.5)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(loading)
+        .accessibilityLabel("صوت \(pack.title)")
+    }
+
+    private func startSoundLoad(_ pack: SoundPackStore.Pack) {
+        soundTask?.cancel()
+        loadingSoundIDs.removeAll()
+        soundTask = Task {
+            guard !Task.isCancelled else { return }
+            guard let requestID = await soundGate.begin() else { return }
+            await onSoundTap(pack, requestID: requestID)
+        }
+    }
+
+    private func onSoundTap(_ pack: SoundPackStore.Pack, requestID: UUID) async {
+        guard !Task.isCancelled, await soundGate.isCurrent(requestID) else { return }
+        if SoundPackStore.isInstalled(pack.id) {
+            if SoundPackStore.apply(pack.id) {
+                soundChoice = pack.id
+                sounds = pack.id != "none"
+            }
+            return
+        }
+
+        loadingSoundIDs.insert(pack.id)
+        await Task.yield()
+        guard !Task.isCancelled, await soundGate.isCurrent(requestID) else { return }
+
+        SoundPackStore.markInstalled(pack.id)
+        guard !Task.isCancelled, await soundGate.isCurrent(requestID) else { return }
+        loadingSoundIDs.remove(pack.id)
+        installedSoundsTick += 1
+        if SoundPackStore.apply(pack.id) {
+            soundChoice = pack.id
+            sounds = pack.id != "none"
+        }
+    }
+
+    private func soundStatusLabel(installed: Bool, loading: Bool, free: Bool, active: Bool) -> String {
+        if loading { return "جاري التحميل…" }
+        if active { return "مُطبَّق" }
+        if free { return "جاهز" }
+        if installed { return "محمّل · اضغط للتطبيق" }
+        return "اضغط للتحميل"
     }
 
     private func reload() {

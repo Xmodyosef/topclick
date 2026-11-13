@@ -82,7 +82,12 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var showNumberRow: Bool { ThemeIO.bool("showNumberRow") ?? true }
     var themeSignature: String {
         let id = ThemeIO.string("naqra.themeId") ?? "auto"
-        return id == "auto" ? "auto-\(TimeTheme.preferredThemeId())" : id
+        let base = id == "auto" ? "auto-\(TimeTheme.preferredThemeId())" : id
+        // Special-key overrides (shift/lang/symbols/enter/delete/period/emoji) must force repaint.
+        let specials = ["shift", "language", "enter", "delete", "symbols", "period", "emoji"]
+            .map { ThemeIO.string("specialKey.\($0)") ?? "" }
+            .joined(separator: "|")
+        return "\(base)|\(specials)"
     }
 
     // Arabic letter rows contain 11 / 11 / 9 keys, kept simple and predictable.
@@ -317,6 +322,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     @objc func periodTapped() {
         textDocumentProxy.insertText(".")
+        playSystemClick(.rowMid)
         tapHaptic(.action)
     }
 
