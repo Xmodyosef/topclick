@@ -130,7 +130,6 @@ extension NaqraPalette {
         let background = UIColor(red: max(0, r - amount), green: max(0, g - amount), blue: max(0, b - amount), alpha: 1)
         return .init(background: background, key: key, text: text, accent: accent, blurDark: dark)
     }
-}
 
     /// Same ink and accent math as ThemeCatalog.make, so the keyboard matches the app tile.
     static func catalogMatch(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat, dark: Bool) -> NaqraPalette {
@@ -145,3 +144,4 @@ extension NaqraPalette {
         let background = UIColor(red: max(0, r - shift), green: max(0, g - shift), blue: max(0, b - shift), alpha: 1)
         return .init(background: background, key: key, text: text, accent: accent, blurDark: dark)
     }
+}
