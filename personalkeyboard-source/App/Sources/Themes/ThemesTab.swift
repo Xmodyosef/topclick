@@ -287,9 +287,6 @@ struct ThemesTab: View {
         }
     }
 
-    // MARK: Status chrome
-
-    @ViewBuilder
     /// Display-only. Reads the suite directly (no standard fallback) so a dead group stays visible.
     private func recordThemeTrace(wrote: String) {
         guard ThemeTrace.isEnabled else {
@@ -300,6 +297,9 @@ struct ThemesTab: View {
         themeTraceLine = "wrote=\(wrote) | suiteRead=\(suiteRead) | build=\(NaqraBuildStamp.short)"
     }
 
+    // MARK: Status chrome
+
+    @ViewBuilder
     private func statusBadge(installed: Bool, loading: Bool, free: Bool) -> some View {
         if loading {
             ProgressView().scaleEffect(0.6)
