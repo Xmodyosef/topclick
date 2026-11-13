@@ -2,7 +2,43 @@ import UIKit
 
 // MARK: - NaqraPalette presets
 extension NaqraPalette {
+    /// Key RGB copied from ThemeCatalog.rgb so every app tile paints the same color.
+    static let catalogRGB: [String: (CGFloat, CGFloat, CGFloat, Bool)] = [
+        "auto": (0.16, 0.18, 0.23, true),
+        "light": (0.90, 0.95, 0.99, false),
+        "dark": (0.10, 0.16, 0.28, true),
+        "glass": (0.86, 0.82, 0.96, false),
+        "ocean": (0.06, 0.22, 0.32, true),
+        "cobalt": (0.10, 0.18, 0.42, true),
+        "violet": (0.18, 0.10, 0.32, true),
+        "orchid": (0.32, 0.08, 0.18, true),
+        "hailey": (0.22, 0.05, 0.08, true),
+        "ember": (0.24, 0.12, 0.05, true),
+        "forest": (0.06, 0.18, 0.12, true),
+        "matrix": (0.02, 0.07, 0.03, true),
+        "nord": (0.78, 0.82, 0.86, false),
+        "morning": (0.96, 0.90, 0.78, false),
+        "evening": (0.08, 0.12, 0.24, true),
+        "m4": (0.97, 0.82, 0.64, false),
+        "m7": (0.84, 0.93, 0.88, false),
+        "m9": (0.78, 0.88, 0.96, false),
+        "m12": (0.96, 0.86, 0.90, false),
+        "e2": (0.08, 0.12, 0.24, true),
+        "e5": (0.18, 0.10, 0.22, true),
+        "e8": (0.06, 0.18, 0.16, true),
+        "e11": (0.22, 0.10, 0.08, true),
+        "aurora": (0.10, 0.28, 0.30, true),
+        "lavender": (0.28, 0.20, 0.42, true),
+        "sunset": (0.38, 0.14, 0.16, true),
+        "mint": (0.08, 0.24, 0.22, true),
+        "rose": (0.36, 0.12, 0.24, true),
+        "mono": (0.22, 0.23, 0.25, true)
+    ]
+
     static func preset(_ id: String) -> NaqraPalette {
+        if let (r, g, b, dark) = catalogRGB[id] {
+            return catalogMatch(r, g, b, dark: dark)
+        }
         switch id {
         case "dark": return .init(background: .clear, key: UIColor(red: 0.10, green: 0.16, blue: 0.28, alpha: 0.62), text: UIColor(red: 0.93, green: 0.96, blue: 1.0, alpha: 1), accent: UIColor(red: 0.36, green: 0.60, blue: 1.0, alpha: 1), blurDark: true)
         case "light": return .init(background: .clear, key: UIColor(red: 0.90, green: 0.95, blue: 0.99, alpha: 0.82), text: UIColor(red: 0.14, green: 0.27, blue: 0.40, alpha: 1), accent: UIColor(red: 0.28, green: 0.52, blue: 0.86, alpha: 1), blurDark: false)
@@ -95,3 +131,17 @@ extension NaqraPalette {
         return .init(background: background, key: key, text: text, accent: accent, blurDark: dark)
     }
 }
+
+    /// Same ink and accent math as ThemeCatalog.make, so the keyboard matches the app tile.
+    static func catalogMatch(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat, dark: Bool) -> NaqraPalette {
+        let text: UIColor = dark
+            ? UIColor(red: min(1, r + 0.75), green: min(1, g + 0.75), blue: min(1, b + 0.78), alpha: 1)
+            : UIColor(red: max(0, r - 0.55), green: max(0, g - 0.55), blue: max(0, b - 0.50), alpha: 1)
+        let accent: UIColor = dark
+            ? UIColor(red: min(1, r + 0.35), green: min(1, g + 0.25), blue: min(1, b + 0.15), alpha: 1)
+            : UIColor(red: max(0.2, r - 0.25), green: max(0.15, g - 0.30), blue: max(0.1, b - 0.20), alpha: 1)
+        let key = UIColor(red: r, green: g, blue: b, alpha: 1)
+        let shift: CGFloat = dark ? 0.06 : 0.12
+        let background = UIColor(red: max(0, r - shift), green: max(0, g - shift), blue: max(0, b - shift), alpha: 1)
+        return .init(background: background, key: key, text: text, accent: accent, blurDark: dark)
+    }

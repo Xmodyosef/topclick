@@ -191,20 +191,7 @@ struct ThemesTab: View {
 
     private func onThemeTap(_ theme: ThemeSwatch, requestID: UUID) async {
         guard !Task.isCancelled, await themeGate.isCurrent(requestID) else { return }
-        if ThemePackStore.isInstalled(theme.id) {
-            if ThemePackStore.apply(theme.id) { themeID = theme.id }
-            return
-        }
-
-        loadingThemeIDs.insert(theme.id)
-        // The packs are bundled locally; yield once for cancellation without faking a download delay.
-        await Task.yield()
-        guard !Task.isCancelled, await themeGate.isCurrent(requestID) else { return }
-
-        ThemePackStore.markInstalled(theme.id)
-        guard !Task.isCancelled, await themeGate.isCurrent(requestID) else { return }
-        loadingThemeIDs.remove(theme.id)
-        installedThemesTick += 1
+        // Themes ship inside the app. The first tap writes themeId; there is no download.
         if ThemePackStore.apply(theme.id) { themeID = theme.id }
     }
 

@@ -43,10 +43,8 @@ private enum PackInstallBook {
 // MARK: - Theme packs
 
 enum ThemePackStore {
-    /// Always unlocked — no download step.
-    static let freeIDs: Set<String> = [
-        "auto", "morning", "evening", "light", "dark", "glass"
-    ]
+    /// Every catalog theme is bundled. No download step.
+    static var freeIDs: Set<String> { Set(ThemeCatalog.all.map(\.id)) }
 
     static func isFree(_ id: String) -> Bool { freeIDs.contains(id) }
 
@@ -59,10 +57,10 @@ enum ThemePackStore {
         PackInstallBook.markInstalled(id, free: freeIDs, key: ContentPackKeys.installedThemes)
     }
 
-    /// Switch active theme. Other installed packs stay.
+    /// Switch active theme immediately. Catalog themes do not require a download.
     @discardableResult
     static func apply(_ id: String) -> Bool {
-        guard isInstalled(id) else { return false }
+        guard ThemeCatalog.all.contains(where: { $0.id == id }) else { return false }
         ThemeStore.write(ContentPackKeys.themeId, value: id)
         ThemeStore.write(ContentPackKeys.themeAppliedAt, value: Date().timeIntervalSince1970)
         return true
