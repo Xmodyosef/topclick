@@ -36,6 +36,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var holdChoice = ""
     /// One reused magnified-key bubble. Never allocated per key.
     var keyPreview: UILabel?
+    /// Diagnostic overlay. Not part of the key stack.
+    var themeTraceLabel: UILabel?
 
     let translationModel = TranslationBridgeModel()
     var translationHost: UIHostingController<TranslationBridgeView>?
@@ -129,6 +131,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
             palette = next
             rebuild()
         }
+        refreshThemeTraceStrip()
     }
 
     func paletteMatches(_ other: NaqraPalette) -> Bool {

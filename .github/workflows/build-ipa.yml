@@ -100,6 +100,17 @@ jobs:
           echo "--- LISTING SCHEMES ---"
           xcodebuild -list -project "$PROJECT"
 
+      - name: Stamp Git SHA into app and keyboard Info.plist
+        working-directory: personalkeyboard-source
+        run: |
+          set -euo pipefail
+          SHA="${GITHUB_SHA:-dev}"
+          SHORT="${SHA:0:7}"
+          for PLIST in App/Config/Info.plist KeyboardExtension/Config/Info.plist; do
+            /usr/libexec/PlistBuddy -c "Set :NaqraGitSHA ${SHORT}" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :NaqraGitSHA string ${SHORT}" "$PLIST"
+            echo "$PLIST NaqraGitSHA=$(/usr/libexec/PlistBuddy -c 'Print :NaqraGitSHA' "$PLIST")"
+          done
+
       - name: Build App
         run: |
           cd personalkeyboard-source

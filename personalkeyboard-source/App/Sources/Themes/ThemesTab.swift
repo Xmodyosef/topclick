@@ -16,6 +16,8 @@ struct ThemesTab: View {
     @State private var soundTask: Task<Void, Never>?
     @State private var themeGate = LatestSelectionGate()
     @State private var soundGate = LatestSelectionGate()
+    /// Diagnostic line only. Does not affect apply.
+    @State private var themeTraceLine = ""
 
     var body: some View {
         NavigationStack {
@@ -33,6 +35,13 @@ struct ThemesTab: View {
 
                     SettingsCard(title: "الثيم على اللوحة", subtitle: "\(ThemeCatalog.swatch(for: themeID).title) · يُطبَّق فورًا") {
                         ThemeBoardCanvas(theme: ThemeCatalog.swatch(for: themeID), showNumbers: ThemeStore.bool("showNumberRow") ?? true)
+                        if ThemeTrace.isEnabled, !themeTraceLine.isEmpty {
+                            Text(themeTraceLine)
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .foregroundStyle(NaqraColors.textSecondary)
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
 
                     // STEP 3: one system ColorPicker — no 6-swatch raft
@@ -192,7 +201,10 @@ struct ThemesTab: View {
     private func onThemeTap(_ theme: ThemeSwatch, requestID: UUID) async {
         guard !Task.isCancelled, await themeGate.isCurrent(requestID) else { return }
         // Themes ship with the app; first tap writes themeId (suite + standard for sideload).
-        if ThemePackStore.apply(theme.id) { themeID = theme.id }
+        if ThemePackStore.apply(theme.id) {
+            themeID = theme.id
+            recordThemeTrace(wrote: theme.id)
+        }
     }
 
     // MARK: Sound tile
@@ -278,6 +290,16 @@ struct ThemesTab: View {
     // MARK: Status chrome
 
     @ViewBuilder
+    /// Display-only. Reads the suite directly (no standard fallback) so a dead group stays visible.
+    private func recordThemeTrace(wrote: String) {
+        guard ThemeTrace.isEnabled else {
+            themeTraceLine = ""
+            return
+        }
+        let suiteRead = UserDefaults(suiteName: ThemeStore.suiteName)?.string(forKey: "themeId") ?? "-"
+        themeTraceLine = "wrote=\(wrote) | suiteRead=\(suiteRead) | build=\(NaqraBuildStamp.short)"
+    }
+
     private func statusBadge(installed: Bool, loading: Bool, free: Bool) -> some View {
         if loading {
             ProgressView().scaleEffect(0.6)

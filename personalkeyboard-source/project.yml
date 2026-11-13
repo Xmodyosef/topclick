@@ -22,6 +22,7 @@ targets:
       - path: App/Sources
       - path: App/Resources
       - path: Shared/Models/SharedKeyboardData.swift
+      - path: Shared/Models/ThemeTrace.swift
     settings:
       base:
         PRODUCT_NAME: PersonalKeyboard
@@ -49,6 +50,7 @@ targets:
     sources:
       - path: KeyboardExtension/Sources
       - path: Shared/Models/SharedKeyboardData.swift
+      - path: Shared/Models/ThemeTrace.swift
     # Explicit JSON files so XcodeGen copies them into KeyboardExtension.appex
     # (folder resource alone was missing from the built unsigned IPA).
     resources:
