@@ -103,7 +103,10 @@ extension KeyboardViewController {
         cv.delegate = self
         cv.tag = 0
         cv.alwaysBounceVertical = true
-        // Grid stays LTR in every language (Apple-like; never mirror in Arabic).
+        cv.delaysContentTouches = false
+        cv.canCancelContentTouches = true
+        cv.decelerationRate = .normal
+        // Grid stays LTR in every language (index 0 is the top-left cell).
         cv.semanticContentAttribute = .forceLeftToRight
         cv.register(EmojiCell.self, forCellWithReuseIdentifier: "e")
         cv.translatesAutoresizingMaskIntoConstraints = false
@@ -124,15 +127,15 @@ extension KeyboardViewController {
         cv.addGestureRecognizer(pan)
 
         let longPress = UILongPressGestureRecognizer(target: self, action: #selector(emojiSkinLongPressed(_:)))
-        longPress.minimumPressDuration = 0.40
-        // Finger must travel from the cell up onto the strip. 10pt cancels the gesture first.
-        longPress.allowableMovement = 10_000
+        longPress.minimumPressDuration = 0.45
+        // A real scroll must win. Cancelling touches was what made the grid stick to the finger.
+        longPress.allowableMovement = 12
         longPress.delegate = self
-        longPress.cancelsTouchesInView = true
+        longPress.cancelsTouchesInView = false
+        longPress.delaysTouchesBegan = false
         cv.addGestureRecognizer(longPress)
         emojiSkinLongPress = longPress
-        // Category swipe waits on skin long-press. Vertical scroll must not — that lag is what made emoji feel sticky.
-        pan.require(toFail: longPress)
+        // Do not require(toFail:) the long-press. That held every swipe for 0.45s.
 
         return host
     }
@@ -240,16 +243,22 @@ extension KeyboardViewController {
         switch gesture.state {
         case .began:
             closeSkinPicker()
-            emojiCollection?.isScrollEnabled = false
-            // Lightweight snapshot rides with the pan; live grid reloads only after the swipe ends.
+            // Scroll stays on until the finger is clearly horizontal.
+
+        case .changed:
+            if abs(translation.x) < 16 || abs(translation.x) < abs(translation.y) * 1.4 {
+                host.transform = .identity
+                break
+            }
+            if emojiCollection?.isScrollEnabled != false {
+                emojiCollection?.isScrollEnabled = false
+            }
             if emojiSwipeSnapshot == nil, let snap = host.snapshotView(afterScreenUpdates: false) {
                 snap.frame = host.bounds
                 snap.isUserInteractionEnabled = false
                 host.addSubview(snap)
                 emojiSwipeSnapshot = snap
             }
-
-        case .changed:
             var tx = translation.x
             let atStart = emojiCategoryIndex <= 0
             let atEnd = emojiCategoryIndex >= emojiPack.count - 1
@@ -315,7 +324,7 @@ extension KeyboardViewController {
 
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         if gestureRecognizer is UILongPressGestureRecognizer {
-            // Allow long-press only when the grid is not mid-deceleration.
+            // A moving finger is a scroll, not a skin-tone hold.
             if let cv = emojiCollection, cv.isDragging || cv.isDecelerating { return false }
             return true
         }
@@ -363,8 +372,12 @@ extension KeyboardViewController {
             // Session is independent of the bar. dismissSkinBar must not clear it.
             skinSession = SkinSession(base: base, tones: Array(tones.prefix(6)), armedIndex: nil)
             emojiSkinBase = base
-            cv.isScrollEnabled = false
             showEmojiSkinBar(tones: skinSession?.tones ?? [], from: indexPath, in: cv)
+            guard emojiSkinBar != nil else {
+                endSkinSession()
+                return
+            }
+            cv.isScrollEnabled = false
             tapHaptic(.action)
         case .changed:
             guard let bar = emojiSkinBar, skinSession != nil else { return }
@@ -406,10 +419,7 @@ extension KeyboardViewController {
         bar.layer.cornerCurve = .continuous
         bar.layer.borderWidth = 1
         bar.layer.borderColor = palette.accent.withAlphaComponent(0.35).cgColor
-        bar.layer.shadowColor = UIColor.black.cgColor
-        bar.layer.shadowOpacity = 0.18
-        bar.layer.shadowRadius = 6
-        bar.layer.shadowOffset = CGSize(width: 0, height: 2)
+        bar.layer.shadowOpacity = 0
         bar.translatesAutoresizingMaskIntoConstraints = true
 
         let stack = UIStackView()
