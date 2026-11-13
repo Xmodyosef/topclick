@@ -16,22 +16,28 @@ extension KeyboardViewController {
         holdGesture.cancelsTouchesInView = true
         clip.addGestureRecognizer(holdGesture)
         clip.widthAnchor.constraint(equalToConstant: 36).isActive = true
-        s.addArrangedSubsystem(clip)
+        s.addArrangedSubview(clip)
+
+        // In-keyboard theme cycle (sideload-safe: no App Group required).
+        let theme = iconKey("paintpalette", #selector(themeToggleTapped))
+        theme.widthAnchor.constraint(equalToConstant: 36).isActive = true
+        theme.accessibilityLabel = "تبديل الثيم"
+        s.addArrangedSubview(theme)
 
         // Suggestions only when enabled AND non-empty — no blank white middle strip.
         let showSuggestions = ThemeIO.bool("suggestions") ?? false
-        let words = showSuggestions ? suggestions().filter { !0.isEmpty } : []
+        let words = showSuggestions ? suggestions().filter { !$0.isEmpty } : []
         if !words.isEmpty {
             let suggRow = makeSuggestionsRow(words: words)
             suggRow.setContentHuggingPriority(.defaultLow, for: .horizontal)
-            s.addArrangedSubsystem(suggRow)
+            s.addArrangedSubview(suggRow)
         } else {
             let spacer = UIView()
             spacer.backgroundColor = .clear
             spacer.isUserInteractionEnabled = false
             spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
             spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-            s.addArrangedSubsystem(spacer)
+            s.addArrangedSubview(spacer)
         }
 
         // Translate: keep only when iOS 18+ (otherwise the button only shows "needs iOS 18").
@@ -39,12 +45,29 @@ extension KeyboardViewController {
             let tr = iconKey("translate", #selector(translateTapped))
             tr.widthAnchor.constraint(equalToConstant: 36).isActive = true
             tr.accessibilityLabel = "ترجمة"
-            s.addArrangedSubsystem(tr)
+            s.addArrangedSubview(tr)
         }
         let hide = iconKey("keyboard.chevron.compact.down", #selector(dismissKeyboardAction))
         hide.widthAnchor.constraint(equalToConstant: 36).isActive = true
-        s.addArrangedSubsystem(hide)
+        s.addArrangedSubview(hide)
         lockHeight(s, 34)
         return s
+    }
+
+    /// Cycle auto → light → dark → ocean. Stored in local UserDefaults (ThemeIO standard path).
+    @objc func themeToggleTapped() {
+        let cycle = ["auto", "light", "dark", "ocean"]
+        let raw = ThemeIO.string("themeId") ?? "auto"
+        let current = NaqraPalette.normalizeThemeId(raw)
+        let idx = cycle.firstIndex(of: current) ?? -1
+        let next = cycle[(idx + 1) % cycle.count]
+        ThemeIO.write("themeId", value: next)
+        appliedThemeId = themeSignature
+        palette = NaqraPalette.current()
+        rebuild()
+        tapHaptic(.action)
+        if let title = NaqraPalette.titles[next] {
+            showNotice(title)
+        }
     }
 }

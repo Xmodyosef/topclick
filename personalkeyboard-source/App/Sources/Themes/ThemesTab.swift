@@ -28,6 +28,9 @@ struct ThemesTab: View {
                         Text("كل حزمة تُحمَّل لوحدها. بعد التحميل يمكنك التبديل بينها بحرية دون فقدان الحزم الأخرى.")
                             .font(.system(size: 13))
                             .foregroundStyle(NaqraColors.textSecondary)
+                        Text("على النسخة المثبّتة بدون مجموعة تطبيقات، غيّر الثيم من زر الألوان داخل لوحة المفاتيح. هذه الشاشة للمعاينة.")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(NaqraColors.textPrimary)
                     }
                     .padding(.top, NaqraSpacing.sm)
 

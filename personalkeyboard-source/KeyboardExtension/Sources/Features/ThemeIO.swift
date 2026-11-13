@@ -26,10 +26,17 @@ enum ThemeIO {
         suite.set(value, forKey: key)
     }
 
-    /// Always try the shared suite first, then fall back to standard.
-    /// This restores the pre-#115 behavior that made app-to-keyboard theme transfer work.
+    /// themeId is owned by this extension. Sideload strips App Group, so the
+    /// in-keyboard toggle reads and writes UserDefaults.standard first.
+    /// Other keys still prefer the shared suite when the group is actually alive.
     static func string(_ key: String) -> String? {
-        suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
+        if key == "themeId", let local = UserDefaults.standard.string(forKey: key) {
+            return local
+        }
+        if !groupAlive {
+            return UserDefaults.standard.string(forKey: key) ?? suite.string(forKey: key)
+        }
+        return suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
     }
 
     static func bool(_ key: String) -> Bool? {
