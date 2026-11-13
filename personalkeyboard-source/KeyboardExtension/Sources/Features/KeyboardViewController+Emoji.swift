@@ -3,12 +3,48 @@ import Translation
 import UIKit
 import AudioToolbox
 
-// MARK: - LTR emoji grid layout (never mirror cell order under Arabic UI)
-final class LTREmojiFlowLayout: UICollectionViewFlowLayout {
-    /// Keep leading→trailing order fixed even when the keyboard is Arabic RTL
-    /// (PrefersRightToLeft=true on the extension does not mirror the emoji grid).
-    override var flipsHorizontallyInOppositeLayoutDirection: Bool { false }
-    override var developmentLayoutDirection: UIUserInterfaceLayoutDirection { .leftToRight }
+// MARK: - LTR emoji grid (index 0 always top-left; never mirrors under Arabic RTL)
+final class LTREmojiGridLayout: UICollectionViewLayout {
+    /// Fixed column count matches 0.1 density and Apple-like LTR reading order.
+    var columns: Int = 8
+    private var cache: [UICollectionViewLayoutAttributes] = []
+    private var contentHeight: CGFloat = 0
+    private var contentWidth: CGFloat = 0
+
+    override var collectionViewContentSize: CGSize {
+        CGSize(width: contentWidth, height: contentHeight)
+    }
+
+    override func prepare() {
+        guard let cv = collectionView else { return }
+        cache.removeAll(keepingCapacity: true)
+        contentWidth = max(cv.bounds.width - cv.adjustedContentInset.left - cv.adjustedContentInset.right, 1)
+        let cols = max(columns, 1)
+        let side = floor(contentWidth / CGFloat(cols))
+        let count = cv.numberOfItems(inSection: 0)
+        for i in 0..<count {
+            let row = i / cols
+            let col = i % cols // 0 = left edge always
+            let attrs = UICollectionViewLayoutAttributes(forCellWith: IndexPath(item: i, section: 0))
+            attrs.frame = CGRect(x: CGFloat(col) * side, y: CGFloat(row) * side, width: side, height: side)
+            cache.append(attrs)
+        }
+        let rows = count == 0 ? 0 : (count + cols - 1) / cols
+        contentHeight = CGFloat(rows) * side
+    }
+
+    override func layoutAttributesForElements(in rect: CGRect) -> [UICollectionViewLayoutAttributes]? {
+        cache.filter { $0.frame.intersects(rect) }
+    }
+
+    override func layoutAttributesForItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
+        guard indexPath.item >= 0, indexPath.item < cache.count else { return nil }
+        return cache[indexPath.item]
+    }
+
+    override func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
+        newBounds.width != (collectionView?.bounds.width ?? newBounds.width)
+    }
 }
 
 // MARK: - KeyboardViewController + Emoji
@@ -59,10 +95,8 @@ extension KeyboardViewController {
         host.semanticContentAttribute = .forceLeftToRight
         lockHeight(host, emojiPagerHeight())
 
-        let layout = LTREmojiFlowLayout()
-        layout.minimumInteritemSpacing = 0
-        layout.minimumLineSpacing = 0
-        layout.sectionInset = .zero
+        let layout = LTREmojiGridLayout()
+        layout.columns = 8
         let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
         cv.backgroundColor = .clear
         cv.dataSource = self
@@ -137,11 +171,10 @@ extension KeyboardViewController {
         tapHaptic()
     }
 
+    // Cell size is owned by LTREmojiGridLayout (always LTR, 8 columns).
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let width = max(collectionView.bounds.width - collectionView.adjustedContentInset.left - collectionView.adjustedContentInset.right, 1)
-        // Match 0.1 density: eight columns, larger glyphs.
-        let columns = 8
-        let side = floor(width / CGFloat(columns))
+        let side = floor(width / 8)
         return CGSize(width: side, height: side)
     }
 
