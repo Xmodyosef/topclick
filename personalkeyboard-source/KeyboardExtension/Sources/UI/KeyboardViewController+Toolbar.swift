@@ -18,12 +18,6 @@ extension KeyboardViewController {
         clip.widthAnchor.constraint(equalToConstant: 36).isActive = true
         s.addArrangedSubview(clip)
 
-        // In-keyboard theme cycle (sideload-safe: no App Group required).
-        let theme = iconKey("paintpalette", #selector(themeToggleTapped))
-        theme.widthAnchor.constraint(equalToConstant: 36).isActive = true
-        theme.accessibilityLabel = "تبديل الثيم"
-        s.addArrangedSubview(theme)
-
         // Suggestions only when enabled AND non-empty — no blank white middle strip.
         let showSuggestions = ThemeIO.bool("suggestions") ?? false
         let words = showSuggestions ? suggestions().filter { !$0.isEmpty } : []
@@ -54,20 +48,4 @@ extension KeyboardViewController {
         return s
     }
 
-    /// Cycle auto → light → dark → ocean. Stored in local UserDefaults (ThemeIO standard path).
-    @objc func themeToggleTapped() {
-        let cycle = ["auto", "light", "dark", "ocean"]
-        let raw = ThemeIO.string("themeId") ?? "auto"
-        let current = NaqraPalette.normalizeThemeId(raw)
-        let idx = cycle.firstIndex(of: current) ?? -1
-        let next = cycle[(idx + 1) % cycle.count]
-        ThemeIO.write("themeId", value: next)
-        appliedThemeId = themeSignature
-        palette = NaqraPalette.current()
-        rebuild()
-        tapHaptic(.action)
-        if let title = NaqraPalette.titles[next] {
-            showNotice(title)
-        }
-    }
 }

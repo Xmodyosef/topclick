@@ -5,12 +5,6 @@ enum ThemeIO {
     static let notificationName = "app.personal.PersonalKeyboard.prefs"
     static var suite: UserDefaults { UserDefaults(suiteName: group) ?? .standard }
 
-    /// True only when the App Group container exists (signed install with the entitlement).
-    /// Unsigned / sideloaded builds strip groups, so suite is a private non-shared domain.
-    static var groupAlive: Bool {
-        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group) != nil
-    }
-
     static func write(_ key: String, value: Any) {
         set(key, value: value)
         CFNotificationCenterPostNotification(
@@ -20,29 +14,18 @@ enum ThemeIO {
         )
     }
 
-    /// Always write both: standard (sideload-safe) and the shared suite (signed builds).
+    /// App Group only. The container app writes themeId into this suite.
     static func set(_ key: String, value: Any) {
-        UserDefaults.standard.set(value, forKey: key)
         suite.set(value, forKey: key)
     }
 
-    /// themeId is owned by this extension. Sideload strips App Group, so the
-    /// in-keyboard toggle reads and writes UserDefaults.standard first.
-    /// Other keys still prefer the shared suite when the group is actually alive.
     static func string(_ key: String) -> String? {
-        if key == "themeId", let local = UserDefaults.standard.string(forKey: key) {
-            return local
-        }
-        if !groupAlive {
-            return UserDefaults.standard.string(forKey: key) ?? suite.string(forKey: key)
-        }
-        return suite.string(forKey: key) ?? UserDefaults.standard.string(forKey: key)
+        suite.string(forKey: key)
     }
 
     static func bool(_ key: String) -> Bool? {
-        if suite.object(forKey: key) != nil { return suite.bool(forKey: key) }
-        if UserDefaults.standard.object(forKey: key) != nil { return UserDefaults.standard.bool(forKey: key) }
-        return nil
+        guard suite.object(forKey: key) != nil else { return nil }
+        return suite.bool(forKey: key)
     }
 }
 
