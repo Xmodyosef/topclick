@@ -148,6 +148,7 @@ extension KeyboardViewController {
         ])
         rootStack.setContentHuggingPriority(.required, for: .vertical)
         rootStack.setContentCompressionResistancePriority(.required, for: .vertical)
+        installThemeTraceStrip()
     }
     func rebuild() {
         hideKeyPreview()
@@ -206,6 +207,7 @@ extension KeyboardViewController {
         }
         updateHeightForCurrentSize()
         view.setNeedsLayout()
+        refreshThemeTraceStrip()
     }
 
     /// Letter layouts for the current language/shift state.
