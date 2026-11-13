@@ -144,11 +144,11 @@ extension ThemeStore {
 }
 
 // MARK: - Special action-key color (one system ColorPicker → all control keys)
-// Emoji is intentionally excluded (stays letter/neutral on the board).
+// Shared accent for all control keys including emoji.
 
 enum SpecialKeyColorStore {
-    /// Keys that accept a shared accent override. No emoji.
-    static let slots = ["shift", "language", "enter", "delete", "symbols", "period"]
+    /// Keys that accept a shared accent override (includes emoji).
+    static let slots = ["shift", "language", "enter", "delete", "symbols", "period", "emoji"]
 
     static func storedRGBA(for slot: String) -> String? {
         let key = "specialKey.\(slot)"
@@ -179,13 +179,11 @@ enum SpecialKeyColorStore {
         for slot in slots {
             ThemeStore.write("specialKey.\(slot)", value: value)
         }
-        // Explicitly clear emoji override if any legacy value remains
-        ThemeStore.write("specialKey.emoji", value: "")
     }
 
     /// Back to theme accent (empty slots → NaqraPalette.color uses accent).
     static func clearToThemeAccent() {
-        for slot in slots + ["emoji"] {
+        for slot in slots {
             ThemeStore.write("specialKey.\(slot)", value: "")
             UserDefaults.standard.removeObject(forKey: "specialKey.\(slot)")
             ThemeStore.suite.removeObject(forKey: "specialKey.\(slot)")
