@@ -46,6 +46,9 @@ extension KeyboardViewController {
     }
 
     func symbolKeyRowHeight() -> CGFloat {
+        // The symbols page has no 34pt suggestions toolbar, so its four rows
+        // legitimately receive more vertical space than letter rows. Keep the
+        // board filled; normalize glyph size independently in charKey().
         let flex = symbolRowsCount()
         return filledRowHeight(flexibleRows: flex, fixedHeight: 44, arrangedCount: flex + 1)
     }
