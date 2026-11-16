@@ -71,7 +71,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     var letterFont: UIFont {
         // One compact, predictable font keeps Arabic and English aligned.
-        .systemFont(ofSize: 26, weight: .medium)
+        .systemFont(ofSize: KeyboardGlyphMetrics.letterPointSize, weight: .medium)
     }
     let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
     let boardHeight: CGFloat = 324
