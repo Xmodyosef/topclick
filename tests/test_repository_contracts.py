@@ -87,3 +87,20 @@ def test_clipboard_privacy_default_does_not_destroy_existing_history() -> None:
     block = source.split("func ensurePrivacyDefault()", 1)[1].split("\n    }", 1)[0]
     assert 'ThemeIO.set("clipboardHistoryEnabled", value: false)' in block
     assert 'ThemeIO.set(key, value: "")' not in block
+
+
+def test_pr131_device_validation_protocol_is_explicit_about_evidence() -> None:
+    plan = (ROOT / "docs/PR131_DEVICE_VALIDATION.md").read_text(encoding="utf-8")
+    required = (
+        "T4 — `needsInputModeSwitchKey` transition",
+        "INCONCLUSIVE FOR TRANSITION",
+        "T8 — Arabic combining marks and deletion",
+        "Unicode scalar values and grapheme-cluster count",
+        "Peak Resident",
+        "VM Tracker",
+        "at least 20 runs",
+        "NOT RUN",
+        "Owner approval is still required",
+    )
+    for phrase in required:
+        assert phrase in plan, f"PR #131 validation protocol missing: {phrase}"
