@@ -2,7 +2,6 @@ import Foundation
 
 /// Shared visual sizing rules for the keyboard's letter and symbol key labels.
 enum KeyboardGlyphMetrics {
-    static let letterPointSize: CGFloat = 26
     static let symbolPointSize: CGFloat = 24
 
     /// Digits retain the letter size; punctuation and Unicode symbols use a
