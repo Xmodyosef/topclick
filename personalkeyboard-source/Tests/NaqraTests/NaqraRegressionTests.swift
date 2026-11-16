@@ -42,3 +42,25 @@ final class LatestSelectionGateTests: XCTestCase {
         XCTAssertFalse(aIsStillCurrent)
     }
 }
+
+final class KeyboardGlyphMetricsTests: XCTestCase {
+    func testArabicAndUnicodeSymbolsUseReducedGlyphScale() {
+        XCTAssertTrue(KeyboardGlyphMetrics.usesSymbolScale("﷼"))
+        XCTAssertTrue(KeyboardGlyphMetrics.usesSymbolScale("٪"))
+        XCTAssertTrue(KeyboardGlyphMetrics.usesSymbolScale("∞"))
+        XCTAssertTrue(KeyboardGlyphMetrics.usesSymbolScale("؟"))
+    }
+
+    func testDigitsAndLettersKeepTheLetterGlyphScale() {
+        XCTAssertFalse(KeyboardGlyphMetrics.usesSymbolScale("1"))
+        XCTAssertFalse(KeyboardGlyphMetrics.usesSymbolScale("a"))
+        XCTAssertFalse(KeyboardGlyphMetrics.usesSymbolScale("م"))
+    }
+
+    func testSymbolScaleIsSmallerThanLetterScale() {
+        XCTAssertEqual(KeyboardGlyphMetrics.letterPointSize, 26)
+        XCTAssertEqual(KeyboardGlyphMetrics.symbolPointSize, 24)
+        XCTAssertLessThan(KeyboardGlyphMetrics.symbolPointSize, KeyboardGlyphMetrics.letterPointSize)
+    }
+}
+
