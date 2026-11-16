@@ -94,7 +94,7 @@ extension KeyboardViewController {
         language = language == .arabic ? .english : .arabic
         isShifted = false
         symbolPageIndex = 0
-        if page == .emoji { page = .letters }
+        // Keep the current page (including emoji); only language-dependent UI is rebuilt.
         saveLanguage()
         rebuild()
         tapHaptic(.action)

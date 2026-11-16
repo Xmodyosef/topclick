@@ -242,6 +242,7 @@ extension KeyboardViewController {
 
         switch gesture.state {
         case .began:
+            emojiTransitionGeneration &+= 1
             closeSkinPicker()
             // Scroll stays on until the finger is clearly horizontal.
 
@@ -277,8 +278,12 @@ extension KeyboardViewController {
                 next = emojiCategoryIndex - 1
             }
 
+            let transitionID = emojiTransitionGeneration
             let finish = { [weak self] in
-                guard let self else { return }
+                guard let self,
+                      self.emojiTransitionGeneration == transitionID,
+                      self.page == .emoji,
+                      self.emojiPager === host else { return }
                 self.emojiSwipeSnapshot?.removeFromSuperview()
                 self.emojiSwipeSnapshot = nil
                 self.emojiCollection?.isScrollEnabled = true
@@ -290,7 +295,10 @@ extension KeyboardViewController {
                 UIView.animate(withDuration: 0.16, delay: 0, options: [.curveEaseIn]) {
                     host.transform = CGAffineTransform(translationX: outX, y: 0)
                 } completion: { [weak self] _ in
-                    guard let self else { return }
+                    guard let self,
+                          self.emojiTransitionGeneration == transitionID,
+                          self.page == .emoji,
+                          self.emojiPager === host else { return }
                     self.emojiCategoryIndex = next
                     self.refreshTabs()
                     self.emojiCollection?.setContentOffset(.zero, animated: false)
@@ -301,7 +309,11 @@ extension KeyboardViewController {
                     host.transform = CGAffineTransform(translationX: -outX, y: 0)
                     UIView.animate(withDuration: 0.22, delay: 0, usingSpringWithDamping: 0.9, initialSpringVelocity: 0.35, options: [.curveEaseOut]) {
                         host.transform = .identity
-                    } completion: { _ in
+                    } completion: { [weak self] _ in
+                        guard let self,
+                              self.emojiTransitionGeneration == transitionID,
+                              self.page == .emoji,
+                              self.emojiPager === host else { return }
                         self.emojiCollection?.isScrollEnabled = true
                         self.tapHaptic(.action)
                         if self.emojiPack.indices.contains(next) {

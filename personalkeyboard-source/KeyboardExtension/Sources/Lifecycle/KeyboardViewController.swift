@@ -16,6 +16,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var isShifted = false
     var symbolPageIndex = 0
     var emojiCategoryIndex = 0
+    /// Invalidates callbacks from emoji animations when the page is rebuilt or hidden.
+    var emojiTransitionGeneration: UInt64 = 0
     var palette = NaqraPalette.current()
 
     // Keep the extension light: a solid background avoids a live blur pass.
@@ -178,8 +180,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         holdTimer?.invalidate()
         holdTimer = nil
         hideHoldPopup()
-        hideEmojiSkinBar()
-        endSkinSession()
+        cancelEmojiTransientInteractions()
         hideKeyPreview()
         hideClipboardPanel()
         pendingInserted = false

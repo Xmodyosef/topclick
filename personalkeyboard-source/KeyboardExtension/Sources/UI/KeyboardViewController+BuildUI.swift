@@ -149,14 +149,29 @@ extension KeyboardViewController {
         rootStack.setContentCompressionResistancePriority(.required, for: .vertical)
         installThemeTraceStrip()
     }
+    /// Cancel transient emoji overlays and stale animation callbacks before replacing the page.
+    func cancelEmojiTransientInteractions() {
+        emojiTransitionGeneration &+= 1
+        if let pager = emojiPager {
+            pager.layer.removeAllAnimations()
+            pager.transform = .identity
+        }
+        emojiSwipeSnapshot?.removeFromSuperview()
+        emojiSwipeSnapshot = nil
+        emojiCollection?.isScrollEnabled = true
+        closeSkinPicker()
+    }
+
     func rebuild() {
         hideKeyPreview()
         hideClipboardPanel()
-        emojiPager = nil
+        cancelEmojiTransientInteractions()
         emojiCollection?.dataSource = nil
         emojiCollection?.delegate = nil
         emojiCollection = nil
         emojiTabs = nil
+        emojiPager = nil
+        emojiSkinLongPress = nil
         letterKeyButtons = []
         shiftKeyButton = nil
         palette = NaqraPalette.current()

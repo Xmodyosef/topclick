@@ -40,7 +40,7 @@ jobs:
       - name: Validate Naqra source contracts
         run: python3 .github/scripts/validate_naqra.py personalkeyboard-source
 
-      - name: Validate rolling version set
+      - name: Validate unified version set
         working-directory: personalkeyboard-source
         run: python3 scripts/bump_version.py --check
 
@@ -205,9 +205,9 @@ jobs:
           test -n "$APP"
           cp -R "$APP" Payload/
           # Display name only. Do not rewrite MARKETING_VERSION or CURRENT_PROJECT_VERSION.
-          ROLLING=$(python3 -c "import re, pathlib; t=pathlib.Path('project.yml').read_text(); m=re.search(r'(?m)^\\s+ROLLING_VERSION:\\s*[\"\']?([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)', t); assert m, 'ROLLING_VERSION missing'; print(m.group(1))")
-          test -n "$ROLLING"
-          IPA="PersonalKeyboard-${ROLLING}.ipa"
+          VERSION="$(tr -d '\r\n' < VERSION)"
+          test -n "$VERSION"
+          IPA="PersonalKeyboard-${VERSION}.ipa"
           zip -r "$IPA" Payload
           shasum -a 256 "$IPA" > "${IPA}.sha256"
           echo "IPA_NAME=$IPA" >> "$GITHUB_ENV"
