@@ -115,16 +115,11 @@ jobs:
         run: |
           cd personalkeyboard-source
           PROJECT=$(find . -name "*.xcodeproj" -print -quit)
-          # Ad-hoc identity "-" embeds CODE_SIGN_ENTITLEMENTS during the
-          # CodeSign phase, which Xcode runs after Copy Bundle Resources.
-          # Command-line settings override project.yml CODE_SIGNING_ALLOWED=NO.
+          # CI builds an unsigned IPA only. The owner signs on iPhone with Feather or ESign.
           xcodebuild -project "$PROJECT" -scheme "PersonalKeyboard" -sdk iphoneos -configuration Release -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=YES \
-            CODE_SIGN_IDENTITY=- \
+            CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM= \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGN_IDENTITY="" \
             build
 
       - name: Ensure keyboard resources are embedded
@@ -136,8 +131,8 @@ jobs:
           APPEX="$APP/PlugIns/KeyboardExtension.appex"
           test -d "$APPEX"
           # XcodeGen does not emit a Copy Bundle Resources phase for these files,
-          # so they are absent after xcodebuild. Copy them now, then the next
-          # step re-signs. Nothing may modify the bundles after that re-sign.
+          # so they are absent after xcodebuild. Copy them into the unsigned bundle
+          # before packaging; signing is performed later on the owner's iPhone.
           copied=0
           while IFS= read -r -d '' source; do
             test -s "$source"
@@ -169,33 +164,6 @@ jobs:
           test -n "$APP"
           python3 ../.github/scripts/validate_built_app.py "$APP"
 
-      # Copying resources above breaks the ad-hoc signature. Re-sign after that
-      # copy, extension first, and do not modify either bundle afterwards.
-      - name: Re-sign after resource copy and prove App Group
-        working-directory: personalkeyboard-source
-        run: |
-          set -euo pipefail
-          APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
-          test -n "$APP"
-          APPEX="$APP/PlugIns/KeyboardExtension.appex"
-          test -x "$APP/PersonalKeyboard"
-          test -x "$APPEX/KeyboardExtension"
-          APP_ENT="App/Config/PersonalKeyboard.entitlements"
-          EXT_ENT="KeyboardExtension/Config/KeyboardExtension.entitlements"
-          test -s "$APP_ENT"
-          test -s "$EXT_ENT"
-          codesign --force --sign - \
-            --entitlements "$EXT_ENT" \
-            --generate-entitlement-der \
-            "$APPEX"
-          codesign --force --sign - \
-            --entitlements "$APP_ENT" \
-            --generate-entitlement-der \
-            "$APP"
-          codesign --display --entitlements :- "$APP/PersonalKeyboard" | tee "$RUNNER_TEMP/app-entitlements.txt" | grep -F 'group.Mark1'
-          codesign --display --entitlements :- "$APPEX/KeyboardExtension" | tee "$RUNNER_TEMP/extension-entitlements.txt" | grep -F 'group.Mark1'
-          echo "App Group present in PersonalKeyboard and KeyboardExtension"
-
       - name: Create IPA
         run: |
           set -euo pipefail
@@ -216,7 +184,7 @@ jobs:
       - name: Upload IPA
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: Fresh-Entitlement-Embedded-IPA
+          name: Fresh-Unsigned-IPA
           path: |
             personalkeyboard-source/PersonalKeyboard-*.ipa
             personalkeyboard-source/PersonalKeyboard-*.ipa.sha256
