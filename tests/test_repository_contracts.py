@@ -34,6 +34,19 @@ def test_naqra_source_contracts() -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_unified_version_source_and_bundle_placeholders() -> None:
+    source = ROOT / "personalkeyboard-source"
+    assert (source / "VERSION").read_text(encoding="utf-8").strip() == "0.2.10"
+    project = (source / "project.yml").read_text(encoding="utf-8")
+    assert project.count('MARKETING_VERSION: "0.2.10"') == 2
+    assert project.count("CURRENT_PROJECT_VERSION: 32") == 2
+    assert "ROLLING_VERSION" not in project
+    for path in (source / "App/Config/Info.plist", source / "KeyboardExtension/Config/Info.plist"):
+        content = path.read_text(encoding="utf-8")
+        assert "$(MARKETING_VERSION)" in content
+        assert "$(CURRENT_PROJECT_VERSION)" in content
+
+
 def test_ios_source_tree_contracts() -> None:
     source = ROOT / "personalkeyboard-source"
     required = (

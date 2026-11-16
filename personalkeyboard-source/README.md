@@ -3,7 +3,7 @@
 لوحة مفاتيح iOS عربية/إنجليزية.
 
 ## الحالة
-- الإصدار: **0.2.8.1** (build 30)
+- الإصدار: **0.2.10** (build 32)
 - الحد الأدنى: iOS 17
 - التوقيع: IPA غير موقّع (ESign / Feather)
 
@@ -19,7 +19,7 @@
 - PRODUCT_NAME: PersonalKeyboard
 - Bundle: app.personal.PersonalKeyboard
 - Extension: app.personal.PersonalKeyboard.KeyboardExtension
-- App Group: group.app.personal.PersonalKeyboard
+- App Group: group.Mark1
 - Notification: app.personal.PersonalKeyboard.prefs
 - DisplayName: نقرة
 
@@ -39,6 +39,6 @@ GitHub Actions → IPA غير موقّع → ESign
 
 ## التحميل
 
-الإصدار الحالي: [v0.2.8.1](https://github.com/Xmodyosef/topclick/releases/tag/v0.2.8.1)
+الإصدار الموحد: **0.2.10** (build **32**).
 
-IPA: [PersonalKeyboard-unsigned.ipa](https://github.com/Xmodyosef/topclick/releases/download/v0.2.8.1/PersonalKeyboard-unsigned.ipa)
+اسم IPA المعتمد: `PersonalKeyboard-0.2.10.ipa`؛ ينشر Release بعد نجاح GitHub Actions ومراجعة الحزمة.
