@@ -2,12 +2,24 @@ import UIKit
 
 // MARK: - KeyboardViewController + Hold (long-press + char press)
 extension KeyboardViewController {
+    /// Normalize punctuation and symbol glyphs against the letter keys without
+    /// shrinking digits or changing the fixed keyboard/row geometry.
+    func keyDisplayFont(for key: String) -> UIFont {
+        guard page == .symbols else { return letterFont }
+        let containsSymbolGlyph = key.unicodeScalars.contains {
+            CharacterSet.symbols.contains($0) || CharacterSet.punctuationCharacters.contains($0)
+        }
+        return containsSymbolGlyph
+            ? .systemFont(ofSize: 24, weight: .medium)
+            : letterFont
+    }
+
     func charKey(_ t: String, rowIdx: Int) -> UIButton {
         let b = KeyButton(type: .system)
         b.setTitle(t, for: .normal)
-        b.titleLabel?.font = letterFont
+        b.titleLabel?.font = keyDisplayFont(for: t)
         b.titleLabel?.adjustsFontSizeToFitWidth = true
-        b.titleLabel?.minimumScaleFactor = 0.7
+        b.titleLabel?.minimumScaleFactor = 0.62
         paint(b)
         b.tag = rowIdx
         b.accessibilityLabel = t
@@ -228,6 +240,8 @@ extension KeyboardViewController {
         if let keyPreview { return keyPreview }
         let label = UILabel()
         label.font = .systemFont(ofSize: 32, weight: .medium)
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.62
         label.textAlignment = .center
         label.isUserInteractionEnabled = false
         label.isOpaque = true
@@ -243,6 +257,7 @@ extension KeyboardViewController {
     func showKeyPreview(_ text: String, from button: UIButton) {
         let label = ensureKeyPreview()
         label.text = text
+        label.font = keyDisplayFont(for: text)
         label.textColor = palette.text
         label.backgroundColor = palette.key
         label.layer.borderColor = (palette.blurDark ? UIColor.white.withAlphaComponent(0.22) : UIColor.black.withAlphaComponent(0.14)).cgColor
