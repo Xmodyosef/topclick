@@ -27,12 +27,14 @@ xcodebuild -project PersonalKeyboard.xcodeproj -scheme PersonalKeyboard \
 
 تُقسم مصادر iOS حسب الهدف والوظيفة: `personalkeyboard-source/App/Sources/` للتطبيق، و`KeyboardExtension/Sources/` للوحة، و`Shared/Models/` للكود المشترك. توجد ملفات الإعداد في مجلدي `Config/`، وموارد الامتداد في `KeyboardExtension/Resources/`، والاختبارات في `Tests/NaqraTests/`. خريطة تفصيلية في [`SPLIT_MAP.txt`](personalkeyboard-source/SPLIT_MAP.txt).
 
-## الإصدار الحالي
+## الإصدار الموحد
 
-- **v0.2.8.1** — [Release](https://github.com/Xmodyosef/topclick/releases/tag/v0.2.8.1)
-- IPA: [PersonalKeyboard-unsigned.ipa](https://github.com/Xmodyosef/topclick/releases/download/v0.2.8.1/PersonalKeyboard-unsigned.ipa)
+- **Version:** `0.2.10` — مصدر الحقيقة في `personalkeyboard-source/VERSION`.
+- **Build:** `32` — رقم بناء مستقل ومتزايد، موحّد للتطبيق وامتداد لوحة المفاتيح.
+- **IPA name:** `PersonalKeyboard-0.2.10.ipa`.
+- **Release tag المعتمد للإصدار القادم:** `v0.2.10` بعد نجاح CI ومراجعة الحزمة.
 
 ### ملاحظات التثبيت
-1. نزّل IPA غير موقّع
-2. وقّع عبر ESign أو Feather مع **App Group** `group.app.personal.PersonalKeyboard`
-3. فعّل اللوحة + **Full Access** من إعدادات iOS
+1. نزّل IPA الناتج من GitHub Actions بعد نشره.
+2. وقّع عبر ESign أو Feather مع **App Group** `group.Mark1`.
+3. فعّل لوحة نقرة من إعدادات iOS.

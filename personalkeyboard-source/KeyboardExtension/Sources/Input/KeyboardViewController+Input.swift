@@ -6,6 +6,7 @@ import AudioToolbox
 // MARK: - KeyboardViewController + Input (suggestions, language, shift, delete, space, enter; no autocorrect)
 extension KeyboardViewController {
     func saveLanguage() { ThemeIO.set("lastLanguage", value: language == .english ? "en" : "ar") }
+    func resetSpaceTapSequence() { lastSpaceTap = nil }
 
     func makeSuggestionsRow(words: [String]? = nil) -> UIView {
         let s = UIStackView()
@@ -91,10 +92,11 @@ extension KeyboardViewController {
     }
 
     @objc func languageTapped() {
+        resetSpaceTapSequence()
         language = language == .arabic ? .english : .arabic
         isShifted = false
         symbolPageIndex = 0
-        if page == .emoji { page = .letters }
+        // Keep the current page (including emoji); only language-dependent UI is rebuilt.
         saveLanguage()
         rebuild()
         tapHaptic(.action)
@@ -103,6 +105,7 @@ extension KeyboardViewController {
     }
 
     @objc func shiftTapped() {
+        resetSpaceTapSequence()
         isShifted.toggle()
         applyShiftSurface()
         tapHaptic(.action)

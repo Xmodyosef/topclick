@@ -34,6 +34,32 @@ def test_naqra_source_contracts() -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_unified_version_source_and_bundle_placeholders() -> None:
+    source = ROOT / "personalkeyboard-source"
+    assert (source / "VERSION").read_text(encoding="utf-8").strip() == "0.2.10"
+    project = (source / "project.yml").read_text(encoding="utf-8")
+    assert project.count('MARKETING_VERSION: "0.2.10"') == 2
+    assert project.count("CURRENT_PROJECT_VERSION: 32") == 2
+    assert "ROLLING_VERSION" not in project
+    for path in (source / "App/Config/Info.plist", source / "KeyboardExtension/Config/Info.plist"):
+        content = path.read_text(encoding="utf-8")
+        assert "<key>CFBundleShortVersionString</key>" in content
+        assert "<string>0.2.10</string>" in content
+        assert "<key>CFBundleVersion</key>" in content
+        assert "<string>32</string>" in content
+
+
+def test_non_space_keyboard_actions_break_double_space_sequence() -> None:
+    source = ROOT / "personalkeyboard-source/KeyboardExtension/Sources"
+    input_source = (source / "Input/KeyboardViewController+Input.swift").read_text(encoding="utf-8")
+    emoji_source = (source / "Features/KeyboardViewController+Emoji.swift").read_text(encoding="utf-8")
+    lifecycle = (source / "Lifecycle/KeyboardViewController.swift").read_text(encoding="utf-8")
+    assert "func resetSpaceTapSequence() { lastSpaceTap = nil }" in input_source
+    assert "resetSpaceTapSequence()" in input_source.split("@objc func languageTapped()", 1)[1].split("@objc func shiftTapped()", 1)[0]
+    assert "resetSpaceTapSequence()" in emoji_source.split("@objc func emojiTapped()", 1)[1].split("func refreshTabs()", 1)[0]
+    assert "resetSpaceTapSequence()" in lifecycle.split("@objc func symbolsOrLettersTapped()", 1)[1].split("static func loadFrequent()", 1)[0]
+
+
 def test_ios_source_tree_contracts() -> None:
     source = ROOT / "personalkeyboard-source"
     required = (
@@ -61,3 +87,20 @@ def test_clipboard_privacy_default_does_not_destroy_existing_history() -> None:
     block = source.split("func ensurePrivacyDefault()", 1)[1].split("\n    }", 1)[0]
     assert 'ThemeIO.set("clipboardHistoryEnabled", value: false)' in block
     assert 'ThemeIO.set(key, value: "")' not in block
+
+
+def test_pr131_device_validation_protocol_is_explicit_about_evidence() -> None:
+    plan = (ROOT / "docs/PR131_DEVICE_VALIDATION.md").read_text(encoding="utf-8")
+    required = (
+        "T4 — `needsInputModeSwitchKey` transition",
+        "INCONCLUSIVE FOR TRANSITION",
+        "T8 — Arabic combining marks and deletion",
+        "Unicode scalar values and grapheme-cluster count",
+        "Peak Resident",
+        "VM Tracker",
+        "at least 20 runs",
+        "NOT RUN",
+        "Owner approval is still required",
+    )
+    for phrase in required:
+        assert phrase in plan, f"PR #131 validation protocol missing: {phrase}"
