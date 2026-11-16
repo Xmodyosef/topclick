@@ -27,7 +27,7 @@ extension KeyboardViewController {
         // Symbols: keep exactly the designed keys (10×4) — no filler clutter when layout is complete.
         let displayKeys = keys
         if page == .symbols {
-            s.spacing = 5  // slightly airier than letters (4)
+            s.spacing = 4  // Match letter-key spacing and preserve symbol width.
         }
         var rowButtons: [UIButton] = []
         for key in displayKeys {
