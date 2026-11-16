@@ -47,6 +47,17 @@ def test_unified_version_source_and_bundle_placeholders() -> None:
         assert "$(CURRENT_PROJECT_VERSION)" in content
 
 
+def test_non_space_keyboard_actions_break_double_space_sequence() -> None:
+    source = ROOT / "personalkeyboard-source/KeyboardExtension/Sources"
+    input_source = (source / "Input/KeyboardViewController+Input.swift").read_text(encoding="utf-8")
+    emoji_source = (source / "Features/KeyboardViewController+Emoji.swift").read_text(encoding="utf-8")
+    lifecycle = (source / "Lifecycle/KeyboardViewController.swift").read_text(encoding="utf-8")
+    assert "func resetSpaceTapSequence() { lastSpaceTap = nil }" in input_source
+    assert "resetSpaceTapSequence()" in input_source.split("@objc func languageTapped()", 1)[1].split("@objc func shiftTapped()", 1)[0]
+    assert "resetSpaceTapSequence()" in emoji_source.split("@objc func emojiTapped()", 1)[1].split("func refreshTabs()", 1)[0]
+    assert "resetSpaceTapSequence()" in lifecycle.split("@objc func symbolsOrLettersTapped()", 1)[1].split("static func loadFrequent()", 1)[0]
+
+
 def test_ios_source_tree_contracts() -> None:
     source = ROOT / "personalkeyboard-source"
     required = (

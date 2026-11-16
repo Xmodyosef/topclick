@@ -183,6 +183,7 @@ extension KeyboardViewController {
 
     @objc func emojiTab(_ sender: UIButton) {
         guard emojiPack.indices.contains(sender.tag) else { return }
+        resetSpaceTapSequence()
         closeSkinPicker()
         emojiCategoryIndex = sender.tag
         refreshTabs()
@@ -193,6 +194,7 @@ extension KeyboardViewController {
     }
 
     @objc func emojiTapped() {
+        resetSpaceTapSequence()
         if page == .emoji {
             page = .letters
         } else {
@@ -242,6 +244,7 @@ extension KeyboardViewController {
 
         switch gesture.state {
         case .began:
+            resetSpaceTapSequence()
             emojiTransitionGeneration &+= 1
             closeSkinPicker()
             // Scroll stays on until the finger is clearly horizontal.

@@ -175,6 +175,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        resetSpaceTapSequence()
         deleteTimer?.invalidate()
         deleteTimer = nil
         holdTimer?.invalidate()
@@ -331,12 +332,14 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     @objc func symbolPageToggled() {
         guard page == .symbols, symbolPages.count > 1 else { return }
+        resetSpaceTapSequence()
         symbolPageIndex = (symbolPageIndex + 1) % symbolPages.count
         rebuild()
         tapHaptic(.action)
     }
 
     @objc func symbolsOrLettersTapped() {
+        resetSpaceTapSequence()
         if page == .symbols {
             page = .letters
             symbolPageIndex = 0
