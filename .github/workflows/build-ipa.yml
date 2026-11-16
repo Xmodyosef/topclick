@@ -155,7 +155,7 @@ jobs:
         working-directory: personalkeyboard-source
         run: |
           # xcodebuild can still rewrite the entitlements sources after reading them.
-          # Restore the committed plists. This does not touch the signed binaries.
+          # Restore the committed plists. This does not modify the packaged app bundle.
           git checkout HEAD -- \
             App/Config/PersonalKeyboard.entitlements \
             KeyboardExtension/Config/KeyboardExtension.entitlements
