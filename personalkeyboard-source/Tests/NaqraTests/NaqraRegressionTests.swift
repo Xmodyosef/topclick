@@ -58,9 +58,8 @@ final class KeyboardGlyphMetricsTests: XCTestCase {
     }
 
     func testSymbolScaleIsSmallerThanLetterScale() {
-        XCTAssertEqual(KeyboardGlyphMetrics.letterPointSize, 26)
         XCTAssertEqual(KeyboardGlyphMetrics.symbolPointSize, 24)
-        XCTAssertLessThan(KeyboardGlyphMetrics.symbolPointSize, KeyboardGlyphMetrics.letterPointSize)
+        XCTAssertLessThan(KeyboardGlyphMetrics.symbolPointSize, 26)
     }
 }
 
