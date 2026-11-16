@@ -5,13 +5,10 @@ extension KeyboardViewController {
     /// Normalize punctuation and symbol glyphs against the letter keys without
     /// shrinking digits or changing the fixed keyboard/row geometry.
     func keyDisplayFont(for key: String) -> UIFont {
-        guard page == .symbols else { return letterFont }
-        let containsSymbolGlyph = key.unicodeScalars.contains {
-            CharacterSet.symbols.contains($0) || CharacterSet.punctuationCharacters.contains($0)
+        guard page == .symbols, KeyboardGlyphMetrics.usesSymbolScale(key) else {
+            return letterFont
         }
-        return containsSymbolGlyph
-            ? .systemFont(ofSize: 24, weight: .medium)
-            : letterFont
+        return .systemFont(ofSize: KeyboardGlyphMetrics.symbolPointSize, weight: .medium)
     }
 
     func charKey(_ t: String, rowIdx: Int) -> UIButton {
