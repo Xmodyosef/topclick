@@ -43,8 +43,10 @@ def test_unified_version_source_and_bundle_placeholders() -> None:
     assert "ROLLING_VERSION" not in project
     for path in (source / "App/Config/Info.plist", source / "KeyboardExtension/Config/Info.plist"):
         content = path.read_text(encoding="utf-8")
-        assert "$(MARKETING_VERSION)" in content
-        assert "$(CURRENT_PROJECT_VERSION)" in content
+        assert "<key>CFBundleShortVersionString</key>" in content
+        assert "<string>0.2.10</string>" in content
+        assert "<key>CFBundleVersion</key>" in content
+        assert "<string>32</string>" in content
 
 
 def test_non_space_keyboard_actions_break_double_space_sequence() -> None:

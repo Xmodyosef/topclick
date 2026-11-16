@@ -5,9 +5,9 @@
   <key>CFBundleDisplayName</key>
   <string>نقرة</string>
   <key>CFBundleShortVersionString</key>
-  <string>$(MARKETING_VERSION)</string>
+  <string>0.2.10</string>
   <key>CFBundleVersion</key>
-  <string>$(CURRENT_PROJECT_VERSION)</string>
+  <string>32</string>
   <key>CFBundleIdentifier</key>
   <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
   <key>CFBundleExecutable</key>

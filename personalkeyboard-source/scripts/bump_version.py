@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import plistlib
 import re
 import stat
 import tempfile
@@ -50,12 +51,29 @@ def replace_project_values(project: str, version: str, build: int) -> str:
     return project
 
 
-def validate_info_plist(path: Path) -> None:
-    content = path.read_text(encoding="utf-8")
-    if content.count("<string>$(MARKETING_VERSION)</string>") != 1:
-        raise ValueError(f"{path} must use $(MARKETING_VERSION) exactly once")
-    if content.count("<string>$(CURRENT_PROJECT_VERSION)</string>") != 1:
-        raise ValueError(f"{path} must use $(CURRENT_PROJECT_VERSION) exactly once")
+def validate_info_plist(path: Path, version: str, build: int) -> None:
+    with path.open("rb") as handle:
+        info = plistlib.load(handle)
+    if info.get("CFBundleShortVersionString") != version:
+        raise ValueError(f"{path} short version does not match VERSION ({version})")
+    if str(info.get("CFBundleVersion")) != str(build):
+        raise ValueError(f"{path} build number does not match project.yml ({build})")
+
+
+def replace_plist_values(content: str, version: str, build: int) -> str:
+    content, version_count = re.subn(
+        r"(<key>CFBundleShortVersionString</key>\s*<string>)[^<]+(</string>)",
+        lambda match: f"{match.group(1)}{version}{match.group(2)}",
+        content,
+    )
+    content, build_count = re.subn(
+        r"(<key>CFBundleVersion</key>\s*<string>)[^<]+(</string>)",
+        lambda match: f"{match.group(1)}{build}{match.group(2)}",
+        content,
+    )
+    if version_count != 1 or build_count != 1:
+        raise ValueError("each Info.plist must contain exactly one short version and build value")
+    return content
 
 
 def atomic_write(updates: dict[Path, str]) -> None:
@@ -110,8 +128,8 @@ def main() -> int:
         raise ValueError(f"project.yml version {project_version} does not match VERSION {current_version}")
     if "ROLLING_VERSION" in project:
         raise ValueError("ROLLING_VERSION is retired")
-    validate_info_plist(app_info)
-    validate_info_plist(extension_info)
+    validate_info_plist(app_info, current_version, current_build)
+    validate_info_plist(extension_info, current_version, current_build)
 
     if args.check:
         print(f"Unified version valid: version={current_version}, build={current_build}, app=extension")
@@ -124,6 +142,8 @@ def main() -> int:
     updates = {
         version_path: new_version + "\n",
         project_path: replace_project_values(project, new_version, new_build),
+        app_info: replace_plist_values(app_info.read_text(encoding="utf-8"), new_version, new_build),
+        extension_info: replace_plist_values(extension_info.read_text(encoding="utf-8"), new_version, new_build),
     }
     atomic_write(updates)
     print(f"Updated unified version: version={new_version}, build={new_build}")

@@ -162,6 +162,7 @@ jobs:
           wc -c App/Config/PersonalKeyboard.entitlements KeyboardExtension/Config/KeyboardExtension.entitlements
           APP=$(find build/Build/Products/Release-iphoneos -type d -name 'PersonalKeyboard.app' -print -quit)
           test -n "$APP"
+          python3 ../skills/ios-keyboard-release-gate/scripts/check_keyboard_release.py . --built-app "$APP"
           python3 ../.github/scripts/validate_built_app.py "$APP"
 
       - name: Create IPA

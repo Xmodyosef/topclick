@@ -28,3 +28,11 @@ def test_project_version_values_are_updated_as_one_set() -> None:
     assert updated.count('MARKETING_VERSION: "0.2.11"') == 2
     assert updated.count("CURRENT_PROJECT_VERSION: 33") == 2
     assert "ROLLING_VERSION" not in updated
+
+
+def test_info_plist_values_are_updated_as_one_set() -> None:
+    source = SCRIPT.parent.parent
+    content = (source / "App/Config/Info.plist").read_text(encoding="utf-8")
+    updated = bump_version.replace_plist_values(content, "0.2.11", 33)
+    assert "<string>0.2.11</string>" in updated
+    assert "<string>33</string>" in updated

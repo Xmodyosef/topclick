@@ -4,7 +4,7 @@
 
 - `VERSION` is the only source of truth for the public three-part release version (SemVer), currently `0.2.10`.
 - `MARKETING_VERSION` is generated into both app and keyboard-extension targets from `VERSION` by `scripts/bump_version.py`.
-- `CFBundleShortVersionString` in both Info.plists uses `$(MARKETING_VERSION)`; `CFBundleVersion` uses `$(CURRENT_PROJECT_VERSION)`.
+- The version script writes the same `CFBundleShortVersionString` and `CFBundleVersion` values into both Info.plists; CI verifies them against `VERSION` and `project.yml`.
 - `CURRENT_PROJECT_VERSION` is a separate, monotonically increasing integer build identifier; it is not a second product version. Both targets must have the same value.
 - The four-part `ROLLING_VERSION` is retired. It must not appear in project settings, artifact names, or release instructions.
 
