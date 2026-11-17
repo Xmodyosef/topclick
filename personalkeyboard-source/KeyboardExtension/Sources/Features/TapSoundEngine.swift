@@ -2,7 +2,7 @@ import AudioToolbox
 import UIKit
 
 /// Plays short bundled keyboard clicks through AudioServices.
-/// No AVAudioEngine, player nodes, PCM buffers, or audio-session graph are created.
+/// Uses cached AudioServices identifiers without creating an audio-session graph.
 final class TapSoundEngine {
     static let shared = TapSoundEngine()
 
