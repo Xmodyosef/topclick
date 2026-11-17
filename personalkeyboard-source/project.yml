@@ -52,8 +52,6 @@ targets:
       - path: Shared/Models/SharedKeyboardData.swift
       - path: Shared/Models/ThemeTrace.swift
       - path: Shared/Models/SharedThemeCatalog.swift
-    # Explicit JSON files so XcodeGen copies them into KeyboardExtension.appex
-    # (folder resource alone was missing from the built unsigned IPA).
     resources:
       - path: KeyboardExtension/Resources/emoji_catalog.json
       - path: KeyboardExtension/Resources/emoji_skin_map.json
@@ -61,6 +59,7 @@ targets:
       - path: KeyboardExtension/Resources/soft.caf
       - path: KeyboardExtension/Resources/thocky.caf
       - path: KeyboardExtension/Resources/creamy.caf
+      - path: KeyboardExtension/Resources/piano.caf
     settings:
       base:
         PRODUCT_NAME: KeyboardExtension
@@ -88,8 +87,6 @@ targets:
       - target: PersonalKeyboard
     settings:
       base:
-        # Explicit product name: empty PRODUCT_NAME produced
-        # PersonalKeyboard.app/PlugIns/.xctest and "Multiple commands produce" under xcodebuild test.
         PRODUCT_NAME: NaqraTests
         PRODUCT_BUNDLE_IDENTIFIER: app.personal.PersonalKeyboardTests
         GENERATE_INFOPLIST_FILE: YES
