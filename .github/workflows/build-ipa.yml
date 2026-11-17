@@ -142,13 +142,15 @@ jobs:
             copied=$((copied + 1))
             echo "embedded resource: $name"
           done < <(find KeyboardExtension/Resources -type f -print0)
-          test "$copied" -ge 6
+          test "$copied" -ge 8
           test -s "$APPEX/emoji_catalog.json"
           test -s "$APPEX/emoji_skin_map.json"
           test -s "$APPEX/keyboard_layouts.json"
           test -s "$APPEX/soft.caf"
           test -s "$APPEX/thocky.caf"
           test -s "$APPEX/creamy.caf"
+          test -s "$APPEX/piano.caf"
+          test -s "$APPEX/typewriter.caf"
           echo "keyboard resources embedded count=$copied"
 
       - name: Verify built app bundle
@@ -195,8 +197,7 @@ jobs:
       # remove the artifact. Paths/xcodebuild flags unchanged from pre-split CI.
       - name: Run XCTest regression suite
         id: xctest
-        continue-on-error: true
-        timeout-minutes: 5
+        timeout-minutes: 8
         run: |
           set -euo pipefail
           cd personalkeyboard-source
