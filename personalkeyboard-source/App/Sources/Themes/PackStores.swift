@@ -35,6 +35,7 @@ private enum PackInstallBook {
         var set = installed(free: free, key: key)
         set.insert(id)
         let paid = Array(set.subtracting(free)).sorted()
+        // One dual-write path only (standard + App Group + Darwin).
         ThemeStore.write(key, value: paid)
     }
 }
@@ -42,19 +43,23 @@ private enum PackInstallBook {
 // MARK: - Theme packs
 
 enum ThemePackStore {
+    /// Every catalog theme ships in the app — no download step.
     static var freeIDs: Set<String> { Set(ThemeCatalog.all.map(\.id)) }
 
     static func isFree(_ id: String) -> Bool { freeIDs.contains(id) }
 
     static func isInstalled(_ id: String) -> Bool {
+        // Catalog themes are always available.
         if freeIDs.contains(id) { return true }
         return PackInstallBook.installed(free: freeIDs, key: ContentPackKeys.installedThemes).contains(id)
     }
 
+    /// Persist install only — does not change active theme.
     static func markInstalled(_ id: String) {
         PackInstallBook.markInstalled(id, free: freeIDs, key: ContentPackKeys.installedThemes)
     }
 
+    /// Switch active theme immediately for any catalog id.
     @discardableResult
     static func apply(_ id: String) -> Bool {
         guard ThemeCatalog.all.contains(where: { $0.id == id }) else { return false }
@@ -64,7 +69,7 @@ enum ThemePackStore {
     }
 }
 
-// MARK: - Sound packs
+// MARK: - Sound packs (catalog lives with install store — engine has frequencies only)
 
 enum SoundPackStore {
     static let freeIDs: Set<String> = ["system", "none"]
@@ -76,7 +81,7 @@ enum SoundPackStore {
     }
 
     /// Single source of truth for sound IDs shown in the app.
-    /// Every custom ID must map to a CAF in KeyboardExtension/Resources.
+    /// Must stay aligned with TapSoundEngine.customFrequencies keys.
     static let catalog: [Pack] = [
         .init(id: "system", title: "النظام", blurb: "نقرة iOS الافتراضية"),
         .init(id: "creamy", title: "كريمي", blurb: "نغمات دافئة"),
@@ -103,6 +108,7 @@ enum SoundPackStore {
         PackInstallBook.markInstalled(id, free: freeIDs, key: ContentPackKeys.installedSounds)
     }
 
+    /// Apply sound. Other installed packs stay.
     @discardableResult
     static func apply(_ id: String) -> Bool {
         guard knownIDs.contains(id), isInstalled(id) else { return false }
@@ -111,6 +117,7 @@ enum SoundPackStore {
         return true
     }
 
+    /// Master mute/unmute without losing last non-none choice.
     static func setEnabled(_ enabled: Bool) {
         if enabled {
             let current = ThemeStore.string(ContentPackKeys.soundChoice) ?? "system"
@@ -126,15 +133,22 @@ enum SoundPackStore {
     }
 }
 
+// MARK: - ThemeStore array helper
+
 extension ThemeStore {
     static func stringArray(_ key: String) -> [String]? {
+        // Suite first so extension and container agree (connectors review 2026-10-29).
         if let a = suite.array(forKey: key) as? [String] { return a }
         if let a = UserDefaults.standard.array(forKey: key) as? [String] { return a }
         return nil
     }
 }
 
+// MARK: - Special action-key color (one system ColorPicker → all control keys)
+// Shared accent for all control keys including emoji.
+
 enum SpecialKeyColorStore {
+    /// Keys that accept a shared accent override (includes emoji).
     static let slots = ["shift", "language", "enter", "delete", "symbols", "period", "emoji"]
 
     static func storedRGBA(for slot: String) -> String? {
@@ -143,6 +157,7 @@ enum SpecialKeyColorStore {
         return raw.isEmpty ? nil : raw
     }
 
+    /// Prefer period/shift sample; fallback Naqra accent blue-ish.
     static func loadUIColor() -> UIColor {
         for slot in slots {
             if let raw = storedRGBA(for: slot) {
@@ -167,6 +182,7 @@ enum SpecialKeyColorStore {
         }
     }
 
+    /// Back to theme accent (empty slots → NaqraPalette.color uses accent).
     static func clearToThemeAccent() {
         for slot in slots {
             ThemeStore.write("specialKey.\(slot)", value: "")
