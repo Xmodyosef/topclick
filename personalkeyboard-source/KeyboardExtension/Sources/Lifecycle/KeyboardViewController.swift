@@ -98,9 +98,19 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var englishLower: [[String]] { KeyboardDataLoader.layouts().englishLower }
     var englishUpper: [[String]] { KeyboardDataLoader.layouts().englishUpper }
     var symbolPages: [[[String]]] {
-        language == .arabic
+        let configured = language == .arabic
             ? KeyboardDataLoader.layouts().arabicSymbolPages
             : KeyboardDataLoader.layouts().englishSymbolPages
+        let fallback = language == .arabic
+            ? KeyboardDataLoader.builtinArabicSymbols
+            : KeyboardDataLoader.builtinEnglishSymbols
+        var pages = Array(configured.prefix(2))
+        if pages.isEmpty {
+            pages = Array(fallback.prefix(2))
+        } else if pages.count == 1, fallback.count > 1 {
+            pages.append(fallback[1])
+        }
+        return pages
     }
     var emojiPack: [(icon: String, items: [String])] = []
 
@@ -143,8 +153,6 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
             appliedThemeId = sig
             palette = next
             rebuild()
-        } else {
-            refreshThemeTraceStrip()
         }
     }
 

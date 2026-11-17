@@ -55,15 +55,15 @@ extension KeyboardViewController {
         let wrap = UIStackView()
         wrap.axis = .horizontal
         wrap.spacing = 6
-        // Tabs follow keyboard language (RTL Arabic, LTR English).
-        wrap.semanticContentAttribute = language == .arabic ? .forceRightToLeft : .forceLeftToRight
+        // Emoji categories always begin at the left edge in both Arabic and English.
+        wrap.semanticContentAttribute = .forceLeftToRight
         let scroller = UIScrollView()
         scroller.showsHorizontalScrollIndicator = false
-        scroller.semanticContentAttribute = wrap.semanticContentAttribute
+        scroller.semanticContentAttribute = .forceLeftToRight
         let s = UIStackView()
         s.axis = .horizontal
         s.spacing = 4
-        s.semanticContentAttribute = wrap.semanticContentAttribute
+        s.semanticContentAttribute = .forceLeftToRight
         s.translatesAutoresizingMaskIntoConstraints = false
         scroller.addSubview(s)
         emojiTabs = s

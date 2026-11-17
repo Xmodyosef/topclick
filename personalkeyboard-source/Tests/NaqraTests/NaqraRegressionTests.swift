@@ -42,3 +42,14 @@ final class LatestSelectionGateTests: XCTestCase {
         XCTAssertFalse(aIsStillCurrent)
     }
 }
+
+
+final class SymbolPageCountTests: XCTestCase {
+    func testArabicSymbolsContainExactlyTwoPages() {
+        XCTAssertEqual(KeyboardDataLoader.builtinArabicSymbols.count, 2)
+    }
+
+    func testEnglishSymbolsContainExactlyTwoPages() {
+        XCTAssertEqual(KeyboardDataLoader.builtinEnglishSymbols.count, 2)
+    }
+}

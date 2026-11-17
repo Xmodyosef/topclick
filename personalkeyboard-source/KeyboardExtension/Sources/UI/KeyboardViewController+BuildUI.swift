@@ -46,8 +46,10 @@ extension KeyboardViewController {
     }
 
     func symbolKeyRowHeight() -> CGFloat {
+        // Symbols now share the full 34pt task toolbar and 44pt bottom row.
+        // Four symbol rows therefore use the same 51pt key-row height as letters.
         let flex = symbolRowsCount()
-        return filledRowHeight(flexibleRows: flex, fixedHeight: 44, arrangedCount: flex + 1)
+        return filledRowHeight(flexibleRows: flex, fixedHeight: 34 + 44, arrangedCount: flex + 2)
     }
 
     /// How many symbol rows to show. Four rows: three full + one action (delete).
@@ -147,7 +149,6 @@ extension KeyboardViewController {
         ])
         rootStack.setContentHuggingPriority(.required, for: .vertical)
         rootStack.setContentCompressionResistancePriority(.required, for: .vertical)
-        installThemeTraceStrip()
     }
     /// Cancel transient emoji overlays and stale animation callbacks before replacing the page.
     func cancelEmojiTransientInteractions() {
@@ -199,6 +200,8 @@ extension KeyboardViewController {
             }
             rootStack.addArrangedSubview(makeBottom())
         case .symbols:
+            // Match the letters page: clipboard, suggestion/spacer, translate, dismiss.
+            rootStack.addArrangedSubview(makeToolbar())
             let pages = symbolPages
             let pageIdx = min(max(symbolPageIndex, 0), max(pages.count - 1, 0))
             let allRows = pages.isEmpty ? [] : pages[pageIdx]
@@ -227,7 +230,6 @@ extension KeyboardViewController {
         }
         updateHeightForCurrentSize()
         view.setNeedsLayout()
-        refreshThemeTraceStrip()
     }
 
     /// Letter layouts for the current language/shift state.
