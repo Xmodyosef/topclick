@@ -23,9 +23,11 @@ targets:
       - path: Shared/Models/SharedKeyboardData.swift
       - path: Shared/Models/ThemeTrace.swift
       - path: Shared/Models/SharedThemeCatalog.swift
+      - path: Shared/Models/KeyboardGlyphMetrics.swift
     settings:
       base:
         PRODUCT_NAME: PersonalKeyboard
+        ENABLE_TESTABILITY: YES
         PRODUCT_BUNDLE_IDENTIFIER: app.personal.PersonalKeyboard
         MARKETING_VERSION: "0.2.10"
         CURRENT_PROJECT_VERSION: 32
@@ -52,6 +54,7 @@ targets:
       - path: Shared/Models/SharedKeyboardData.swift
       - path: Shared/Models/ThemeTrace.swift
       - path: Shared/Models/SharedThemeCatalog.swift
+      - path: Shared/Models/KeyboardGlyphMetrics.swift
     # Explicit JSON files so XcodeGen copies them into KeyboardExtension.appex
     # (folder resource alone was missing from the built unsigned IPA).
     resources:
@@ -61,6 +64,8 @@ targets:
       - path: KeyboardExtension/Resources/soft.caf
       - path: KeyboardExtension/Resources/thocky.caf
       - path: KeyboardExtension/Resources/creamy.caf
+      - path: KeyboardExtension/Resources/piano.caf
+      - path: KeyboardExtension/Resources/typewriter.caf
     settings:
       base:
         PRODUCT_NAME: KeyboardExtension
