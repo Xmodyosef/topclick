@@ -3,14 +3,14 @@ import XCTest
 
 final class ClipboardHistoryCodecTests: XCTestCase {
     func testJSONRoundTripPreservesUnicodeAndLegacySeparatorCharacters() throws {
-        let original = ["before\u{1F}inside", "مرحبا 👋", "English"]
+        let original = ["before\\u{1F}inside", "مرحبا 👋", "English"]
         let encoded = try XCTUnwrap(ClipboardHistoryCodec.encode(original))
         XCTAssertEqual(ClipboardHistoryCodec.decode(encoded), original)
     }
 
     func testLegacyFormatMigrationKeepsOriginalItemOrder() {
         XCTAssertEqual(
-            ClipboardHistoryCodec.decodeLegacy("first\u{1F}second\u{1F}third"),
+            ClipboardHistoryCodec.decodeLegacy("first\\u{1F}second\\u{1F}third"),
             ["first", "second", "third"]
         )
     }
@@ -43,7 +43,6 @@ final class LatestSelectionGateTests: XCTestCase {
     }
 }
 
-
 final class SymbolPageCountTests: XCTestCase {
     func testArabicSymbolsContainExactlyTwoPages() {
         XCTAssertEqual(KeyboardDataLoader.builtinArabicSymbols.count, 2)
@@ -51,5 +50,12 @@ final class SymbolPageCountTests: XCTestCase {
 
     func testEnglishSymbolsContainExactlyTwoPages() {
         XCTAssertEqual(KeyboardDataLoader.builtinEnglishSymbols.count, 2)
+    }
+}
+
+final class SoundPackCatalogTests: XCTestCase {
+    func testPianoPackIsSelectable() {
+        XCTAssertTrue(SoundPackStore.knownIDs.contains("piano"))
+        XCTAssertEqual(SoundPackStore.title(for: "piano"), "بيانو")
     }
 }
