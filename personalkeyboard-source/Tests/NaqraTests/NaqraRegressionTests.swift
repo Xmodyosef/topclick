@@ -46,11 +46,11 @@ final class LatestSelectionGateTests: XCTestCase {
 
 final class SymbolPageCountTests: XCTestCase {
     func testArabicSymbolsContainExactlyTwoPages() {
-        XCTAssertEqual(KeyboardDataLoader.builtinArabicSymbols.count, 2)
+        XCTAssertEqual(KeyboardSymbolCatalog.builtinArabicSymbols.count, 2)
     }
 
     func testEnglishSymbolsContainExactlyTwoPages() {
-        XCTAssertEqual(KeyboardDataLoader.builtinEnglishSymbols.count, 2)
+        XCTAssertEqual(KeyboardSymbolCatalog.builtinEnglishSymbols.count, 2)
     }
 }
 
