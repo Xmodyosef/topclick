@@ -140,7 +140,12 @@ def main() -> None:
             require(len(flat) == len(set(flat)), f'{pages_key}[{page_index}] has no duplicate symbols')
 
     sound = (ext_dir / 'Features/TapSoundEngine.swift').read_text(encoding='utf-8')
-    require('AudioServicesPlaySystemSound' in sound or 'AVAudioEngine' in sound, 'sound engine present')
+    require('AudioServicesCreateSystemSoundID' in sound, 'custom CAF sounds are registered through AudioServices')
+    require('AudioServicesPlaySystemSound' in sound, 'custom sound playback uses AudioServices')
+    require(
+        all(token not in sound for token in ('AVAudioEngine', 'AVAudioPlayerNode', 'AVAudioPCMBuffer', 'AVAudioFile', 'scheduleBuffer')),
+        'legacy AVAudioEngine player and buffer scheduling are absent from the keyboard click path'
+    )
     none_branch = re.search(r'if choice == "none"\s*\{([^}]*)\}', sound)
     require(none_branch is not None and 'return' in none_branch.group(1) and 'AudioServicesPlaySystemSound' not in none_branch.group(1), 'none sound choice is silent')
     require('ThemeIO.bool("sounds") != false' in sound, 'sound engine respects disabled sound preference')

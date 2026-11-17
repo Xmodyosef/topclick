@@ -1,8 +1,8 @@
-import AVFoundation
+import AudioToolbox
 import UIKit
 
-/// Plays cached, bundled click samples. Audio work is isolated from the keyboard's
-/// main thread so a slow audio session can never delay text insertion.
+/// Plays short bundled keyboard clicks through AudioServices.
+/// Uses cached AudioServices identifiers without creating an audio-session graph.
 final class TapSoundEngine {
     static let shared = TapSoundEngine()
 
@@ -16,20 +16,17 @@ final class TapSoundEngine {
         case rowBot = 6
     }
 
-    private let engine = AVAudioEngine()
-    private let player = AVAudioPlayerNode()
     private let audioQueue = DispatchQueue(label: "Naqra.TapSound.queue", qos: .userInitiated)
-    private let maximumPendingSamples = 4
+    private let pendingLock = NSLock()
+    private let maximumPendingPlayRequests = 4
 
     // Accessed only on audioQueue.
     private var enabled = true
-    private var pendingSamples = 0
-    private var cachedSamples: [String: AVAudioPCMBuffer] = [:]
+    private var cachedSoundIDs: [String: SystemSoundID] = [:]
     private var unavailableSamples = Set<String>()
 
-    /// The repository currently ships three CAF packs. Typewriter remains a
-    /// first-class selectable profile and uses the percussive thocky sample;
-    /// it must never fall through to the system click because its CAF is absent.
+    // The repository ships these three CAF files. Typewriter intentionally reuses
+    // the existing thocky sample until a dedicated typewriter asset is added.
     private static let sampleAssets: [String: String] = [
         "creamy": "creamy",
         "thocky": "thocky",
@@ -37,9 +34,14 @@ final class TapSoundEngine {
         "typewriter": "thocky"
     ]
 
-    private init() {
-        engine.attach(player)
-        engine.connect(player, to: engine.mainMixerNode, format: nil)
+    // Counts work submitted to the serial queue, not audio currently playing.
+    // This prevents rapid typing from creating an unbounded DispatchQueue backlog.
+    private var pendingPlayRequests = 0
+
+    private init() {}
+
+    deinit {
+        cachedSoundIDs.values.forEach { AudioServicesDisposeSystemSoundID($0) }
     }
 
     func setEnabled(_ value: Bool) {
@@ -49,92 +51,68 @@ final class TapSoundEngine {
     }
 
     func play(_ sound: Sound, variation: Float = 0) {
-        // Keep the existing call signature for keyboard callers. CAF playback
-        // uses the recorded transient rather than synthesizing a new tone.
+        // Preserve the existing call surface for keyboard input handlers.
         _ = sound
         _ = variation
 
+        guard reservePlayRequest() else { return }
+
         audioQueue.async { [weak self] in
-            guard let self, self.enabled, ThemeIO.bool("sounds") != false else { return }
+            guard let self else { return }
+            defer { self.releasePlayRequest() }
+
+            guard self.enabled, ThemeIO.bool("sounds") != false else { return }
 
             let choice = ThemeIO.string("soundChoice") ?? "system"
             if choice == "none" { return }
 
-            guard let assetName = Self.sampleAssets[choice] else {
+            guard choice != "system" else {
                 self.playSystemClick()
                 return
             }
 
-            guard let sample = self.loadSample(named: assetName) else {
+            guard let soundID = self.soundID(for: choice) else {
                 self.playSystemClick()
                 return
             }
 
-            // Never let a fast typist build an unbounded audio backlog. Dropping
-            // an excess click is preferable to delaying or affecting text input.
-            guard self.pendingSamples < self.maximumPendingSamples else { return }
-            guard self.startAudioIfNeeded() else {
-                self.playSystemClick()
-                return
-            }
-
-            self.pendingSamples += 1
-            self.player.scheduleBuffer(sample, at: nil, options: []) { [weak self] in
-                guard let self else { return }
-                self.audioQueue.async {
-                    self.pendingSamples = max(0, self.pendingSamples - 1)
-                }
-            }
-            if !self.player.isPlaying {
-                self.player.play()
-            }
+            AudioServicesPlaySystemSound(soundID)
         }
     }
 
-    private func loadSample(named assetName: String) -> AVAudioPCMBuffer? {
-        if let cached = cachedSamples[assetName] { return cached }
-        guard !unavailableSamples.contains(assetName) else { return nil }
+    private func reservePlayRequest() -> Bool {
+        pendingLock.lock()
+        defer { pendingLock.unlock() }
 
-        guard let url = Bundle.main.url(forResource: assetName, withExtension: "caf"),
-              let file = try? AVAudioFile(forReading: url),
-              file.length > 0,
-              file.length <= Int64(UInt32.max) else {
+        guard pendingPlayRequests < maximumPendingPlayRequests else { return false }
+        pendingPlayRequests += 1
+        return true
+    }
+
+    private func releasePlayRequest() {
+        pendingLock.lock()
+        pendingPlayRequests = max(0, pendingPlayRequests - 1)
+        pendingLock.unlock()
+    }
+
+    private func soundID(for choice: String) -> SystemSoundID? {
+        guard let assetName = Self.sampleAssets[choice] else { return nil }
+        if let cached = cachedSoundIDs[assetName] { return cached }
+        guard !unavailableSamples.contains(assetName),
+              let url = Bundle.main.url(forResource: assetName, withExtension: "caf") else {
             unavailableSamples.insert(assetName)
             return nil
         }
 
-        let capacity = AVAudioFrameCount(file.length)
-        guard let buffer = AVAudioPCMBuffer(
-            pcmFormat: file.processingFormat,
-            frameCapacity: capacity
-        ),
-        (try? file.read(into: buffer)) != nil,
-        buffer.frameLength > 0 else {
+        var soundID: SystemSoundID = 0
+        let status = AudioServicesCreateSystemSoundID(url as CFURL, &soundID)
+        guard status == kAudioServicesNoError, soundID != 0 else {
             unavailableSamples.insert(assetName)
             return nil
         }
 
-        cachedSamples[assetName] = buffer
-        return buffer
-    }
-
-    private func startAudioIfNeeded() -> Bool {
-        if engine.isRunning {
-            if !player.isPlaying { player.play() }
-            return true
-        }
-
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.ambient, mode: .default, options: [.mixWithOthers])
-            try session.setActive(true)
-            try engine.start()
-            player.play()
-            return true
-        } catch {
-            engine.stop()
-            return false
-        }
+        cachedSoundIDs[assetName] = soundID
+        return soundID
     }
 
     private func playSystemClick() {
