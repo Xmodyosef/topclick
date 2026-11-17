@@ -53,3 +53,32 @@ final class SymbolPageCountTests: XCTestCase {
         XCTAssertEqual(KeyboardDataLoader.builtinEnglishSymbols.count, 2)
     }
 }
+
+
+final class KeyboardGlyphMetricsTests: XCTestCase {
+    func testArabicAndUnicodeSymbolsUseReducedGlyphScale() {
+        XCTAssertTrue(KeyboardGlyphMetrics.usesSymbolScale("﷼"))
+        XCTAssertTrue(KeyboardGlyphMetrics.usesSymbolScale("٪"))
+        XCTAssertTrue(KeyboardGlyphMetrics.usesSymbolScale("∞"))
+        XCTAssertTrue(KeyboardGlyphMetrics.usesSymbolScale("؟"))
+    }
+
+    func testDigitsAndLettersKeepTheLetterGlyphScale() {
+        XCTAssertFalse(KeyboardGlyphMetrics.usesSymbolScale("1"))
+        XCTAssertFalse(KeyboardGlyphMetrics.usesSymbolScale("a"))
+        XCTAssertFalse(KeyboardGlyphMetrics.usesSymbolScale("م"))
+    }
+
+    func testSymbolScaleIsSmallerThanLetterScale() {
+        XCTAssertEqual(KeyboardGlyphMetrics.symbolPointSize, 24)
+        XCTAssertLessThan(KeyboardGlyphMetrics.symbolPointSize, 26)
+    }
+}
+
+final class SoundPackCatalogTests: XCTestCase {
+    func testPianoAndDedicatedTypewriterPacksAreSelectable() {
+        XCTAssertTrue(SoundPackStore.knownIDs.contains("piano"))
+        XCTAssertTrue(SoundPackStore.knownIDs.contains("typewriter"))
+        XCTAssertEqual(SoundPackStore.title(for: "piano"), "بيانو")
+    }
+}
