@@ -27,14 +27,13 @@ final class TapSoundEngine {
     private var cachedSamples: [String: AVAudioPCMBuffer] = [:]
     private var unavailableSamples = Set<String>()
 
-    /// The repository currently ships three CAF packs. Typewriter remains a
-    /// first-class selectable profile and uses the percussive thocky sample;
-    /// it must never fall through to the system click because its CAF is absent.
+    /// Every selectable custom profile maps to a bundled CAF sample.
     private static let sampleAssets: [String: String] = [
         "creamy": "creamy",
         "thocky": "thocky",
         "soft": "soft",
-        "typewriter": "thocky"
+        "typewriter": "thocky",
+        "piano": "piano"
     ]
 
     private init() {
@@ -49,8 +48,6 @@ final class TapSoundEngine {
     }
 
     func play(_ sound: Sound, variation: Float = 0) {
-        // Keep the existing call signature for keyboard callers. CAF playback
-        // uses the recorded transient rather than synthesizing a new tone.
         _ = sound
         _ = variation
 
@@ -70,8 +67,7 @@ final class TapSoundEngine {
                 return
             }
 
-            // Never let a fast typist build an unbounded audio backlog. Dropping
-            // an excess click is preferable to delaying or affecting text input.
+            // Never let a fast typist build an unbounded audio backlog.
             guard self.pendingSamples < self.maximumPendingSamples else { return }
             guard self.startAudioIfNeeded() else {
                 self.playSystemClick()
