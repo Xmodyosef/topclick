@@ -31,7 +31,8 @@ final class TapSoundEngine {
         "creamy": "creamy",
         "thocky": "thocky",
         "soft": "soft",
-        "typewriter": "thocky"
+        "typewriter": "typewriter",
+        "piano": "piano"
     ]
 
     // Counts work submitted to the serial queue, not audio currently playing.

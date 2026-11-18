@@ -119,37 +119,8 @@ enum KeyboardDataLoader {
         return value
     }
 
-    /// Two symbol pages: daily + brackets/math. Last row is short for action+delete.
-    static let builtinArabicSymbols: [[[String]]] = [
-        [
-            ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
-            ["-", "/", ":", "؛", "(", ")", "﷼", "&", "@", "\""],
-            [".", "،", "؟", "!", "'", "`", "+", "=", "٪", "*"],
-            ["#", "_", "«", "»", "…", "·"]
-        ],
-        [
-            ["[", "]", "{", "}", "\\", "|", "~", "^", "#", "_"],
-            ["<", ">", "€", "£", "¥", "•", "°", "×", "÷", "∞"],
-            ["≈", "≠", "±", "µ", "§", "¶", "†", "‡", "‰", "◊"],
-            ["©", "®", "™", "✓", "✗", "★"]
-        ]
-    ]
-
-    /// English: same two-page packing.
-    static let builtinEnglishSymbols: [[[String]]] = [
-        [
-            ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
-            ["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""],
-            [".", ",", "?", "!", "'", "`", "%", "*", "+", "="],
-            ["#", "_", "«", "»", "…", "·"]
-        ],
-        [
-            ["[", "]", "{", "}", "=", "_", "\\", "|", "~", "^"],
-            ["<", ">", "€", "£", "¥", "•", "°", "×", "÷", "∞"],
-            ["≈", "≠", "±", "µ", "§", "¶", "†", "‡", "‰", "◊"],
-            ["©", "®", "™", "✓", "✗", "★"]
-        ]
-    ]
+    static let builtinArabicSymbols = KeyboardSymbolCatalog.builtinArabicSymbols
+    static let builtinEnglishSymbols = KeyboardSymbolCatalog.builtinEnglishSymbols
 
     static func arabicLexicon() -> [String] {
         lock.lock(); defer { lock.unlock() }
