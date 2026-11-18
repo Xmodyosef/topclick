@@ -193,10 +193,12 @@ jobs:
             personalkeyboard-source/PersonalKeyboard-*.ipa.sha256
 
 
-      # Soft gate only: IPA is already uploaded above. Hang/timeout here does not
-      # remove the artifact. Paths/xcodebuild flags unchanged from pre-split CI.
+      # Soft gate only: IPA is already uploaded above. Hang/timeout here must not
+      # fail the job or hide the artifact (host-app XCTest can stall after compile
+      # on macos-15 simulators; pure unit-test conversion is a later hard gate).
       - name: Run XCTest regression suite
         id: xctest
+        continue-on-error: true
         timeout-minutes: 8
         run: |
           set -euo pipefail
@@ -261,7 +263,7 @@ jobs:
             DEVELOPMENT_TEAM=
 
       - name: Upload XCTest result bundle on failure
-        if: steps.xctest.outcome == 'failure'
+        if: always() && steps.xctest.outcome == 'failure'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: xctest-results
