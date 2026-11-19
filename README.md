@@ -2,7 +2,7 @@
 
 نقرة (Naqra) لوحة مفاتيح عربية/إنجليزية مخصصة لـ iPhone وiPad، مبنية باستخدام Swift وUIKit وSwiftUI. يركز المشروع على تخطيط قريب من لوحة Apple، الثبات، التخصيص، الثيمات، الصوت، والإيموجي، مع دعم البناء غير الموقّع للتجربة عبر أدوات sideloading مثل ESign وFeather.
 
-يستخدم المستودع **4 حزم مهارات** داخل `skills/`، تشمل بوابة إصدار لوحة المفاتيح، ومدقق توجيه المهارات، ومراجعة VoiceOver. يعرض `SKILLS.md` الفهرس، وتُفحص عقود المصدر على GitHub Actions قبل بناء IPA.
+يستخدم المستودع **7 حزم مهارات** داخل `skills/`، تشمل بوابة إصدار لوحة المفاتيح، ومدقق توجيه المهارات، ومراجعة VoiceOver. يعرض `SKILLS.md` الفهرس، وتُفحص عقود المصدر على GitHub Actions قبل بناء IPA.
 
 ## For AI Agents
 
@@ -31,10 +31,10 @@ xcodebuild -project PersonalKeyboard.xcodeproj -scheme PersonalKeyboard \
 
 ## الإصدار الموحد
 
-- **Version:** `0.2.10` — مصدر الحقيقة في `personalkeyboard-source/VERSION`.
-- **Build:** `32` — رقم بناء مستقل ومتزايد، موحّد للتطبيق وامتداد لوحة المفاتيح.
-- **IPA name:** `PersonalKeyboard-0.2.10.ipa`.
-- **Release tag المعتمد للإصدار القادم:** `v0.2.10` بعد نجاح CI ومراجعة الحزمة.
+- **Version:** `0.2.11` — مصدر الحقيقة في `personalkeyboard-source/VERSION`.
+- **Build:** `33` — رقم بناء مستقل ومتزايد، موحّد للتطبيق وامتداد لوحة المفاتيح.
+- **IPA name:** `PersonalKeyboard-0.2.11.ipa`.
+- **Release tag المعتمد للإصدار القادم:** `v0.2.11` بعد نجاح CI ومراجعة الحزمة.
 
 ### ملاحظات التثبيت
 1. نزّل IPA الناتج من GitHub Actions بعد نشره.

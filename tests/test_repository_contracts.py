@@ -35,18 +35,22 @@ def test_naqra_source_contracts() -> None:
 
 
 def test_unified_version_source_and_bundle_placeholders() -> None:
+    """Version numbers change every release; enforce unity via bump_version --check."""
     source = ROOT / "personalkeyboard-source"
-    assert (source / "VERSION").read_text(encoding="utf-8").strip() == "0.2.10"
+    result = run_script("personalkeyboard-source/scripts/bump_version.py", "--check")
+    assert result.returncode == 0, result.stdout + result.stderr
+    version = (source / "VERSION").read_text(encoding="utf-8").strip()
+    assert version.count(".") == 2 and all(part.isdigit() for part in version.split("."))
     project = (source / "project.yml").read_text(encoding="utf-8")
-    assert project.count('MARKETING_VERSION: "0.2.10"') == 2
-    assert project.count("CURRENT_PROJECT_VERSION: 32") == 2
+    assert project.count(f'MARKETING_VERSION: "{version}"') == 2
     assert "ROLLING_VERSION" not in project
+    builds = [line.split(":")[-1].strip() for line in project.splitlines() if "CURRENT_PROJECT_VERSION:" in line]
+    assert len(builds) == 2 and builds[0] == builds[1] and builds[0].isdigit()
+    build = builds[0]
     for path in (source / "App/Config/Info.plist", source / "KeyboardExtension/Config/Info.plist"):
         content = path.read_text(encoding="utf-8")
-        assert "<key>CFBundleShortVersionString</key>" in content
-        assert "<string>0.2.10</string>" in content
-        assert "<key>CFBundleVersion</key>" in content
-        assert "<string>32</string>" in content
+        assert f"<string>{version}</string>" in content
+        assert f"<string>{build}</string>" in content
 
 
 def test_non_space_keyboard_actions_break_double_space_sequence() -> None:
