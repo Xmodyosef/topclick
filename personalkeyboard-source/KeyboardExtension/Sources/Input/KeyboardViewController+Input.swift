@@ -54,7 +54,7 @@ extension KeyboardViewController {
         }
         if out.count < 3 {
             let code = language == .english ? "en_US" : "ar"
-            let checker = UITextChecker()
+            let checker = textChecker
             let range = NSRange(location: 0, length: token.utf16.count)
             let completions = checker.completions(forPartialWordRange: range, in: token, language: code) ?? []
             let guesses = checker.guesses(forWordRange: range, in: token, language: code) ?? []
