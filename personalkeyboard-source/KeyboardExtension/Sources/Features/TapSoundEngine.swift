@@ -48,7 +48,7 @@ final class TapSoundEngine {
         selectedChoice = Self.sampleAssets[choice] != nil || choice == "system" || choice == "none"
             ? choice
             : "system"
-        soundsEnabled = enabled && selectedChoice != "none"
+        soundsEnabled = enabled
         configurationLock.unlock()
     }
 
@@ -61,7 +61,9 @@ final class TapSoundEngine {
         let choice = selectedChoice
         configurationLock.unlock()
 
-        guard shouldPlay, choice != "none", reservePlayRequest() else { return }
+        guard shouldPlay else { return }
+        if choice == "none" { return }
+        guard reservePlayRequest() else { return }
 
         audioQueue.async { [weak self] in
             guard let self else { return }
