@@ -68,6 +68,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var letterKeyButtons: [[UIButton]] = []
     weak var shiftKeyButton: UIButton?
     var displayedNeedsInputModeSwitchKey: Bool?
+    /// Coalesces language changes and lets the current touch event finish before rebuilding.
+    var languageRebuildScheduled = false
 
     var letterFont: UIFont {
         // One compact, predictable font keeps Arabic and English aligned.
@@ -126,7 +128,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         translationModel.onResult = { [weak self] t in self?.applyTranslation(t) }
         translationModel.onError = { [weak self] message in self?.showNotice(message) }
         ClipboardHistory.shared.ensurePrivacyDefault()
-        TapSoundEngine.shared.setEnabled(ThemeIO.bool("sounds") ?? true)
+        TapSoundEngine.shared.configure(enabled: ThemeIO.bool("sounds") ?? false, choice: ThemeIO.string("soundChoice") ?? "system")
         armHaptics()
         rebuild()
     }
@@ -221,7 +223,6 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     func playSystemClick(_ sound: TapSoundEngine.Sound = .rowMid) {
         guard enableInputClicksWhenVisible else { return }
-        TapSoundEngine.shared.setEnabled(ThemeIO.bool("sounds") ?? true)
         TapSoundEngine.shared.play(sound)
     }
 
