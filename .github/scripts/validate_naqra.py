@@ -185,7 +185,7 @@ def main() -> None:
     char_key = re.search(r'func charKey\(_ t: String, rowIdx: Int\) -> UIButton\s*\{(.*?)\n    \}', extension, re.S)
     require(
         'CTFontCreateUIFontForLanguage' in typography_code
-        and 'kCTFontUIFontSystem' in typography_code
+        and '.system' in typography_code
         and '"ar" as CFString' in typography_code
         and 'CTFontCreateWithName' not in typography_code
         and '.SFUI-' not in typography_code,
