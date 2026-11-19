@@ -55,7 +55,8 @@ def main() -> int:
 
     app_group = app_entitlements.get(APP_GROUP_KEY, [])
     ext_group = ext_entitlements.get(APP_GROUP_KEY, [])
-    checks.require(bool(app_group) and app_group == ext_group, "container and keyboard share the same App Group entitlement")
+    checks.require(bool(app_group) and app_group == ext_group,
+                   "container and keyboard share the same App Group entitlement")
 
     def target_bundle_id(target: str) -> str | None:
         block = re.search(rf"(?ms)^  {re.escape(target)}:\n(.*?)(?=^  [A-Za-z][A-Za-z0-9]+:\n|\Z)", project)
@@ -69,20 +70,26 @@ def main() -> int:
     app_source_id = app_info.get("CFBundleIdentifier")
     ext_source_id = ext_info.get("CFBundleIdentifier")
     placeholder = "$(PRODUCT_BUNDLE_IDENTIFIER)"
-    checks.require(bool(app_bundle) and app_source_id in (app_bundle, placeholder), "container bundle ID matches project.yml or its Xcode placeholder")
-    checks.require(bool(ext_bundle) and ext_source_id in (ext_bundle, placeholder), "extension bundle ID matches project.yml or its Xcode placeholder")
-    checks.require(bool(app_bundle and ext_bundle and ext_bundle.startswith(app_bundle + ".")), "extension bundle ID is nested under container bundle ID")
+    checks.require(bool(app_bundle) and app_source_id in (app_bundle, placeholder),
+                   "container bundle ID matches project.yml or its Xcode placeholder")
+    checks.require(bool(ext_bundle) and ext_source_id in (ext_bundle, placeholder),
+                   "extension bundle ID matches project.yml or its Xcode placeholder")
+    checks.require(bool(app_bundle and ext_bundle and ext_bundle.startswith(app_bundle + ".")),
+                   "extension bundle ID is nested under container bundle ID")
     extension_attributes = ext_info.get("NSExtension", {}).get("NSExtensionAttributes", {})
-    checks.require(extension_attributes.get("RequestsOpenAccess") is True, "keyboard Full Access request is declared in extension Info.plist")
+    checks.require(extension_attributes.get("RequestsOpenAccess") is True,
+                   "keyboard Full Access request is declared in extension Info.plist")
 
     versions = re.findall(r"MARKETING_VERSION:\s*[\"']?([^\"'\s]+)", project)
     builds = re.findall(r"CURRENT_PROJECT_VERSION:\s*([0-9]+)", project)
     checks.require(bool(versions) and len(set(versions)) == 1, "app and extension marketing versions agree")
     checks.require(bool(builds) and len(set(builds)) == 1, "app and extension build numbers agree")
     if versions:
-        checks.require(app_info.get("CFBundleShortVersionString") == versions[0] == ext_info.get("CFBundleShortVersionString"), "source Info.plist versions match project.yml")
+        checks.require(app_info.get("CFBundleShortVersionString") == versions[0] == ext_info.get(
+            "CFBundleShortVersionString"), "source Info.plist versions match project.yml")
     if builds:
-        checks.require(app_info.get("CFBundleVersion") == builds[0] == ext_info.get("CFBundleVersion"), "source Info.plist build numbers match project.yml")
+        checks.require(app_info.get("CFBundleVersion") == builds[0] == ext_info.get(
+            "CFBundleVersion"), "source Info.plist build numbers match project.yml")
 
     resource_paths = re.findall(r"- path:\s*(KeyboardExtension/Resources/[^\s]+\.json)", project)
     resource_names = {Path(item).name for item in resource_paths}
@@ -107,7 +114,8 @@ def main() -> int:
     swift = "\n".join(path.read_text(encoding="utf-8") for path in swift_files)
     checks.require(bool(swift_files), "keyboard and app Swift sources were found")
     checks.require("needsInputModeSwitchKey" in swift, "system switch key is gated by needsInputModeSwitchKey")
-    checks.require("handleInputModeList(from:with:)" in swift and "for: .allTouchEvents" in swift, "system switch key invokes the UIKit input-mode handler")
+    checks.require("handleInputModeList(from:with:)" in swift and "for: .allTouchEvents" in swift,
+                   "system switch key invokes the UIKit input-mode handler")
 
     if args.built_app:
         app_path = args.built_app.resolve()
@@ -115,14 +123,16 @@ def main() -> int:
         checks.require(app_path.is_dir(), "built .app bundle exists")
         checks.require(built_info.get("CFBundleIdentifier") == app_bundle, "built app bundle ID matches project.yml")
         if versions:
-            checks.require(built_info.get("CFBundleShortVersionString") == versions[0], "built app marketing version matches source")
+            checks.require(built_info.get("CFBundleShortVersionString") ==
+                           versions[0], "built app marketing version matches source")
         if builds:
             checks.require(built_info.get("CFBundleVersion") == builds[0], "built app build number matches source")
         extension_path = app_path / "PlugIns/KeyboardExtension.appex"
         checks.require(extension_path.is_dir(), "built app embeds KeyboardExtension.appex")
         if extension_path.is_dir():
             built_ext = read_plist(checks, extension_path / "Info.plist")
-            checks.require(built_ext.get("CFBundleIdentifier") == ext_bundle, "built extension bundle ID matches project.yml")
+            checks.require(built_ext.get("CFBundleIdentifier") == ext_bundle,
+                           "built extension bundle ID matches project.yml")
             for name in sorted(REQUIRED_RESOURCES):
                 checks.require(any(extension_path.rglob(name)), f"built extension contains {name}")
 

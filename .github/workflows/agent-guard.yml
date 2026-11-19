@@ -31,6 +31,21 @@ jobs:
       - name: Validate skill routing
         run: python3 skills/skill-routing-integrity/scripts/verify_skill_links.py --root .
 
+      - name: Report keyboard skill findings (informational)
+        run: |
+          set -euo pipefail
+          echo "Informational audits on the current tree (not a merge blocker alone)."
+          python3 skills/ios-keyboard-release-gate/scripts/check_keyboard_release.py personalkeyboard-source
+          python3 skills/iphone-keyboard-accessibility-qa/scripts/a11y_static_audit.py personalkeyboard-source
+          python3 skills/keyboard-language-switch-qa/scripts/audit_language_switch.py personalkeyboard-source || true
+          python3 skills/keyboard-audio-integrity/scripts/validate_keyboard_audio.py personalkeyboard-source || true
+
+      - name: Strict language + audio contracts on this tree
+        run: |
+          set -euo pipefail
+          python3 skills/keyboard-language-switch-qa/scripts/audit_language_switch.py personalkeyboard-source --strict
+          python3 skills/keyboard-audio-integrity/scripts/validate_keyboard_audio.py personalkeyboard-source --strict
+
       - name: Run pytest regression suite
         run: |
           python3 -m pip install --disable-pip-version-check pytest
@@ -120,7 +135,7 @@ jobs:
           legacy = list(root.rglob("SKILL.reference.md")) + list(
               root.rglob("references/source")
           )
-          if len(packs) != 4 or len(bundles) != 0 or len(archives) != 1 or legacy:
+          if len(packs) != 7 or len(bundles) != 0 or len(archives) != 1 or legacy:
               raise SystemExit(
                   f"Invalid skill layout: packs={len(packs)}, bundles={len(bundles)}, archives={len(archives)}, legacy={len(legacy)}"
               )
@@ -140,13 +155,14 @@ jobs:
           report.write_text(
               "# Agent Review Report\n\n"
               f"- Changed files: {len(changed)}\n"
-              "- Active skill packs: 4\n"
+              "- Active skill packs: 7\n"
               "- Integrated bundles: 0\n"
               "- Resource archives: 1\n"
               "- Legacy individual skill files: 0\n"
               "- Conflict markers: 0\n"
               "- Obvious secrets: 0\n"
-              "- Automated checks: source contracts, skill routing, and repository guard passed\n\n"
+              "- Automated checks: source contracts, executable skill audits, skill routing, pytest, and repository guard passed\n"
+              "- Non-blocking audit findings: see step logs; static results are not device verification\n\n"
               "## Device-only checks\n\n"
               "Signing, installation, Feather, ESign, audio hardware, and long-session iPhone behavior require owner testing on a physical device.\n"
           )
