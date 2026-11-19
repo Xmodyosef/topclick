@@ -199,7 +199,12 @@ def main() -> None:
         require(struct.unpack('>d', caf[20:28])[0] == 44100.0, f'{sample_name} sample rate is 44.1 kHz')
         require(struct.unpack('>I', caf[44:48])[0] == 1, f'{sample_name} is mono')
         require(struct.unpack('>I', caf[48:52])[0] == 16, f'{sample_name} is 16-bit')
+        require(struct.unpack('>I', caf[36:40])[0] == 2, f'{sample_name} has two bytes per mono frame')
+        require(struct.unpack('>I', caf[40:44])[0] == 1, f'{sample_name} has one frame per packet')
+        require(struct.unpack('>Q', caf[56:64])[0] == len(caf) - 64, f'{sample_name} data chunk length matches file bytes')
 
+    require('primaryLanguage = language == .arabic ? "ar" : "en"' in extension, 'internal language switch updates UIKit primaryLanguage')
+    require('let textChecker = UITextChecker()' in extension and 'let checker = textChecker' in extension, 'suggestions reuse UITextChecker instead of allocating per keystroke')
     require('UIVisualEffectView(effect: nil)' in extension and 'shadowOpacity = 0' in extension, 'keyboard avoids live blur and key shadows')
     build_ui = (ext_dir / 'UI/KeyboardViewController+BuildUI.swift').read_text(encoding='utf-8')
     require(('b.isOpaque = true' in build_ui or 'b.isOpaque = true' in extension) and 'b.opaque = true' not in extension, 'UIButton opacity uses current UIKit property')
