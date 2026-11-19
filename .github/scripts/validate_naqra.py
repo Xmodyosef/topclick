@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import plistlib
+import struct
 from pathlib import Path
 import re
 import sys
@@ -34,6 +35,7 @@ def main() -> None:
     source = args.source
 
     ext_dir = source / 'KeyboardExtension/Sources'
+    project_text = (source / 'project.yml').read_text(encoding='utf-8')
     app_dir = source / 'App/Sources'
     extension_resources = source / 'KeyboardExtension/Resources'
     app_config = source / 'App/Config'
@@ -175,7 +177,29 @@ def main() -> None:
     )
     require(not re.search(r'(?m)^\s*sounds\s*=\s*ThemeStore\.bool\("sounds"\)', settings), 'no orphan sound assignment in SettingsTab')
     require('UIApplication.openSettingsURLString' in app and 'App-Prefs:' not in app, 'Full Access uses public app settings URL')
-    require('letterFont' in extension and '.systemFont(ofSize: 26, weight: .medium)' in extension, 'compact keyboard font')
+    typography = (source / 'Shared/Models/KeyboardTypography.swift').read_text(encoding='utf-8')
+    require(
+        'CTFontCreateForString' in typography
+        and 'UIFont.systemFont(ofSize: size, weight: weight)' in typography
+        and 'SF Arabic' in typography
+        and 'letterFont' not in extension,
+        'Arabic keys use the Apple system SF Arabic cascade without bundled fonts'
+    )
+    require(
+        project_text.count('Shared/Models/KeyboardTypography.swift') == 2,
+        'system Arabic typography is compiled into both app and keyboard targets'
+    )
+    for sample_name in ('piano.caf', 'typewriter.caf'):
+        caf_path = extension_resources / sample_name
+        require(caf_path.is_file(), f'{sample_name} exists')
+        caf = caf_path.read_bytes()
+        require(caf[:4] == b'caff', f'{sample_name} has a CAF header')
+        require(len(caf) >= 68, f'{sample_name} has complete CAF chunks')
+        require(struct.unpack('>I', caf[32:36])[0] == 2, f'{sample_name} declares little-endian signed 16-bit PCM correctly')
+        require(struct.unpack('>d', caf[20:28])[0] == 44100.0, f'{sample_name} sample rate is 44.1 kHz')
+        require(struct.unpack('>I', caf[44:48])[0] == 1, f'{sample_name} is mono')
+        require(struct.unpack('>I', caf[48:52])[0] == 16, f'{sample_name} is 16-bit')
+
     require('UIVisualEffectView(effect: nil)' in extension and 'shadowOpacity = 0' in extension, 'keyboard avoids live blur and key shadows')
     build_ui = (ext_dir / 'UI/KeyboardViewController+BuildUI.swift').read_text(encoding='utf-8')
     require(('b.isOpaque = true' in build_ui or 'b.isOpaque = true' in extension) and 'b.opaque = true' not in extension, 'UIButton opacity uses current UIKit property')
