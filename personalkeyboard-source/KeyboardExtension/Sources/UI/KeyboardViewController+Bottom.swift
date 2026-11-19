@@ -51,7 +51,7 @@ extension KeyboardViewController {
             symbols.semanticContentAttribute = .forceLeftToRight
             symbols.titleLabel?.semanticContentAttribute = .forceLeftToRight
             symbols.titleLabel?.textAlignment = .center
-            let font = UIFont.systemFont(ofSize: 13, weight: .semibold)
+            let font = KeyboardTypography.font(for: symbolsTitle, size: 13, weight: .semibold)
             symbols.setAttributedTitle(ltrAttributedTitle(symbolsTitle, font: font, color: .white), for: .normal)
             symbols.accessibilityLabel = "لوحة الرموز والأرقام"
             leading.append(symbols)
