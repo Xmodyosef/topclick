@@ -60,6 +60,7 @@ def main() -> None:
     require(APP_GROUP in (source / 'App/Config/PersonalKeyboard.entitlements').read_text(encoding='utf-8'), 'container App Group unchanged')
     require(APP_GROUP in (source / 'KeyboardExtension/Config/KeyboardExtension.entitlements').read_text(encoding='utf-8'), 'extension App Group unchanged')
     require(APP_BUNDLE in project and EXT_BUNDLE in project, 'container and extension bundle IDs unchanged')
+    require(project_text.count('ALWAYS_SEARCH_USER_PATHS: NO') >= 4, 'deprecated traditional header-map search is disabled for project and all targets')
 
     # Split structure
     require((ext_dir / 'Lifecycle/KeyboardViewController.swift').is_file(), 'core KeyboardViewController exists')
