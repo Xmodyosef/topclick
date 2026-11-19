@@ -204,7 +204,7 @@ def main() -> None:
         require(struct.unpack('>Q', caf[56:64])[0] == len(caf) - 64, f'{sample_name} data chunk length matches file bytes')
 
     require('primaryLanguage = language == .arabic ? "ar" : "en"' in extension, 'internal language switch updates UIKit primaryLanguage')
-    require('let textChecker = UITextChecker()' in extension and 'let checker = textChecker' in extension, 'suggestions reuse UITextChecker instead of allocating per keystroke')
+    require('lazy var textChecker = UITextChecker()' in extension and 'let checker = textChecker' in extension, 'suggestions reuse UITextChecker instead of allocating per keystroke')
     require('UIVisualEffectView(effect: nil)' in extension and 'shadowOpacity = 0' in extension, 'keyboard avoids live blur and key shadows')
     build_ui = (ext_dir / 'UI/KeyboardViewController+BuildUI.swift').read_text(encoding='utf-8')
     require(('b.isOpaque = true' in build_ui or 'b.isOpaque = true' in extension) and 'b.opaque = true' not in extension, 'UIButton opacity uses current UIKit property')
