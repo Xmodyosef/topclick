@@ -2,7 +2,7 @@
 
 ## Source of truth
 
-- `VERSION` is the only source of truth for the public three-part release version (SemVer), currently `0.2.10`.
+- `VERSION` is the only source of truth for the public three-part release version (SemVer), currently `0.2.11`.
 - `MARKETING_VERSION` is generated into both app and keyboard-extension targets from `VERSION` by `scripts/bump_version.py`.
 - The version script writes the same `CFBundleShortVersionString` and `CFBundleVersion` values into both Info.plists; CI verifies them against `VERSION` and `project.yml`.
 - `CURRENT_PROJECT_VERSION` is a separate, monotonically increasing integer build identifier; it is not a second product version. Both targets must have the same value.
@@ -10,20 +10,20 @@
 
 ## Release naming contract
 
-- Git tag: `v<VERSION>` (current target: `v0.2.10`).
-- IPA: `PersonalKeyboard-<VERSION>.ipa` (current target: `PersonalKeyboard-0.2.10.ipa`).
+- Git tag: `v<VERSION>` (current target: `v0.2.11`).
+- IPA: `PersonalKeyboard-<VERSION>.ipa` (current target: `PersonalKeyboard-0.2.11.ipa`).
 - Release title and changelog heading use the same `VERSION` value.
 - Never create a tag or Release until the corresponding PR has passed CI and the built IPA has been inspected.
 
 ## Current source version
 
-- Version: **0.2.10**
+- Version: **0.2.11**
 - Build: **32**
 - App + extension: same version and build.
 
 ## Commands
 
 - Validate: `python3 scripts/bump_version.py --check`.
-- Set the next public version: `python3 scripts/bump_version.py --set-version 0.2.11`.
+- Set the next public version: `python3 scripts/bump_version.py --set-version 0.2.12`.
 - Increment build for a new build: `python3 scripts/bump_version.py --bump-build`.
-- Set version and increment build together: `python3 scripts/bump_version.py --set-version 0.2.11 --bump-build`.
+- Set version and increment build together: `python3 scripts/bump_version.py --set-version 0.2.12 --bump-build`.

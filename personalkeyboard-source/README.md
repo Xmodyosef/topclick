@@ -3,7 +3,7 @@
 لوحة مفاتيح iOS عربية/إنجليزية.
 
 ## الحالة
-- الإصدار: **0.2.10** (build 32)
+- الإصدار: **0.2.11** (build 33)
 - الحد الأدنى: iOS 17
 - التوقيع: IPA غير موقّع (ESign / Feather)
 
@@ -39,6 +39,6 @@ GitHub Actions → IPA غير موقّع → ESign
 
 ## التحميل
 
-الإصدار الموحد: **0.2.10** (build **32**).
+الإصدار الموحد: **0.2.11** (build **33**).
 
-اسم IPA المعتمد: `PersonalKeyboard-0.2.10.ipa`؛ ينشر Release بعد نجاح GitHub Actions ومراجعة الحزمة.
+اسم IPA المعتمد: `PersonalKeyboard-0.2.11.ipa`؛ ينشر Release بعد نجاح GitHub Actions ومراجعة الحزمة.
