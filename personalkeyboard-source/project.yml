@@ -106,9 +106,9 @@ targets:
         ALWAYS_SEARCH_USER_PATHS: NO
         PRODUCT_BUNDLE_IDENTIFIER: app.personal.PersonalKeyboardTests
         GENERATE_INFOPLIST_FILE: YES
-        TEST_TARGET_NAME: PersonalKeyboard
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/PersonalKeyboard.app/PersonalKeyboard"
-        BUNDLE_LOADER: "$(TEST_HOST)"
+        # Hostless unit tests (option B): pure logic / Core Text asserts.
+        # Do NOT set TEST_HOST or BUNDLE_LOADER — launching PersonalKeyboard.app
+        # on the CI simulator is the hang that timed out after compile.
 
 schemes:
   PersonalKeyboard:
