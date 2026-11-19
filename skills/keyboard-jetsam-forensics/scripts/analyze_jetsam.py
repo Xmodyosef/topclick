@@ -125,7 +125,8 @@ def analyze(path: Path, target: str = "KeyboardExtension", page_size_bytes: int 
     )
     report["root_cause_identified"] = False
     report["interpretation"] = (
-        "Termination evidence only. Jetsam data does not identify the allocation site or prove which feature caused memory growth."
+        "Termination evidence only. Jetsam data does not identify the "
+        "allocation site or prove which feature caused memory growth."
     )
     return report
 

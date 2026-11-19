@@ -40,8 +40,11 @@ def audit(source_root: Path) -> dict:
     suggestions = function_body(input_source, "suggestions()")
 
     check(
-        "LANG001", "high",
-        bool(toggle) and re.search(r'primaryLanguage\s*=\s*language\s*==\s*\.arabic\s*\?\s*"ar"\s*:\s*"en"', toggle) is not None,
+        "LANG001",
+        "high",
+        bool(toggle) and re.search(
+            r'primaryLanguage\s*=\s*language\s*==\s*\.arabic\s*\?\s*"ar"\s*:\s*"en"',
+            toggle) is not None,
         "The shared language transition must synchronize UIInputViewController.primaryLanguage to ar/en.",
     )
     check(

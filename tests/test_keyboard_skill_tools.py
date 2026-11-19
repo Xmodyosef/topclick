@@ -205,6 +205,7 @@ def test_skill_inventory_ignores_python_and_tool_caches(tmp_path: Path) -> None:
     (pack / "scripts" / "__pycache__" / "audit.cpython-313.pyc").write_bytes(b"cache")
     assert len(routing.visible_skill_files(root)) == 2
 
+
 def test_skill_cli_scripts_have_executable_entrypoints() -> None:
     scripts = (
         "skills/keyboard-language-switch-qa/scripts/audit_language_switch.py",
@@ -222,4 +223,3 @@ def test_skill_cli_scripts_have_executable_entrypoints() -> None:
         )
         assert result.returncode == 0, f"{relative}: {result.stdout}{result.stderr}"
         assert "usage:" in result.stdout.lower()
-

@@ -143,7 +143,8 @@ def validate(source: Path, built_appex: Path | None = None) -> dict:
             if info["duration_seconds"] > 30.0:
                 errors.append(f"{relative}: duration {info['duration_seconds']:.3f}s exceeds AudioServices 30s limit")
             elif info["duration_seconds"] > 5.0:
-                errors.append(f"{relative}: duration {info['duration_seconds']:.3f}s is long for a key click (prefer ≤5s)")
+                errors.append(
+                    f"{relative}: duration {info['duration_seconds']:.3f}s is long for a key click (prefer ≤5s)")
             if info.get("sample_rate", 0) and info["sample_rate"] not in (22050.0, 24000.0, 32000.0, 44100.0, 48000.0):
                 # soft finding — unusual rate still playable
                 pass
@@ -177,7 +178,9 @@ def main() -> int:
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
-        print(f"Audio integrity: {report['status']} — {report['validated_asset_count']}/{report['mapped_sound_count']} assets")
+        print(
+            f"Audio integrity: {report['status']} — "
+            f"{report['validated_asset_count']}/{report['mapped_sound_count']} assets")
         for asset in report["assets"]:
             print(
                 f"PASS {asset['choice']}: {asset['sample_rate']:g} Hz, "

@@ -54,7 +54,11 @@ def main() -> int:
     bundle_files = list(skills_root.rglob("bundle-*.md"))
     archives = list(skills_root.rglob("resources.tar.gz"))
     visible_files = visible_skill_files(skills_root)
-    actual_counts = {"packs": len(packs), "bundles": len(bundle_files), "archives": len(archives), "visible": len(visible_files)}
+    actual_counts = {
+        "packs": len(packs),
+        "bundles": len(bundle_files),
+        "archives": len(archives),
+        "visible": len(visible_files)}
 
     for label, key in COUNTS.items():
         match = re.search(rf"(?:\*\*)?{re.escape(label)}:(?:\*\*)?\s*(\d+)", index_text)
