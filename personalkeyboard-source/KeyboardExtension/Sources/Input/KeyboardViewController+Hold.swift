@@ -4,7 +4,7 @@ import UIKit
 extension KeyboardViewController {
     func keyDisplayFont(for key: String) -> UIFont {
         if page == .symbols && KeyboardGlyphMetrics.usesSymbolScale(key) {
-            return .systemFont(ofSize: KeyboardGlyphMetrics.symbolPointSize, weight: .medium)
+            return KeyboardTypography.font(for: key, size: KeyboardGlyphMetrics.symbolPointSize, weight: .medium)
         }
         return KeyboardTypography.font(for: key, size: 26, weight: .medium)
     }
