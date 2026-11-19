@@ -3,8 +3,10 @@ import UIKit
 // MARK: - KeyboardViewController + Hold (long-press + char press)
 extension KeyboardViewController {
     func keyDisplayFont(for key: String) -> UIFont {
-        guard page == .symbols, KeyboardGlyphMetrics.usesSymbolScale(key) else { return letterFont }
-        return .systemFont(ofSize: KeyboardGlyphMetrics.symbolPointSize, weight: .medium)
+        if page == .symbols && KeyboardGlyphMetrics.usesSymbolScale(key) {
+            return .systemFont(ofSize: KeyboardGlyphMetrics.symbolPointSize, weight: .medium)
+        }
+        return KeyboardTypography.font(for: key, size: 26, weight: .medium)
     }
 
     func charKey(_ t: String, rowIdx: Int) -> UIButton {
@@ -165,7 +167,7 @@ extension KeyboardViewController {
             // Classic title path only — never UIButton.Configuration (wipes setTitle).
             let b = UIButton(type: .system)
             b.setTitle(item, for: .normal)
-            b.titleLabel?.font = .systemFont(ofSize: 24, weight: .medium)
+            b.titleLabel?.font = KeyboardTypography.font(for: item, size: 24, weight: .medium)
             b.setTitleColor(i == 0 ? .white : popupFG, for: .normal)
             b.backgroundColor = i == 0 ? activeBG : popupBG
             b.isOpaque = true
