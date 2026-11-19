@@ -91,14 +91,31 @@ extension KeyboardViewController {
         tapHaptic()
     }
 
-    @objc func languageTapped() {
-        resetSpaceTapSequence()
+    func scheduleLanguageRebuild() {
+        guard !languageRebuildScheduled else { return }
+        languageRebuildScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.languageRebuildScheduled = false
+            NSLog("[Naqra.Keyboard] rebuilding after language switch: %@", String(describing: self.language))
+            self.rebuild()
+        }
+    }
+
+    func toggleLanguage(returnToLetters: Bool = false) {
         language = language == .arabic ? .english : .arabic
         isShifted = false
         symbolPageIndex = 0
-        // Keep the current page (including emoji); only language-dependent UI is rebuilt.
+        if returnToLetters && page != .emoji {
+            page = .letters
+        }
         saveLanguage()
-        rebuild()
+        scheduleLanguageRebuild()
+    }
+
+    @objc func languageTapped() {
+        resetSpaceTapSequence()
+        toggleLanguage()
         tapHaptic(.action)
         let announce = language == .arabic ? "العربية" : "English"
         UIAccessibility.post(notification: .announcement, argument: announce)
@@ -185,12 +202,7 @@ extension KeyboardViewController {
             lastSpaceTap = nil
             // Drop the space the first tap already inserted — language switch only.
             textDocumentProxy.deleteBackward()
-            language = language == .arabic ? .english : .arabic
-            isShifted = false
-            symbolPageIndex = 0
-            saveLanguage()
-            if page != .emoji { page = .letters }
-            rebuild()
+            toggleLanguage(returnToLetters: true)
             tapHaptic()
             return
         }
