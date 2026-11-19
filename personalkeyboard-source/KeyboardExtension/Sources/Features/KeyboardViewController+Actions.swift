@@ -11,6 +11,7 @@ extension KeyboardViewController {
         if page != .emoji { page = .letters }
         let raw = ThemeIO.string("lastLanguage") ?? "ar"
         language = raw == "en" ? .english : .arabic
+        primaryLanguage = language == .arabic ? "ar" : "en"
     }
     func listenPrefs() {
         let me = Unmanaged.passUnretained(self).toOpaque()
