@@ -163,45 +163,49 @@ extension KeyboardViewController {
         closeSkinPicker()
     }
 
-    func rebuild() {
-        hideKeyPreview()
-        hideClipboardPanel()
-        cancelEmojiTransientInteractions()
+    /// Shell identity. Language is applied by retitling EN/ع and ؟+#, not by rebuilding chrome.
+    func surfaceChromeKey() -> String {
+        let globe = needsInputModeSwitchKey ? "globe" : "noglobe"
+        let shell: String
+        switch page {
+        case .letters: shell = "letters"
+        case .symbols: shell = "symbols"
+        case .emoji: shell = "emoji"
+        }
+        return "\(shell)|\(globe)|\(themeSignature)"
+    }
+
+    func releaseEmojiSurface() {
         emojiCollection?.dataSource = nil
         emojiCollection?.delegate = nil
         emojiCollection = nil
         emojiTabs = nil
         emojiPager = nil
         emojiSkinLongPress = nil
-        letterKeyButtons = []
-        shiftKeyButton = nil
-        palette = NaqraPalette.current()
-        view.clipsToBounds = false
-        view.backgroundColor = palette.background
-        blurView.effect = nil
-        blurView.backgroundColor = palette.background
-        // Hard clear — avoid ghost layers from leftover arranged views.
-        rootStack.arrangedSubviews.forEach { v in
-            rootStack.removeArrangedSubview(v)
-            v.removeFromSuperview()
+    }
+
+    func clearMiddle() {
+        middleStack.arrangedSubviews.forEach { view in
+            middleStack.removeArrangedSubview(view)
+            view.removeFromSuperview()
         }
-        rootStack.spacing = 6
-        heightConstraint?.constant = computedBoardHeight()
+    }
+
+    func fillMiddle() {
         switch page {
         case .letters:
-            rootStack.addArrangedSubview(makeToolbar())
             if showNumberRow {
-                rootStack.addArrangedSubview(makeRow(numberRow, rowIdx: 0))
+                middleStack.addArrangedSubview(makeRow(numberRow, rowIdx: 0))
             }
             let rows = activeLetterLayout()
             for (i, row) in rows.enumerated() {
-                if i == rows.count - 1 { rootStack.addArrangedSubview(makeLastLetterRow(row)) }
-                else { rootStack.addArrangedSubview(makeRow(row, rowIdx: i + 1, trackAsLetters: true)) }
+                if i == rows.count - 1 {
+                    middleStack.addArrangedSubview(makeLastLetterRow(row))
+                } else {
+                    middleStack.addArrangedSubview(makeRow(row, rowIdx: i + 1, trackAsLetters: true))
+                }
             }
-            rootStack.addArrangedSubview(makeBottom())
         case .symbols:
-            // Match the letters page: clipboard, suggestion/spacer, translate, dismiss.
-            rootStack.addArrangedSubview(makeToolbar())
             let pages = symbolPages
             let pageIdx = min(max(symbolPageIndex, 0), max(pages.count - 1, 0))
             let allRows = pages.isEmpty ? [] : pages[pageIdx]
@@ -213,20 +217,98 @@ extension KeyboardViewController {
             }
             for (i, row) in rows.enumerated() {
                 if i == rows.count - 1 {
-                    rootStack.addArrangedSubview(makeSymbolLastRow(row))
+                    middleStack.addArrangedSubview(makeSymbolLastRow(row))
                 } else {
-                    rootStack.addArrangedSubview(makeRow(row, rowIdx: i + 1))
+                    middleStack.addArrangedSubview(makeRow(row, rowIdx: i + 1))
                 }
             }
-            rootStack.addArrangedSubview(makeBottom())
         case .emoji:
-            // Always ensure full catalog (13 categories / ~1200+ emoji) before drawing.
             if emojiPack.isEmpty {
                 emojiPack = Self.catalog()
             }
-            rootStack.addArrangedSubview(makeEmojiTabs())
-            rootStack.addArrangedSubview(makeEmojiPager())
-            rootStack.addArrangedSubview(makeBottom(emojiOn: true))
+            middleStack.addArrangedSubview(makeEmojiTabs())
+            middleStack.addArrangedSubview(makeEmojiPager())
+        }
+    }
+
+    /// Same EN/ع and ؟+# the full bottom build would show, without allocating a new bar.
+    func refreshKeptChromeTitles() {
+        if let lang = languageKeyButton {
+            let title = language == .arabic ? "EN" : "ع"
+            lang.setTitle(title, for: .normal)
+            lang.titleLabel?.font = KeyboardTypography.font(for: title, size: language == .arabic ? 14 : 16, weight: .semibold)
+        }
+        guard page == .letters, let mode = symbolsModeButton else { return }
+        let symbolsTitle = language == .arabic ? "؟+#" : "#+="
+        mode.setTitle(symbolsTitle, for: .normal)
+        let font = KeyboardTypography.font(for: symbolsTitle, size: 13, weight: .semibold)
+        mode.setAttributedTitle(ltrAttributedTitle(symbolsTitle, font: font, color: .white), for: .normal)
+    }
+
+    func mountFullSurface() {
+        // Drop the previous page before allocating the next one.
+        autoreleasepool {
+            rootStack.arrangedSubviews.forEach { view in
+                rootStack.removeArrangedSubview(view)
+                view.removeFromSuperview()
+            }
+            clearMiddle()
+        }
+        rootStack.spacing = 6
+        languageKeyButton = nil
+        symbolsModeButton = nil
+        if page == .emoji {
+            topChrome = nil
+        } else {
+            let bar = makeToolbar()
+            rootStack.addArrangedSubview(bar)
+            topChrome = bar
+        }
+        rootStack.addArrangedSubview(middleStack)
+        fillMiddle()
+        let bottom = makeBottom(emojiOn: page == .emoji)
+        rootStack.addArrangedSubview(bottom)
+        bottomChrome = bottom
+    }
+
+    func rebuild() {
+        hideKeyPreview()
+        hideClipboardPanel()
+        cancelEmojiTransientInteractions()
+        releaseEmojiSurface()
+        letterKeyButtons = []
+        shiftKeyButton = nil
+        palette = NaqraPalette.current()
+        view.clipsToBounds = false
+        view.backgroundColor = palette.background
+        blurView.effect = nil
+        blurView.backgroundColor = palette.background
+        heightConstraint?.constant = computedBoardHeight()
+
+        let key = surfaceChromeKey()
+        let chromeAlive = mountedChromeKey == key
+            && bottomChrome?.superview === rootStack
+            && middleStack.superview === rootStack
+            && (page == .emoji ? topChrome == nil : topChrome?.superview === rootStack)
+
+        if chromeAlive {
+            autoreleasepool { clearMiddle() }
+            fillMiddle()
+            let langTitle = language == .arabic ? "EN" : "ع"
+            let languageChanged = languageKeyButton?.title(for: .normal) != langTitle
+            refreshKeptChromeTitles()
+            if page == .letters {
+                refreshSuggestions()
+            } else if languageChanged, let old = topChrome, old.superview === rootStack {
+                rootStack.removeArrangedSubview(old)
+                old.removeFromSuperview()
+                let bar = makeToolbar()
+                rootStack.insertArrangedSubview(bar, at: 0)
+                topChrome = bar
+            }
+        } else {
+            mountFullSurface()
+            mountedChromeKey = key
         }
         updateHeightForCurrentSize()
         view.setNeedsLayout()

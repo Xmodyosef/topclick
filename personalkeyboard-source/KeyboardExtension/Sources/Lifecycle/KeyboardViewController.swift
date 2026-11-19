@@ -72,6 +72,21 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var displayedNeedsInputModeSwitchKey: Bool?
     /// Coalesces language changes and lets the current touch event finish before rebuilding.
     var languageRebuildScheduled = false
+    /// Page body only. Toolbar and bottom stay when the page shell is unchanged.
+    let middleStack: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 6
+        stack.distribution = .fill
+        stack.alignment = .fill
+        return stack
+    }()
+    weak var topChrome: UIView?
+    weak var bottomChrome: UIView?
+    weak var languageKeyButton: UIButton?
+    weak var symbolsModeButton: UIButton?
+    /// page + globe + theme. Language is retitled in place and is not part of this key.
+    var mountedChromeKey = ""
 
     let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
     let boardHeight: CGFloat = 324

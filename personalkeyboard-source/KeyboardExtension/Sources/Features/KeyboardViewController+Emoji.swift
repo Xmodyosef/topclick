@@ -199,7 +199,9 @@ extension KeyboardViewController {
             page = .letters
         } else {
             page = .emoji
-            emojiPack = Self.catalog()
+            if emojiPack.isEmpty {
+                emojiPack = Self.catalog()
+            }
             emojiCategoryIndex = min(emojiCategoryIndex, max(emojiPack.count - 1, 0))
         }
         rebuild()

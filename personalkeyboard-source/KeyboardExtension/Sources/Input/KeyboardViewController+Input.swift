@@ -73,12 +73,12 @@ extension KeyboardViewController {
         let current = suggestionButtons.compactMap { $0.title(for: .normal) }.filter { !$0.isEmpty }
         if current == words { return }
         if current.isEmpty && words.isEmpty { return }
-        guard !rootStack.arrangedSubviews.isEmpty else { return }
-        let old = rootStack.arrangedSubviews[0]
+        guard let old = topChrome, old.superview === rootStack else { return }
         rootStack.removeArrangedSubview(old)
         old.removeFromSuperview()
         let bar = makeToolbar()
         rootStack.insertArrangedSubview(bar, at: 0)
+        topChrome = bar
     }
 
     @objc func suggestionTapped(_ sender: UIButton) {
