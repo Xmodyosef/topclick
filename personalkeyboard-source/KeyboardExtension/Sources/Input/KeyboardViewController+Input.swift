@@ -22,7 +22,7 @@ extension KeyboardViewController {
             b.tag = i
             b.setTitle(word, for: .normal)
             b.isEnabled = true
-            b.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
+            b.titleLabel?.font = KeyboardTypography.font(for: word, size: 14, weight: .semibold)
             b.titleLabel?.adjustsFontSizeToFitWidth = true
             b.titleLabel?.minimumScaleFactor = 0.7
             b.setTitleColor(palette.text, for: .normal)
