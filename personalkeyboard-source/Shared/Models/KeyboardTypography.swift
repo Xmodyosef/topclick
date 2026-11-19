@@ -31,7 +31,7 @@ enum KeyboardTypography {
         // This API selects the localized system UI face (SF Arabic for Arabic),
         // unlike recreating a font from UIKit's private .SFUI-* PostScript name.
         guard let arabicSystemFont = CTFontCreateUIFontForLanguage(
-            kCTFontUIFontSystem,
+            .system,
             size,
             "ar" as CFString
         ) else {
