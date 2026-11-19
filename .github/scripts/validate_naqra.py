@@ -179,7 +179,7 @@ def main() -> None:
     require('UIApplication.openSettingsURLString' in app and 'App-Prefs:' not in app, 'Full Access uses public app settings URL')
     typography = (source / 'Shared/Models/KeyboardTypography.swift').read_text(encoding='utf-8')
     require(
-        'CTFontCreateForString' in typography
+        'CTFontCreateForStringWithLanguage' in typography
         and 'UIFont.systemFont(ofSize: size, weight: weight)' in typography
         and 'SF Arabic' in typography
         and 'letterFont' not in extension,
