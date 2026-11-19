@@ -8,3 +8,11 @@
 - Never rely on the PR page alone for a fresh head SHA; verify with the GitHub API and `git ls-remote`.
 - Pass Markdown-rich PR bodies through a quoted file (`gh pr create --body-file ...`) so shell backticks cannot trigger command substitution and silently remove code references.
 - 2026-11-19: Owner locked FROZEN SURFACE (layouts/emoji/hold/themes) + group.Mark1; releases require sequential numbers and post-device owner opinion before GitHub Release (AGENTS v1.7).
+
+## 2026-11-19 — Skill suite hardened for merge
+
+- Do not pin agent-guard strict checks to a long-lived feature branch (e.g. merged PR #139); always audit the PR tree itself.
+- CAF LPCM: CAF mFormatFlags bit0=float bit1=little-endian — not the wider ASBD flag set (Apple CAF + community parsers).
+- System-sound clicks should stay short; Apple documents AudioServicesPlaySystemSound for ≤30s linear PCM/IMA4 in caf/aif/wav; Signal-iOS caches SystemSoundID similarly to our engine.
+- Jetsam: keep rpages as pages unless page size is known for that report; phys_footprint patterns appear in public keyboard metrics code (dictus-ios / fcitx5-ios docs) but remain device-side.
+- No talk-only skill packs; freeze policy lives in AGENTS §17, not a new script pack.

@@ -15,6 +15,19 @@ COUNTS = {
 }
 
 
+def visible_skill_files(skills_root: Path) -> list[Path]:
+    """Count tracked-style skill files, excluding interpreter and OS cache artifacts."""
+    ignored_parts = {"__pycache__", ".pytest_cache"}
+    ignored_suffixes = {".pyc", ".pyo"}
+    return [
+        path for path in skills_root.rglob("*")
+        if path.is_file()
+        and not any(part in ignored_parts for part in path.relative_to(skills_root).parts)
+        and path.suffix not in ignored_suffixes
+        and path.name != ".DS_Store"
+    ]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=None, help="repository root (default: inferred from this script)")
@@ -40,7 +53,7 @@ def main() -> int:
     packs = sorted(path for path in skills_root.iterdir() if path.is_dir())
     bundle_files = list(skills_root.rglob("bundle-*.md"))
     archives = list(skills_root.rglob("resources.tar.gz"))
-    visible_files = [path for path in skills_root.rglob("*") if path.is_file()]
+    visible_files = visible_skill_files(skills_root)
     actual_counts = {"packs": len(packs), "bundles": len(bundle_files), "archives": len(archives), "visible": len(visible_files)}
 
     for label, key in COUNTS.items():
