@@ -8,7 +8,7 @@ import AudioToolbox
 struct SettingsTab: View {
     @State private var showNumberRow = ThemeStore.bool("showNumberRow") ?? true
     @State private var haptics = ThemeStore.bool("haptics") ?? true
-    @State private var sounds = ThemeStore.bool("sounds") ?? true
+    @State private var sounds = ThemeStore.bool("sounds") ?? false
     @State private var soundChoice = ThemeStore.string("soundChoice") ?? "system"
     @State private var hapticLevel = ThemeStore.string("hapticLevel") ?? "medium"
     @State private var clipboardHistoryEnabled = ThemeStore.bool("clipboardHistoryEnabled") ?? false
@@ -332,7 +332,7 @@ struct SettingsTab: View {
         haptics = ThemeStore.bool("haptics") ?? true
         let storedChoice = ThemeStore.string(ContentPackKeys.soundChoice) ?? "system"
         let requestedChoice = SoundPackStore.knownIDs.contains(storedChoice) ? storedChoice : "system"
-        let soundsEnabled = ThemeStore.bool("sounds") ?? (requestedChoice != "none")
+        let soundsEnabled = ThemeStore.bool("sounds") ?? false
         soundChoice = soundsEnabled && requestedChoice != "none" ? requestedChoice : "none"
         sounds = soundChoice != "none"
         hapticLevel = ThemeStore.string("hapticLevel") ?? "medium"
