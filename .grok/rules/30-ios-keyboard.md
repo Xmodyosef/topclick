@@ -6,3 +6,8 @@
 - Never claim sound, signing, Feather, ESign, or long-session stability without device evidence.
 - Use safe teardown and index guards for emoji and page transitions.
 - Avoid heavyweight rendering, audio engines, timers, or repeated full view reconstruction in the extension unless measured and justified.
+
+## FROZEN SURFACE (owner lock)
+
+Never change Arabic/English key positions, symbols layout, emoji layout, long-press maps, themes, or `group.Mark1` unless the owner unfreezes that item in writing. Prefer stability fixes only. Releases need sequential versions and owner device opinion before GitHub Release.
+
