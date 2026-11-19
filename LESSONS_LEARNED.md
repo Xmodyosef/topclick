@@ -21,3 +21,9 @@
 
 - `paths-ignore` only skips IPA when **every** changed file is ignored; touching `agent-guard.yml` or `tests/**` used to force a full macOS build.
 - Expanded ignore/stamp lists cover skills, docs, agent-guard, security-review, tests, gitignore; app source and build-ipa.yml still force IPA.
+
+## 2026-11-19 — Release 0.2.11 version lock
+
+- Run `python3 personalkeyboard-source/scripts/bump_version.py --check` before every IPA.
+- Tag = `v{MARKETING_VERSION}`; asset = `PersonalKeyboard-{version}.ipa` only (no older IPAs on the Release).
+- Release PRs must not mix skills/ with app sources (agent-guard); land skills first, then version PR.
