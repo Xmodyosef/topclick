@@ -1,4 +1,5 @@
 import XCTest
+import CoreText
 @testable import PersonalKeyboard
 
 final class ClipboardHistoryCodecTests: XCTestCase {
@@ -80,5 +81,35 @@ final class SoundPackCatalogTests: XCTestCase {
         XCTAssertTrue(SoundPackStore.knownIDs.contains("piano"))
         XCTAssertTrue(SoundPackStore.knownIDs.contains("typewriter"))
         XCTAssertEqual(SoundPackStore.title(for: "piano"), "بيانو")
+    }
+}
+
+
+final class KeyboardTypographyTests: XCTestCase {
+    func testArabicKeyGlyphsResolveToAppleSystemArabicFamily() {
+        for character in ["ا", "ب", "م", "ي", "ع", "ة", "َ", "ّ"] {
+            let font = KeyboardTypography.font(for: character, size: 26, weight: .medium)
+            XCTAssertEqual(font.pointSize, 26, "Unexpected point size for \\(character)")
+            XCTAssertTrue(KeyboardTypography.containsArabicScript(character))
+            XCTAssertTrue(
+                font.familyName.localizedCaseInsensitiveContains("Arabic"),
+                "Expected Apple SF Arabic system fallback for \\(character), got \\(font.familyName)"
+            )
+            let coreTextFont = CTFontCreateWithName(font.fontName as CFString, font.pointSize, nil)
+            var characters = Array(character.utf16)
+            var glyphs = [CGGlyph](repeating: 0, count: characters.count)
+            XCTAssertTrue(
+                CTFontGetGlyphsForCharacters(coreTextFont, &characters, &glyphs, characters.count),
+                "System font cascade did not resolve \\(character)"
+            )
+            XCTAssertTrue(glyphs.allSatisfy { $0 != 0 }, "Missing glyph for \\(character)")
+        }
+    }
+
+    func testLatinKeysRemainOnTheDefaultSystemFont() {
+        XCTAssertFalse(KeyboardTypography.containsArabicScript("A"))
+        XCTAssertFalse(KeyboardTypography.containsArabicScript("7"))
+        let font = KeyboardTypography.font(for: "A", size: 26, weight: .medium)
+        XCTAssertEqual(font.fontName, UIFont.systemFont(ofSize: 26, weight: .medium).fontName)
     }
 }
