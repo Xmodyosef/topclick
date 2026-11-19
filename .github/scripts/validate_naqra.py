@@ -180,11 +180,13 @@ def main() -> None:
     require('UIApplication.openSettingsURLString' in app and 'App-Prefs:' not in app, 'Full Access uses public app settings URL')
     typography = (source / 'Shared/Models/KeyboardTypography.swift').read_text(encoding='utf-8')
     require(
-        'CTFontCreateForStringWithLanguage' in typography
-        and 'UIFont.systemFont(ofSize: size, weight: weight)' in typography
-        and 'SF Arabic' in typography
+        'CTFontCreateUIFontForLanguage' in typography
+        and 'kCTFontUIFontSystem' in typography
+        and '"ar" as CFString' in typography
+        and 'CTFontCreateWithName' not in typography
+        and '.SFUI-' not in typography
         and 'letterFont' not in extension,
-        'Arabic keys use the Apple system SF Arabic cascade without bundled fonts'
+        'Arabic keys use the language-aware Apple system UI font API without private font names or bundled fonts'
     )
     require(
         project_text.count('Shared/Models/KeyboardTypography.swift') == 2,
