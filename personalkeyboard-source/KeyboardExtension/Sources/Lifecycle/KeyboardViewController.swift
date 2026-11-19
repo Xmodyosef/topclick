@@ -71,10 +71,6 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     /// Coalesces language changes and lets the current touch event finish before rebuilding.
     var languageRebuildScheduled = false
 
-    var letterFont: UIFont {
-        // One compact, predictable font keeps Arabic and English aligned.
-        .systemFont(ofSize: 26, weight: .medium)
-    }
     let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
     let boardHeight: CGFloat = 324
     /// Number row matches active language; long-press still offers the other script via hold_map.
@@ -300,7 +296,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     func control(_ t: String, _ a: Selector, font: CGFloat, chrome: KeyChrome = .control) -> UIButton {
         let b = KeyButton(type: .system)
         b.setTitle(t, for: .normal)
-        b.titleLabel?.font = .systemFont(ofSize: font, weight: .semibold)
+        b.titleLabel?.font = KeyboardTypography.font(for: t, size: font, weight: .semibold)
         paint(b, chrome: chrome)
         b.addTarget(self, action: a, for: .touchUpInside)
         return b
