@@ -1,8 +1,8 @@
 import CoreText
 import UIKit
 
-/// Resolves Arabic keys through Apple's installed script-aware system font cascade.
-/// Do not bundle SF Arabic or address Apple's reserved font by a private name.
+/// Uses Apple's language-aware system UI font selection for Arabic glyphs.
+/// SF Arabic is supplied by iOS; it must not be bundled or loaded by private name.
 enum KeyboardTypography {
     static func containsArabicScript(_ text: String) -> Bool {
         text.unicodeScalars.contains { scalar in
@@ -28,15 +28,16 @@ enum KeyboardTypography {
             return systemFont
         }
 
-        // Core Text resolves the actual system face that contains the Arabic glyphs.
-        // On Apple platforms this selects SF Arabic rather than an embedded third-party font.
-        let baseFont = CTFontCreateWithName(systemFont.fontName as CFString, size, nil)
-        let resolvedFont = CTFontCreateForStringWithLanguage(
-            baseFont,
-            text as CFString,
-            CFRange(location: 0, length: text.utf16.count),
+        // This API selects the localized system UI face (SF Arabic for Arabic),
+        // unlike recreating a font from UIKit's private .SFUI-* PostScript name.
+        guard let arabicSystemFont = CTFontCreateUIFontForLanguage(
+            kCTFontUIFontSystem,
+            size,
             "ar" as CFString
-        )
-        return resolvedFont as UIFont
+        ) else {
+            return systemFont
+        }
+
+        return arabicSystemFont as UIFont
     }
 }
