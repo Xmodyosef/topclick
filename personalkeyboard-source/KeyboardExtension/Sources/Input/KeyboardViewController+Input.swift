@@ -104,6 +104,7 @@ extension KeyboardViewController {
 
     func toggleLanguage(returnToLetters: Bool = false) {
         language = language == .arabic ? .english : .arabic
+        primaryLanguage = language == .arabic ? "ar" : "en"
         isShifted = false
         symbolPageIndex = 0
         if returnToLetters && page != .emoji {
