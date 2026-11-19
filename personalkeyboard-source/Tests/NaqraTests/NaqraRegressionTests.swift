@@ -87,7 +87,7 @@ final class SoundPackCatalogTests: XCTestCase {
 
 final class KeyboardTypographyTests: XCTestCase {
     func testArabicKeyGlyphsResolveToAppleSystemArabicFamily() {
-        for character in ["ا", "ب", "م", "ي", "ع", "ة", "َ", "ّ"] {
+        for character in ["ا", "ب", "م", "ي", "ع", "ة", "َ", "ّ", "؟"] {
             let font = KeyboardTypography.font(for: character, size: 26, weight: .medium)
             XCTAssertEqual(font.pointSize, 26, "Unexpected point size for \\(character)")
             XCTAssertTrue(KeyboardTypography.containsArabicScript(character))
