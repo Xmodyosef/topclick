@@ -16,3 +16,8 @@
 - System-sound clicks should stay short; Apple documents AudioServicesPlaySystemSound for ≤30s linear PCM/IMA4 in caf/aif/wav; Signal-iOS caches SystemSoundID similarly to our engine.
 - Jetsam: keep rpages as pages unless page size is known for that report; phys_footprint patterns appear in public keyboard metrics code (dictus-ios / fcitx5-ios docs) but remain device-side.
 - No talk-only skill packs; freeze policy lives in AGENTS §17, not a new script pack.
+
+## 2026-11-19 — CI IPA path filter expansion
+
+- `paths-ignore` only skips IPA when **every** changed file is ignored; touching `agent-guard.yml` or `tests/**` used to force a full macOS build.
+- Expanded ignore/stamp lists cover skills, docs, agent-guard, security-review, tests, gitignore; app source and build-ipa.yml still force IPA.

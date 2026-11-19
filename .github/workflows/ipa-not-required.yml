@@ -1,9 +1,12 @@
 name: IPA not required
 
-# build-ipa.yml uses paths-ignore, which skips that whole workflow (including
-# any job inside it). This file is the stamp that still reports success when
-# a PR only touches docs, skills, or .grok. Agent Guard and security review
-# are unchanged and still run on every pull request.
+# Companion to build-ipa.yml paths-ignore.
+# When a PR only touches the ignored policy/skills/CI-guard paths, build-ipa is
+# skipped entirely; this workflow still reports a green "build" check so required
+# status contexts do not hang. Agent Guard and Security Review still run.
+#
+# GitHub rule: this workflow runs if ANY changed file matches paths below.
+# If the PR also changes personalkeyboard-source/**, build-ipa runs for real.
 on:
   push:
     branches: [ main ]
@@ -12,7 +15,15 @@ on:
       - 'skills/**'
       - 'docs/**'
       - '.grok/**'
+      - 'tests/**'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'LICENSE*'
+      - '.github/CODEOWNERS'
+      - '.github/workflows/agent-guard.yml'
+      - '.github/workflows/security-review.yml'
       - '.github/workflows/ipa-not-required.yml'
+      - '.github/workflows/remediation-baseline.yml'
   pull_request:
     branches: [ main ]
     paths:
@@ -20,7 +31,15 @@ on:
       - 'skills/**'
       - 'docs/**'
       - '.grok/**'
+      - 'tests/**'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'LICENSE*'
+      - '.github/CODEOWNERS'
+      - '.github/workflows/agent-guard.yml'
+      - '.github/workflows/security-review.yml'
       - '.github/workflows/ipa-not-required.yml'
+      - '.github/workflows/remediation-baseline.yml'
 
 permissions:
   contents: read
@@ -32,4 +51,7 @@ jobs:
     timeout-minutes: 2
     steps:
       - name: No application change
-        run: echo "Docs, skills, or .grok only. Unsigned IPA build is intentionally not required."
+        run: |
+          echo "Policy/skills/CI-guard/tests only."
+          echo "Unsigned IPA build is intentionally not required for this change set."
+          echo "Still required for personalkeyboard-source/**, .github/scripts/**, or build-ipa.yml."
