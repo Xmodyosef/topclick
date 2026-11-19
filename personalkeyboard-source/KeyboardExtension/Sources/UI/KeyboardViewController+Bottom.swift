@@ -43,6 +43,7 @@ extension KeyboardViewController {
             back.accessibilityLabel = "العودة إلى لوحة الحروف"
             back.semanticContentAttribute = .forceLeftToRight
             back.titleLabel?.semanticContentAttribute = .forceLeftToRight
+            symbolsModeButton = nil
             leading.append(back)
         } else {
             // Letters → symbols. Logical string ؟+# with forced LTR rendering.
@@ -54,11 +55,13 @@ extension KeyboardViewController {
             let font = KeyboardTypography.font(for: symbolsTitle, size: 13, weight: .semibold)
             symbols.setAttributedTitle(ltrAttributedTitle(symbolsTitle, font: font, color: .white), for: .normal)
             symbols.accessibilityLabel = "لوحة الرموز والأرقام"
+            symbolsModeButton = symbols
             leading.append(symbols)
         }
         let langTitle = language == .arabic ? "EN" : "ع"
         let lang = control(langTitle, #selector(languageTapped), font: language == .arabic ? 14 : 16, chrome: .language)
         lang.accessibilityLabel = "تغيير اللغة"
+        languageKeyButton = lang
         leading.append(lang)
         if showsNextKeyboard {
             let next = UIButton(type: .system)
