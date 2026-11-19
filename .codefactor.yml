@@ -1,0 +1,9 @@
+# CodeFactor config for Naqra.
+# Merge gates remain Agent Guard + Security + (IPA when app changes).
+version: 1.0
+exclude_paths:
+  - personalkeyboard-source/**
+  - frames/**
+  - searched_images/**
+  - tmp/**
+  - .ci-tools/**

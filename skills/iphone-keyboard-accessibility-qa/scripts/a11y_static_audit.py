@@ -10,22 +10,72 @@ from pathlib import Path
 BUTTON_CREATION = re.compile(r"\b(?:UIButton|KeyButton)\s*\(\s*type\s*:")
 
 
+def _resolve_source(arg: Path | None) -> Path:
+    if arg is not None:
+        return arg.resolve()
+    candidates = [
+        Path("personalkeyboard-source"),
+        Path(__file__).resolve().parents[3] / "personalkeyboard-source",
+    ]
+    return next((item.resolve() for item in candidates if item.is_dir()), candidates[0].resolve())
+
+
+def _scan_file(
+    path: Path,
+    context_lines: int,
+) -> tuple[int, list[tuple[Path, int, str]], list[tuple[Path, int, str]]]:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    button_candidates: list[tuple[Path, int, str]] = []
+    icon_candidates: list[tuple[Path, int, str]] = []
+    total = 0
+    for index, line in enumerate(lines):
+        if BUTTON_CREATION.search(line):
+            total += 1
+            nearby = "\n".join(lines[index:index + max(1, context_lines)])
+            in_icon_factory = any("func iconKey(" in prior for prior in lines[:index])
+            has_native_title = any(
+                token in nearby for token in ("setTitle(", "cfg.title =", "configuration.title =")
+            )
+            is_visual_only = "isUserInteractionEnabled = false" in nearby
+            if (
+                "accessibilityLabel" not in nearby
+                and not has_native_title
+                and not is_visual_only
+                and not in_icon_factory
+            ):
+                button_candidates.append((path, index + 1, line.strip()))
+
+        match = re.search(r"\b(?:let|var)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*iconKey\(", line)
+        if match:
+            variable = match.group(1)
+            nearby = "\n".join(lines[index:index + max(1, context_lines)])
+            if not re.search(rf"\b{re.escape(variable)}\.accessibilityLabel\s*=", nearby):
+                icon_candidates.append((path, index + 1, variable))
+    return total, button_candidates, icon_candidates
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("source", nargs="?", type=Path, default=None,
-                        help="directory containing Swift sources (default: personalkeyboard-source)")
-    parser.add_argument("--context-lines", type=int, default=18,
-                        help="following lines to search for a nearby label")
-    parser.add_argument("--strict", action="store_true",
-                        help="return non-zero when review candidates are found")
+    parser.add_argument(
+        "source",
+        nargs="?",
+        type=Path,
+        default=None,
+        help="directory containing Swift sources (default: personalkeyboard-source)",
+    )
+    parser.add_argument(
+        "--context-lines",
+        type=int,
+        default=18,
+        help="following lines to search for a nearby label",
+    )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="return non-zero when review candidates are found",
+    )
     args = parser.parse_args()
-    if args.source is None:
-        candidates = [Path("personalkeyboard-source"),
-                      Path(__file__).resolve().parents[3] / "personalkeyboard-source"]
-        source = next((item.resolve() for item in candidates if item.is_dir()),
-                      candidates[0].resolve())
-    else:
-        source = args.source.resolve()
+    source = _resolve_source(args.source)
     if not source.is_dir():
         print(f"FAIL: source directory does not exist: {source}", file=sys.stderr)
         return 2
@@ -34,29 +84,11 @@ def main() -> int:
     button_candidates: list[tuple[Path, int, str]] = []
     icon_candidates: list[tuple[Path, int, str]] = []
     total = 0
-
     for path in files:
-        lines = path.read_text(encoding="utf-8").splitlines()
-        for index, line in enumerate(lines):
-            if BUTTON_CREATION.search(line):
-                total += 1
-                nearby_lines = lines[index:index + max(1, args.context_lines)]
-                nearby = "\n".join(nearby_lines)
-                in_icon_factory = any("func iconKey(" in prior for prior in lines[:index])
-                has_native_title = any(
-                    token in nearby for token in ("setTitle(", "cfg.title =", "configuration.title =")
-                )
-                is_visual_only = "isUserInteractionEnabled = false" in nearby
-                if ("accessibilityLabel" not in nearby and not has_native_title
-                        and not is_visual_only and not in_icon_factory):
-                    button_candidates.append((path, index + 1, line.strip()))
-
-            match = re.search(r"\b(?:let|var)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*iconKey\(", line)
-            if match:
-                variable = match.group(1)
-                nearby = "\n".join(lines[index:index + max(1, args.context_lines)])
-                if not re.search(rf"\b{re.escape(variable)}\.accessibilityLabel\s*=", nearby):
-                    icon_candidates.append((path, index + 1, variable))
+        file_total, file_buttons, file_icons = _scan_file(path, args.context_lines)
+        total += file_total
+        button_candidates.extend(file_buttons)
+        icon_candidates.extend(file_icons)
 
     has_announcements = any("UIAccessibility.post" in path.read_text(encoding="utf-8") for path in files)
     has_hints = any("accessibilityHint" in path.read_text(encoding="utf-8") for path in files)
