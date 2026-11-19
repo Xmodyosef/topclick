@@ -193,12 +193,10 @@ jobs:
             personalkeyboard-source/PersonalKeyboard-*.ipa.sha256
 
 
-      # Soft gate only: IPA is already uploaded above. Hang/timeout here must not
-      # fail the job or hide the artifact (host-app XCTest can stall after compile
-      # on macos-15 simulators; pure unit-test conversion is a later hard gate).
+      # Hard gate: the IPA is uploaded before tests for diagnosis, but XCTest
+      # failures and the timeout must fail this workflow.
       - name: Run XCTest regression suite
         id: xctest
-        continue-on-error: true
         timeout-minutes: 8
         run: |
           set -euo pipefail
