@@ -28,16 +28,15 @@ enum KeyboardTypography {
             return systemFont
         }
 
-        // This API selects the localized system UI face (SF Arabic for Arabic),
-        // unlike recreating a font from UIKit's private .SFUI-* PostScript name.
-        guard let arabicSystemFont = CTFontCreateUIFontForLanguage(
-            .system,
-            size,
+        // Start with the normal system UI font so its system cascade is retained.
+        // Core Text resolves the actual font that covers this Arabic key in that cascade.
+        let resolvedFont = CTFontCreateForStringWithLanguage(
+            systemFont as CTFont,
+            text as CFString,
+            CFRange(location: 0, length: (text as NSString).length),
             "ar" as CFString
-        ) else {
-            return systemFont
-        }
+        )
 
-        return arabicSystemFont as UIFont
+        return resolvedFont as UIFont
     }
 }
