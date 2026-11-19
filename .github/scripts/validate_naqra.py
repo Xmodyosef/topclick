@@ -180,7 +180,25 @@ def main() -> None:
     require('UIApplication.openSettingsURLString' in app and 'App-Prefs:' not in app, 'Full Access uses public app settings URL')
     typography = (source / 'Shared/Models/KeyboardTypography.swift').read_text(encoding='utf-8')
     # Ignore comments when enforcing the no-private-font-name contract.
-    typography_code = re.sub(r'(?m)^\s*//.*    require(
+    typography_code = re.sub(r'(?m)^\s*//.*$', '', typography)
+    key_font = re.search(r'func keyDisplayFont\(for key: String\) -> UIFont\s*\{(.*?)\n    \}', extension, re.S)
+    char_key = re.search(r'func charKey\(_ t: String, rowIdx: Int\) -> UIButton\s*\{(.*?)\n    \}', extension, re.S)
+    require(
+        'CTFontCreateUIFontForLanguage' in typography_code
+        and 'kCTFontUIFontSystem' in typography_code
+        and '"ar" as CFString' in typography_code
+        and 'CTFontCreateWithName' not in typography_code
+        and '.SFUI-' not in typography_code,
+        'Arabic typography uses the language-aware Apple system UI API without private font names'
+    )
+    require(
+        key_font is not None
+        and 'KeyboardTypography.font(for: key' in key_font.group(1)
+        and char_key is not None
+        and 'keyDisplayFont(for: t)' in char_key.group(1),
+        'Arabic system typography is applied through the existing key-label font path'
+    )
+    require(
         project_text.count('Shared/Models/KeyboardTypography.swift') == 2,
         'system Arabic typography is compiled into both app and keyboard targets'
     )
