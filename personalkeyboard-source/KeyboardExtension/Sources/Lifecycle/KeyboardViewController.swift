@@ -59,7 +59,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     weak var emojiSkinLongPress: UILongPressGestureRecognizer?
     var suggestionButtons: [UIButton] = []
     /// Reused on the main thread; UITextChecker is not allocated for each keystroke.
-    let textChecker = UITextChecker()
+    lazy var textChecker = UITextChecker()
     var appliedThemeId = ""
     var noticeLabel: UILabel?
     var pendingTranslationText = ""
