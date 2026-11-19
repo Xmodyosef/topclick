@@ -37,27 +37,22 @@ extension KeyboardViewController {
         row.semanticContentAttribute = .forceLeftToRight
 
         var leading: [UIButton] = []
-        if page == .symbols || page == .emoji {
-            // Unified ABC (no Arabic «حروف» — avoids bidi/width issues; a11y stays Arabic).
-            let back = control("ABC", #selector(symbolsOrLettersTapped), font: 13, chrome: .symbols)
-            back.accessibilityLabel = "العودة إلى لوحة الحروف"
-            back.semanticContentAttribute = .forceLeftToRight
-            back.titleLabel?.semanticContentAttribute = .forceLeftToRight
-            symbolsModeButton = nil
-            leading.append(back)
+        // One mode key for the life of the bar. Emoji and symbols retitle it to ABC.
+        let returning = page == .symbols || page == .emoji
+        let symbolsTitle = returning ? "ABC" : (language == .arabic ? "؟+#" : "#+=")
+        let symbols = control(symbolsTitle, #selector(symbolsOrLettersTapped), font: 13, chrome: .symbols)
+        symbols.semanticContentAttribute = .forceLeftToRight
+        symbols.titleLabel?.semanticContentAttribute = .forceLeftToRight
+        symbols.titleLabel?.textAlignment = .center
+        if returning {
+            symbols.accessibilityLabel = "العودة إلى لوحة الحروف"
         } else {
-            // Letters → symbols. Logical string ؟+# with forced LTR rendering.
-            let symbolsTitle = language == .arabic ? "؟+#" : "#+="
-            let symbols = control(symbolsTitle, #selector(symbolsOrLettersTapped), font: 13, chrome: .symbols)
-            symbols.semanticContentAttribute = .forceLeftToRight
-            symbols.titleLabel?.semanticContentAttribute = .forceLeftToRight
-            symbols.titleLabel?.textAlignment = .center
             let font = KeyboardTypography.font(for: symbolsTitle, size: 13, weight: .semibold)
             symbols.setAttributedTitle(ltrAttributedTitle(symbolsTitle, font: font, color: .white), for: .normal)
             symbols.accessibilityLabel = "لوحة الرموز والأرقام"
-            symbolsModeButton = symbols
-            leading.append(symbols)
         }
+        symbolsModeButton = symbols
+        leading.append(symbols)
         let langTitle = language == .arabic ? "EN" : "ع"
         let lang = control(langTitle, #selector(languageTapped), font: language == .arabic ? 14 : 16, chrome: .language)
         lang.accessibilityLabel = "تغيير اللغة"
@@ -112,14 +107,19 @@ extension KeyboardViewController {
         leading.forEach { row.addArrangedSubview($0) }
         row.addArrangedSubview(emoji)
         row.addArrangedSubview(space)
-        if emojiOn {
-            row.addArrangedSubview(makeDeleteKey(width: BottomWidth.delete))
-        } else {
-            // Delete lives on the last key row for letters and symbols — never here.
-            let period = control(".", #selector(periodTapped), font: 18, chrome: .period)
-            period.widthAnchor.constraint(equalToConstant: BottomWidth.period).isActive = true
-            row.addArrangedSubview(period)
-        }
+        // Delete lives on the last key row for letters and symbols — never here.
+        // Emoji only reveals the bottom delete; the period stays allocated and hidden.
+        let period = control(".", #selector(periodTapped), font: 18, chrome: .period)
+        period.widthAnchor.constraint(equalToConstant: BottomWidth.period).isActive = true
+        period.isHidden = emojiOn
+        period.accessibilityElementsHidden = emojiOn
+        bottomPeriodButton = period
+        let delete = makeDeleteKey(width: BottomWidth.delete)
+        delete.isHidden = !emojiOn
+        delete.accessibilityElementsHidden = !emojiOn
+        bottomDeleteButton = delete
+        row.addArrangedSubview(period)
+        row.addArrangedSubview(delete)
         row.addArrangedSubview(enter)
         lockHeight(row, 44)
         return row

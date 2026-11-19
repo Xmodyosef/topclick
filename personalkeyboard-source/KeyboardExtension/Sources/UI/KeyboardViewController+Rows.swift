@@ -113,4 +113,75 @@ extension KeyboardViewController {
         del.widthAnchor.constraint(equalToConstant: width).isActive = true
         return del
     }
+
+    /// Number row tracked so a language change rewrites ١↔1 without a new stack.
+    func makeTrackedNumberRow() -> UIView {
+        let row = makeRow(numberRow, rowIdx: 0, trackAsLetters: false)
+        if let stack = row as? UIStackView {
+            numberRowButtons = stack.arrangedSubviews.compactMap { $0 as? UIButton }
+        }
+        return row
+    }
+
+    /// Wider of the Arabic and English grids. Spare slots stay hidden and take no width.
+    func makeStableLetterRow(capacity: Int, titles: [String], rowIdx: Int) -> UIView {
+        let s = UIStackView()
+        s.axis = .horizontal
+        s.spacing = 4
+        s.distribution = .fillEqually
+        s.semanticContentAttribute = .forceLeftToRight
+        var rowButtons: [UIButton] = []
+        for col in 0..<capacity {
+            let title = col < titles.count ? titles[col] : ""
+            let button = charKey(title, rowIdx: rowIdx)
+            let spare = col >= titles.count
+            button.isHidden = spare
+            button.accessibilityElementsHidden = spare
+            button.isUserInteractionEnabled = !spare
+            s.addArrangedSubview(button)
+            rowButtons.append(button)
+        }
+        letterKeyButtons.append(rowButtons)
+        lockHeight(s, letterKeyRowHeight())
+        return s
+    }
+
+    /// Same last-row contract as `makeLastLetterRow`, but the Shift key and spare letters
+    /// are hidden instead of omitted, so the next language does not allocate a new row.
+    func makeStableLastLetterRow(capacity: Int, titles: [String]) -> UIView {
+        let wrap = UIStackView()
+        wrap.axis = .horizontal
+        wrap.spacing = 4
+        wrap.semanticContentAttribute = .forceLeftToRight
+        let shift = iconKey(isShifted ? "shift.fill" : "shift", #selector(shiftTapped))
+        shift.widthAnchor.constraint(equalToConstant: 40).isActive = true
+        paint(shift, chrome: .shift, emphasized: isShifted)
+        shift.accessibilityLabel = language == .arabic ? "حرف كبير" : "Shift"
+        let hideShift = language == .arabic
+        shift.isHidden = hideShift
+        shift.accessibilityElementsHidden = hideShift
+        shiftKeyButton = shift
+        wrap.addArrangedSubview(shift)
+        let mid = UIStackView()
+        mid.axis = .horizontal
+        mid.spacing = 6
+        mid.distribution = .fillEqually
+        mid.semanticContentAttribute = .forceLeftToRight
+        var midButtons: [UIButton] = []
+        for col in 0..<capacity {
+            let title = col < titles.count ? titles[col] : ""
+            let button = charKey(title, rowIdx: 2)
+            let spare = col >= titles.count
+            button.isHidden = spare
+            button.accessibilityElementsHidden = spare
+            button.isUserInteractionEnabled = !spare
+            mid.addArrangedSubview(button)
+            midButtons.append(button)
+        }
+        letterKeyButtons.append(midButtons)
+        wrap.addArrangedSubview(mid)
+        wrap.addArrangedSubview(makeDeleteKey())
+        lockHeight(wrap, letterKeyRowHeight())
+        return wrap
+    }
 }

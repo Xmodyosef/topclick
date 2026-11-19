@@ -67,7 +67,12 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     weak var clipboardPanel: UIView?
     var isClipboardPanelVisible = false
     /// Letter-key buttons on the letters page (for in-place shift without rebuild).
+    /// Each row is allocated at the wider Arabic/English capacity; spare keys stay hidden.
     var letterKeyButtons: [[UIButton]] = []
+    /// Digit keys, retitled in place when the language changes. Empty when that row is off.
+    var numberRowButtons: [UIButton] = []
+    /// Set only after the wide letter grid is mounted. Language switches retitle it.
+    var letterGridStable = false
     weak var shiftKeyButton: UIButton?
     var displayedNeedsInputModeSwitchKey: Bool?
     /// Coalesces language changes and lets the current touch event finish before rebuilding.
@@ -85,6 +90,9 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     weak var bottomChrome: UIView?
     weak var languageKeyButton: UIButton?
     weak var symbolsModeButton: UIButton?
+    /// Both live in the bottom bar. One is hidden so emoji does not allocate a new bar.
+    weak var bottomPeriodButton: UIButton?
+    weak var bottomDeleteButton: UIButton?
     /// page + globe + theme. Language is retitled in place and is not part of this key.
     var mountedChromeKey = ""
 
@@ -362,11 +370,14 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     @objc func symbolsOrLettersTapped() {
         resetSpaceTapSequence()
+        if page == .emoji {
+            page = .letters
+            if !swapEmojiSurface() { rebuild() }
+            return
+        }
         if page == .symbols {
             page = .letters
             symbolPageIndex = 0
-        } else if page == .emoji {
-            page = .letters
         } else {
             page = .symbols
             symbolPageIndex = 0

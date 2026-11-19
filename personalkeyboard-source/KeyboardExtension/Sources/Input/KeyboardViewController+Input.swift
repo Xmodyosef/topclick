@@ -98,6 +98,7 @@ extension KeyboardViewController {
             guard let self else { return }
             self.languageRebuildScheduled = false
             NSLog("[Naqra.Keyboard] rebuilding after language switch: %@", String(describing: self.language))
+            if self.applyLanguageSurface() { return }
             self.rebuild()
         }
     }
