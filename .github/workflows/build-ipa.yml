@@ -3,14 +3,24 @@ name: Build Fresh Unsigned IPA
 on:
   push:
     branches: [ main ]
-    # Docs/skills only. Any other file (personalkeyboard-source/** including
-    # Shared, Config, Resources, project.yml and scripts; .github/workflows/build-ipa.yml;
-    # .github/scripts/**) still starts this workflow.
+    # Skip macOS IPA when the PR only touches policy/skills/CI guards/tests.
+    # ANY other path (personalkeyboard-source/**, .github/scripts/**,
+    # .github/workflows/build-ipa.yml itself) still starts a full build.
+    # GitHub rule: if even one changed file is outside this list, IPA runs.
     paths-ignore:
       - '**/*.md'
       - 'skills/**'
       - 'docs/**'
       - '.grok/**'
+      - 'tests/**'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'LICENSE*'
+      - '.github/CODEOWNERS'
+      - '.github/workflows/agent-guard.yml'
+      - '.github/workflows/security-review.yml'
+      - '.github/workflows/ipa-not-required.yml'
+      - '.github/workflows/remediation-baseline.yml'
   pull_request:
     branches: [ main ]
     paths-ignore:
@@ -18,6 +28,15 @@ on:
       - 'skills/**'
       - 'docs/**'
       - '.grok/**'
+      - 'tests/**'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'LICENSE*'
+      - '.github/CODEOWNERS'
+      - '.github/workflows/agent-guard.yml'
+      - '.github/workflows/security-review.yml'
+      - '.github/workflows/ipa-not-required.yml'
+      - '.github/workflows/remediation-baseline.yml'
   # Manual builds are never filtered.
   workflow_dispatch:
 
