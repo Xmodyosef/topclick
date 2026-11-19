@@ -21,7 +21,10 @@ extension KeyboardViewController {
                 guard let observer else { return }
                 let vc = Unmanaged<KeyboardViewController>.fromOpaque(observer).takeUnretainedValue()
                 DispatchQueue.main.async {
-                    TapSoundEngine.shared.setEnabled(ThemeIO.bool("sounds") ?? true)
+                    TapSoundEngine.shared.configure(
+                        enabled: ThemeIO.bool("sounds") ?? false,
+                        choice: ThemeIO.string("soundChoice") ?? "system"
+                    )
                     vc.applyThemeFromGroupIfNeeded()
                 }
             },
