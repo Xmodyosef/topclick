@@ -148,7 +148,14 @@ def main() -> None:
     )
     none_branch = re.search(r'if choice == "none"\s*\{([^}]*)\}', sound)
     require(none_branch is not None and 'return' in none_branch.group(1) and 'AudioServicesPlaySystemSound' not in none_branch.group(1), 'none sound choice is silent')
-    require('ThemeIO.bool("sounds") != false' in sound, 'sound engine respects disabled sound preference')
+    require(
+        'guard shouldPlay else { return }' in sound
+        and 'soundsEnabled' in sound
+        and 'configurationLock' in sound
+        and 'ThemeIO.bool("sounds")' not in sound
+        and 'ThemeIO.string("soundChoice")' not in sound,
+        'sound engine caches preferences outside the per-key playback path'
+    )
 
     settings = (app_dir / 'Settings/SettingsTab.swift').read_text(encoding='utf-8')
     require(not (app_dir / 'Settings/KeyboardPreviewTab.swift').exists(), 'KeyboardPreviewTab removed')
