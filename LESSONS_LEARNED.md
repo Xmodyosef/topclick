@@ -8,3 +8,8 @@
 - Never rely on the PR page alone for a fresh head SHA; verify with the GitHub API and `git ls-remote`.
 - Pass Markdown-rich PR bodies through a quoted file (`gh pr create --body-file ...`) so shell backticks cannot trigger command substitution and silently remove code references.
 - 2026-11-19: Owner locked FROZEN SURFACE (layouts/emoji/hold/themes) + group.Mark1; releases require sequential numbers and post-device owner opinion before GitHub Release (AGENTS v1.7).
+
+## 2026-11-19 — CI IPA path filter expansion
+
+- `paths-ignore` only skips IPA when **every** changed file is ignored; touching `agent-guard.yml` or `tests/**` used to force a full macOS build.
+- Expanded ignore/stamp lists cover skills, docs, agent-guard, security-review, tests, gitignore; app source and build-ipa.yml still force IPA.
