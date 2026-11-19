@@ -24,6 +24,7 @@ targets:
       - path: Shared/Models/ThemeTrace.swift
       - path: Shared/Models/SharedThemeCatalog.swift
       - path: Shared/Models/KeyboardGlyphMetrics.swift
+      - path: Shared/Models/KeyboardTypography.swift
       - path: Shared/Models/KeyboardSymbolCatalog.swift
     settings:
       base:
