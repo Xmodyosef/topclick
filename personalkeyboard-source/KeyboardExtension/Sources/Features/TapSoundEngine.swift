@@ -1,8 +1,7 @@
 import AudioToolbox
 import UIKit
 
-/// Plays short bundled keyboard clicks through AudioServices.
-/// Uses cached AudioServices identifiers without creating an audio-session graph.
+/// Plays short bundled keyboard clicks without reading preferences on every key press.
 final class TapSoundEngine {
     static let shared = TapSoundEngine()
 
@@ -17,16 +16,19 @@ final class TapSoundEngine {
     }
 
     private let audioQueue = DispatchQueue(label: "Naqra.TapSound.queue", qos: .userInitiated)
+    private let configurationLock = NSLock()
     private let pendingLock = NSLock()
     private let maximumPendingPlayRequests = 4
 
+    // Updated only when settings change; the key-tap path performs no preferences I/O.
+    private var soundsEnabled = false
+    private var selectedChoice = "system"
+
     // Accessed only on audioQueue.
-    private var enabled = true
     private var cachedSoundIDs: [String: SystemSoundID] = [:]
     private var unavailableSamples = Set<String>()
+    private var pendingPlayRequests = 0
 
-    // The repository ships these three CAF files. Typewriter intentionally reuses
-    // the existing thocky sample until a dedicated typewriter asset is added.
     private static let sampleAssets: [String: String] = [
         "creamy": "creamy",
         "thocky": "thocky",
@@ -35,39 +37,39 @@ final class TapSoundEngine {
         "piano": "piano"
     ]
 
-    // Counts work submitted to the serial queue, not audio currently playing.
-    // This prevents rapid typing from creating an unbounded DispatchQueue backlog.
-    private var pendingPlayRequests = 0
-
     private init() {}
 
     deinit {
         cachedSoundIDs.values.forEach { AudioServicesDisposeSystemSoundID($0) }
     }
 
-    func setEnabled(_ value: Bool) {
-        audioQueue.async { [weak self] in
-            self?.enabled = value
-        }
+    func configure(enabled: Bool, choice: String) {
+        configurationLock.lock()
+        selectedChoice = Self.sampleAssets[choice] != nil || choice == "system" || choice == "none"
+            ? choice
+            : "system"
+        soundsEnabled = enabled
+        configurationLock.unlock()
     }
 
     func play(_ sound: Sound, variation: Float = 0) {
-        // Preserve the existing call surface for keyboard input handlers.
         _ = sound
         _ = variation
 
+        configurationLock.lock()
+        let shouldPlay = soundsEnabled
+        let choice = selectedChoice
+        configurationLock.unlock()
+
+        guard shouldPlay else { return }
+        if choice == "none" { return }
         guard reservePlayRequest() else { return }
 
         audioQueue.async { [weak self] in
             guard let self else { return }
             defer { self.releasePlayRequest() }
 
-            guard self.enabled, ThemeIO.bool("sounds") != false else { return }
-
-            let choice = ThemeIO.string("soundChoice") ?? "system"
-            if choice == "none" { return }
-
-            guard choice != "system" else {
+            if choice == "system" {
                 self.playSystemClick()
                 return
             }
@@ -76,7 +78,6 @@ final class TapSoundEngine {
                 self.playSystemClick()
                 return
             }
-
             AudioServicesPlaySystemSound(soundID)
         }
     }
@@ -84,7 +85,6 @@ final class TapSoundEngine {
     private func reservePlayRequest() -> Bool {
         pendingLock.lock()
         defer { pendingLock.unlock() }
-
         guard pendingPlayRequests < maximumPendingPlayRequests else { return false }
         pendingPlayRequests += 1
         return true
@@ -102,6 +102,7 @@ final class TapSoundEngine {
         guard !unavailableSamples.contains(assetName),
               let url = Bundle.main.url(forResource: assetName, withExtension: "caf") else {
             unavailableSamples.insert(assetName)
+            NSLog("[Naqra.Audio] missing sound resource: %@.caf", assetName)
             return nil
         }
 
@@ -109,9 +110,9 @@ final class TapSoundEngine {
         let status = AudioServicesCreateSystemSoundID(url as CFURL, &soundID)
         guard status == kAudioServicesNoError, soundID != 0 else {
             unavailableSamples.insert(assetName)
+            NSLog("[Naqra.Audio] AudioServicesCreateSystemSoundID failed for %@.caf status=%d", assetName, status)
             return nil
         }
-
         cachedSoundIDs[assetName] = soundID
         return soundID
     }

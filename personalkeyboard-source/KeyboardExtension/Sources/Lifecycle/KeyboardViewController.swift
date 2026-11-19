@@ -58,6 +58,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var skinSession: SkinSession?
     weak var emojiSkinLongPress: UILongPressGestureRecognizer?
     var suggestionButtons: [UIButton] = []
+    /// Reused on the main thread; UITextChecker is not allocated for each keystroke.
+    lazy var textChecker = UITextChecker()
     var appliedThemeId = ""
     var noticeLabel: UILabel?
     var pendingTranslationText = ""
@@ -68,11 +70,9 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var letterKeyButtons: [[UIButton]] = []
     weak var shiftKeyButton: UIButton?
     var displayedNeedsInputModeSwitchKey: Bool?
+    /// Coalesces language changes and lets the current touch event finish before rebuilding.
+    var languageRebuildScheduled = false
 
-    var letterFont: UIFont {
-        // One compact, predictable font keeps Arabic and English aligned.
-        .systemFont(ofSize: 26, weight: .medium)
-    }
     let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
     let boardHeight: CGFloat = 324
     /// Number row matches active language; long-press still offers the other script via hold_map.
@@ -126,7 +126,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         translationModel.onResult = { [weak self] t in self?.applyTranslation(t) }
         translationModel.onError = { [weak self] message in self?.showNotice(message) }
         ClipboardHistory.shared.ensurePrivacyDefault()
-        TapSoundEngine.shared.setEnabled(ThemeIO.bool("sounds") ?? true)
+        TapSoundEngine.shared.configure(enabled: ThemeIO.bool("sounds") ?? false, choice: ThemeIO.string("soundChoice") ?? "system")
         armHaptics()
         rebuild()
     }
@@ -221,7 +221,6 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     func playSystemClick(_ sound: TapSoundEngine.Sound = .rowMid) {
         guard enableInputClicksWhenVisible else { return }
-        TapSoundEngine.shared.setEnabled(ThemeIO.bool("sounds") ?? true)
         TapSoundEngine.shared.play(sound)
     }
 
@@ -299,7 +298,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     func control(_ t: String, _ a: Selector, font: CGFloat, chrome: KeyChrome = .control) -> UIButton {
         let b = KeyButton(type: .system)
         b.setTitle(t, for: .normal)
-        b.titleLabel?.font = .systemFont(ofSize: font, weight: .semibold)
+        b.titleLabel?.font = KeyboardTypography.font(for: t, size: font, weight: .semibold)
         paint(b, chrome: chrome)
         b.addTarget(self, action: a, for: .touchUpInside)
         return b

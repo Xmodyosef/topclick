@@ -1,4 +1,6 @@
 import XCTest
+import UIKit
+import CoreText
 @testable import PersonalKeyboard
 
 final class ClipboardHistoryCodecTests: XCTestCase {
@@ -80,5 +82,40 @@ final class SoundPackCatalogTests: XCTestCase {
         XCTAssertTrue(SoundPackStore.knownIDs.contains("piano"))
         XCTAssertTrue(SoundPackStore.knownIDs.contains("typewriter"))
         XCTAssertEqual(SoundPackStore.title(for: "piano"), "بيانو")
+    }
+}
+
+
+final class KeyboardTypographyTests: XCTestCase {
+    /// Samples cover letters, hamza/taa, composed tashkeel, and Arabic question mark.
+    /// Isolated combining marks alone are not asserted — they need a base letter.
+    private let arabicKeySamples = ["ا", "ب", "م", "ي", "ع", "ة", "بَ", "بّ", "؟"]
+
+    func testArabicKeyGlyphsResolveThroughAppleSystemFontCascade() {
+        for sample in arabicKeySamples {
+            let font = KeyboardTypography.font(for: sample, size: 26, weight: .medium)
+            XCTAssertEqual(font.pointSize, 26, "Unexpected point size for \(sample)")
+            XCTAssertTrue(KeyboardTypography.containsArabicScript(sample))
+
+            // Assert what UIKit actually draws: CTLine glyph count after cascade.
+            // Do not require familyName to contain "Arabic" (.AppleSystemUIFont is OK).
+            // Do not rely only on CTFontGetGlyphsForCharacters on isolated marks.
+            let attrs: [NSAttributedString.Key: Any] = [.font: font]
+            let line = CTLineCreateWithAttributedString(
+                NSAttributedString(string: sample, attributes: attrs) as CFAttributedString
+            )
+            XCTAssertGreaterThan(
+                CTLineGetGlyphCount(line),
+                0,
+                "System cascade produced no drawable glyphs for \(sample)"
+            )
+        }
+    }
+
+    func testLatinKeysRemainOnTheDefaultSystemFont() {
+        XCTAssertFalse(KeyboardTypography.containsArabicScript("A"))
+        XCTAssertFalse(KeyboardTypography.containsArabicScript("7"))
+        let font = KeyboardTypography.font(for: "A", size: 26, weight: .medium)
+        XCTAssertEqual(font.fontName, UIFont.systemFont(ofSize: 26, weight: .medium).fontName)
     }
 }

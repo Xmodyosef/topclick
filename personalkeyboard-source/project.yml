@@ -13,6 +13,7 @@ settings:
     CODE_SIGN_IDENTITY: ""
     DEVELOPMENT_TEAM: ""
     TARGETED_DEVICE_FAMILY: "1,2"
+    ALWAYS_SEARCH_USER_PATHS: NO
 targets:
   PersonalKeyboard:
     type: application
@@ -24,10 +25,12 @@ targets:
       - path: Shared/Models/ThemeTrace.swift
       - path: Shared/Models/SharedThemeCatalog.swift
       - path: Shared/Models/KeyboardGlyphMetrics.swift
+      - path: Shared/Models/KeyboardTypography.swift
       - path: Shared/Models/KeyboardSymbolCatalog.swift
     settings:
       base:
         PRODUCT_NAME: PersonalKeyboard
+        ALWAYS_SEARCH_USER_PATHS: NO
         ENABLE_TESTABILITY: YES
         PRODUCT_BUNDLE_IDENTIFIER: app.personal.PersonalKeyboard
         MARKETING_VERSION: "0.2.10"
@@ -56,6 +59,7 @@ targets:
       - path: Shared/Models/ThemeTrace.swift
       - path: Shared/Models/SharedThemeCatalog.swift
       - path: Shared/Models/KeyboardGlyphMetrics.swift
+      - path: Shared/Models/KeyboardTypography.swift
       - path: Shared/Models/KeyboardSymbolCatalog.swift
     # Explicit JSON files so XcodeGen copies them into KeyboardExtension.appex
     # (folder resource alone was missing from the built unsigned IPA).
@@ -71,6 +75,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: KeyboardExtension
+        ALWAYS_SEARCH_USER_PATHS: NO
         PRODUCT_BUNDLE_IDENTIFIER: app.personal.PersonalKeyboard.KeyboardExtension
         APPLICATION_EXTENSION_API_ONLY: YES
         MARKETING_VERSION: "0.2.10"
@@ -98,11 +103,12 @@ targets:
         # Explicit product name: empty PRODUCT_NAME produced
         # PersonalKeyboard.app/PlugIns/.xctest and "Multiple commands produce" under xcodebuild test.
         PRODUCT_NAME: NaqraTests
+        ALWAYS_SEARCH_USER_PATHS: NO
         PRODUCT_BUNDLE_IDENTIFIER: app.personal.PersonalKeyboardTests
         GENERATE_INFOPLIST_FILE: YES
-        TEST_TARGET_NAME: PersonalKeyboard
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/PersonalKeyboard.app/PersonalKeyboard"
-        BUNDLE_LOADER: "$(TEST_HOST)"
+        # Hostless unit tests (option B): pure logic / Core Text asserts.
+        # Do NOT set TEST_HOST or BUNDLE_LOADER — launching PersonalKeyboard.app
+        # on the CI simulator is the hang that timed out after compile.
 
 schemes:
   PersonalKeyboard:

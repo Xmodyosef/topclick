@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import plistlib
+import struct
 from pathlib import Path
 import re
 import sys
@@ -34,6 +35,7 @@ def main() -> None:
     source = args.source
 
     ext_dir = source / 'KeyboardExtension/Sources'
+    project_text = (source / 'project.yml').read_text(encoding='utf-8')
     app_dir = source / 'App/Sources'
     extension_resources = source / 'KeyboardExtension/Resources'
     app_config = source / 'App/Config'
@@ -58,6 +60,7 @@ def main() -> None:
     require(APP_GROUP in (source / 'App/Config/PersonalKeyboard.entitlements').read_text(encoding='utf-8'), 'container App Group unchanged')
     require(APP_GROUP in (source / 'KeyboardExtension/Config/KeyboardExtension.entitlements').read_text(encoding='utf-8'), 'extension App Group unchanged')
     require(APP_BUNDLE in project and EXT_BUNDLE in project, 'container and extension bundle IDs unchanged')
+    require(project_text.count('ALWAYS_SEARCH_USER_PATHS: NO') >= 4, 'deprecated traditional header-map search is disabled for project and all targets')
 
     # Split structure
     require((ext_dir / 'Lifecycle/KeyboardViewController.swift').is_file(), 'core KeyboardViewController exists')
@@ -148,7 +151,14 @@ def main() -> None:
     )
     none_branch = re.search(r'if choice == "none"\s*\{([^}]*)\}', sound)
     require(none_branch is not None and 'return' in none_branch.group(1) and 'AudioServicesPlaySystemSound' not in none_branch.group(1), 'none sound choice is silent')
-    require('ThemeIO.bool("sounds") != false' in sound, 'sound engine respects disabled sound preference')
+    require(
+        'guard shouldPlay else { return }' in sound
+        and 'soundsEnabled' in sound
+        and 'configurationLock' in sound
+        and 'ThemeIO.bool("sounds")' not in sound
+        and 'ThemeIO.string("soundChoice")' not in sound,
+        'sound engine caches preferences outside the per-key playback path'
+    )
 
     settings = (app_dir / 'Settings/SettingsTab.swift').read_text(encoding='utf-8')
     require(not (app_dir / 'Settings/KeyboardPreviewTab.swift').exists(), 'KeyboardPreviewTab removed')
@@ -168,7 +178,47 @@ def main() -> None:
     )
     require(not re.search(r'(?m)^\s*sounds\s*=\s*ThemeStore\.bool\("sounds"\)', settings), 'no orphan sound assignment in SettingsTab')
     require('UIApplication.openSettingsURLString' in app and 'App-Prefs:' not in app, 'Full Access uses public app settings URL')
-    require('letterFont' in extension and '.systemFont(ofSize: 26, weight: .medium)' in extension, 'compact keyboard font')
+    typography = (source / 'Shared/Models/KeyboardTypography.swift').read_text(encoding='utf-8')
+    # Ignore comments when enforcing the no-private-font-name contract.
+    typography_code = re.sub(r'(?m)^\s*//.*$', '', typography)
+    key_font = re.search(r'func keyDisplayFont\(for key: String\) -> UIFont\s*\{(.*?)\n    \}', extension, re.S)
+    char_key = re.search(r'func charKey\(_ t: String, rowIdx: Int\) -> UIButton\s*\{(.*?)\n    \}', extension, re.S)
+    require(
+        'CTFontCreateForStringWithLanguage' in typography_code
+        and 'systemFont as CTFont' in typography_code
+        and 'text as CFString' in typography_code
+        and '"ar" as CFString' in typography_code
+        and 'CTFontCreateWithName' not in typography_code
+        and '.SFUI-' not in typography_code,
+        'Arabic keys resolve through the Apple system font cascade without private font names'
+    )
+    require(
+        key_font is not None
+        and 'KeyboardTypography.font(for: key' in key_font.group(1)
+        and char_key is not None
+        and 'keyDisplayFont(for: t)' in char_key.group(1),
+        'Arabic system typography is applied through the existing key-label font path'
+    )
+    require(
+        project_text.count('Shared/Models/KeyboardTypography.swift') == 2,
+        'system Arabic typography is compiled into both app and keyboard targets'
+    )
+    for sample_name in ('piano.caf', 'typewriter.caf'):
+        caf_path = extension_resources / sample_name
+        require(caf_path.is_file(), f'{sample_name} exists')
+        caf = caf_path.read_bytes()
+        require(caf[:4] == b'caff', f'{sample_name} has a CAF header')
+        require(len(caf) >= 68, f'{sample_name} has complete CAF chunks')
+        require(struct.unpack('>I', caf[32:36])[0] == 2, f'{sample_name} declares little-endian signed 16-bit PCM correctly')
+        require(struct.unpack('>d', caf[20:28])[0] == 44100.0, f'{sample_name} sample rate is 44.1 kHz')
+        require(struct.unpack('>I', caf[44:48])[0] == 1, f'{sample_name} is mono')
+        require(struct.unpack('>I', caf[48:52])[0] == 16, f'{sample_name} is 16-bit')
+        require(struct.unpack('>I', caf[36:40])[0] == 2, f'{sample_name} has two bytes per mono frame')
+        require(struct.unpack('>I', caf[40:44])[0] == 1, f'{sample_name} has one frame per packet')
+        require(struct.unpack('>Q', caf[56:64])[0] == len(caf) - 64, f'{sample_name} data chunk length matches file bytes')
+
+    require('primaryLanguage = language == .arabic ? "ar" : "en"' in extension, 'internal language switch updates UIKit primaryLanguage')
+    require('lazy var textChecker = UITextChecker()' in extension and 'let checker = textChecker' in extension, 'suggestions reuse UITextChecker instead of allocating per keystroke')
     require('UIVisualEffectView(effect: nil)' in extension and 'shadowOpacity = 0' in extension, 'keyboard avoids live blur and key shadows')
     build_ui = (ext_dir / 'UI/KeyboardViewController+BuildUI.swift').read_text(encoding='utf-8')
     require(('b.isOpaque = true' in build_ui or 'b.isOpaque = true' in extension) and 'b.opaque = true' not in extension, 'UIButton opacity uses current UIKit property')

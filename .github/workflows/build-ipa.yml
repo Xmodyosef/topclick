@@ -193,9 +193,9 @@ jobs:
             personalkeyboard-source/PersonalKeyboard-*.ipa.sha256
 
 
-      # Soft gate only: IPA is already uploaded above. Hang/timeout here must not
-      # fail the job or hide the artifact (host-app XCTest can stall after compile
-      # on macos-15 simulators; pure unit-test conversion is a later hard gate).
+      # Soft gate (option A): IPA is already uploaded above. A simulator hang
+      # must not fail the job. Hostless NaqraTests (option B) should finish
+      # quickly when the runner is healthy; soft-gate remains as safety net.
       - name: Run XCTest regression suite
         id: xctest
         continue-on-error: true
@@ -245,7 +245,7 @@ jobs:
           fi
           echo "Simulator is Booted"
 
-          # Ad-hoc simulator signing is required for host-app unit tests.
+          # Hostless unit tests still need ad-hoc sim signing for the test runner.
           # CODE_SIGN_IDENTITY="" / CODE_SIGNING_ALLOWED=NO hangs install on
           # macos-15 (root cause of run 180 timeout after compile).
           xcodebuild test \
