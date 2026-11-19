@@ -13,6 +13,7 @@ settings:
     CODE_SIGN_IDENTITY: ""
     DEVELOPMENT_TEAM: ""
     TARGETED_DEVICE_FAMILY: "1,2"
+    ALWAYS_SEARCH_USER_PATHS: NO
 targets:
   PersonalKeyboard:
     type: application
@@ -29,6 +30,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: PersonalKeyboard
+        ALWAYS_SEARCH_USER_PATHS: NO
         ENABLE_TESTABILITY: YES
         PRODUCT_BUNDLE_IDENTIFIER: app.personal.PersonalKeyboard
         MARKETING_VERSION: "0.2.10"
@@ -73,6 +75,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: KeyboardExtension
+        ALWAYS_SEARCH_USER_PATHS: NO
         PRODUCT_BUNDLE_IDENTIFIER: app.personal.PersonalKeyboard.KeyboardExtension
         APPLICATION_EXTENSION_API_ONLY: YES
         MARKETING_VERSION: "0.2.10"
@@ -100,6 +103,7 @@ targets:
         # Explicit product name: empty PRODUCT_NAME produced
         # PersonalKeyboard.app/PlugIns/.xctest and "Multiple commands produce" under xcodebuild test.
         PRODUCT_NAME: NaqraTests
+        ALWAYS_SEARCH_USER_PATHS: NO
         PRODUCT_BUNDLE_IDENTIFIER: app.personal.PersonalKeyboardTests
         GENERATE_INFOPLIST_FILE: YES
         TEST_TARGET_NAME: PersonalKeyboard
