@@ -31,10 +31,11 @@ enum KeyboardTypography {
         // Core Text resolves the actual system face that contains the Arabic glyphs.
         // On Apple platforms this selects SF Arabic rather than an embedded third-party font.
         let baseFont = CTFontCreateWithName(systemFont.fontName as CFString, size, nil)
-        let resolvedFont = CTFontCreateForString(
+        let resolvedFont = CTFontCreateForStringWithLanguage(
             baseFont,
             text as CFString,
-            CFRange(location: 0, length: text.utf16.count)
+            CFRange(location: 0, length: text.utf16.count),
+            "ar" as CFString
         )
         return resolvedFont as UIFont
     }
