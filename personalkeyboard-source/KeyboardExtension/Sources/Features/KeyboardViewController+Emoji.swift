@@ -7,7 +7,9 @@ import AudioToolbox
 final class LTREmojiGridLayout: UICollectionViewLayout {
     /// Fixed column count matches 0.1 density and Apple-like LTR reading order.
     var columns: Int = 8
-    private var cache: [UICollectionViewLayoutAttributes] = []
+    private var columnCount = 8
+    private var itemCount = 0
+    private var side: CGFloat = 0
     private var contentHeight: CGFloat = 0
     private var contentWidth: CGFloat = 0
 
@@ -17,29 +19,47 @@ final class LTREmojiGridLayout: UICollectionViewLayout {
 
     override func prepare() {
         guard let cv = collectionView else { return }
-        cache.removeAll(keepingCapacity: true)
         contentWidth = max(cv.bounds.width - cv.adjustedContentInset.left - cv.adjustedContentInset.right, 1)
-        let cols = max(columns, 1)
-        let side = floor(contentWidth / CGFloat(cols))
-        let count = cv.numberOfItems(inSection: 0)
-        for i in 0..<count {
-            let row = i / cols
-            let col = i % cols // 0 = left edge always
-            let attrs = UICollectionViewLayoutAttributes(forCellWith: IndexPath(item: i, section: 0))
-            attrs.frame = CGRect(x: CGFloat(col) * side, y: CGFloat(row) * side, width: side, height: side)
-            cache.append(attrs)
-        }
-        let rows = count == 0 ? 0 : (count + cols - 1) / cols
+        columnCount = max(columns, 1)
+        side = floor(contentWidth / CGFloat(columnCount))
+        itemCount = cv.numberOfItems(inSection: 0)
+        let rows = itemCount == 0 || side <= 0 ? 0 : (itemCount + columnCount - 1) / columnCount
         contentHeight = CGFloat(rows) * side
     }
 
+    /// Index 0 stays on the left. Attributes are built only for rows that intersect `rect`.
+    private func frame(for item: Int) -> CGRect {
+        let row = item / columnCount
+        let col = item % columnCount
+        return CGRect(x: CGFloat(col) * side, y: CGFloat(row) * side, width: side, height: side)
+    }
+
+    private func attributes(for item: Int) -> UICollectionViewLayoutAttributes {
+        let attrs = UICollectionViewLayoutAttributes(forCellWith: IndexPath(item: item, section: 0))
+        attrs.frame = frame(for: item)
+        return attrs
+    }
+
     override func layoutAttributesForElements(in rect: CGRect) -> [UICollectionViewLayoutAttributes]? {
-        cache.filter { $0.frame.intersects(rect) }
+        guard itemCount > 0, side > 0, columnCount > 0 else { return [] }
+        let first = max(0, Int(floor(rect.minY / side)))
+        let last = min((itemCount - 1) / columnCount, Int(floor((rect.maxY - 0.01) / side)))
+        guard last >= first else { return [] }
+        var out: [UICollectionViewLayoutAttributes] = []
+        out.reserveCapacity((last - first + 1) * columnCount)
+        for row in first...last {
+            let start = row * columnCount
+            let end = min(start + columnCount, itemCount)
+            for item in start..<end where frame(for: item).intersects(rect) {
+                out.append(attributes(for: item))
+            }
+        }
+        return out
     }
 
     override func layoutAttributesForItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
-        guard indexPath.item >= 0, indexPath.item < cache.count else { return nil }
-        return cache[indexPath.item]
+        guard indexPath.item >= 0, indexPath.item < itemCount, side > 0 else { return nil }
+        return attributes(for: indexPath.item)
     }
 
     override func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
@@ -199,12 +219,11 @@ extension KeyboardViewController {
             page = .letters
         } else {
             page = .emoji
-            if emojiPack.isEmpty {
-                emojiPack = Self.catalog()
-            }
             emojiCategoryIndex = min(emojiCategoryIndex, max(emojiPack.count - 1, 0))
         }
-        rebuild()
+        if !swapEmojiSurface() {
+            rebuild()
+        }
         tapHaptic()
     }
 

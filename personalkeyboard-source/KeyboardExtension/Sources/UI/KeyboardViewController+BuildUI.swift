@@ -185,6 +185,10 @@ extension KeyboardViewController {
     }
 
     func clearMiddle() {
+        letterGridStable = false
+        numberRowButtons = []
+        letterKeyButtons = []
+        shiftKeyButton = nil
         middleStack.arrangedSubviews.forEach { view in
             middleStack.removeArrangedSubview(view)
             view.removeFromSuperview()
@@ -194,15 +198,31 @@ extension KeyboardViewController {
     func fillMiddle() {
         switch page {
         case .letters:
+            letterKeyButtons = []
+            numberRowButtons = []
+            letterGridStable = false
             if showNumberRow {
-                middleStack.addArrangedSubview(makeRow(numberRow, rowIdx: 0))
+                middleStack.addArrangedSubview(makeTrackedNumberRow())
             }
             let rows = activeLetterLayout()
-            for (i, row) in rows.enumerated() {
-                if i == rows.count - 1 {
-                    middleStack.addArrangedSubview(makeLastLetterRow(row))
-                } else {
-                    middleStack.addArrangedSubview(makeRow(row, rowIdx: i + 1, trackAsLetters: true))
+            if let caps = sharedLetterCapacity(),
+               caps.count == rows.count,
+               zip(caps, rows).allSatisfy({ $0.0 >= $0.1.count }) {
+                for (i, row) in rows.enumerated() {
+                    if i == rows.count - 1 {
+                        middleStack.addArrangedSubview(makeStableLastLetterRow(capacity: caps[i], titles: row))
+                    } else {
+                        middleStack.addArrangedSubview(makeStableLetterRow(capacity: caps[i], titles: row, rowIdx: i + 1))
+                    }
+                }
+                letterGridStable = shiftKeyButton != nil && letterKeyButtons.count == rows.count
+            } else {
+                for (i, row) in rows.enumerated() {
+                    if i == rows.count - 1 {
+                        middleStack.addArrangedSubview(makeLastLetterRow(row))
+                    } else {
+                        middleStack.addArrangedSubview(makeRow(row, rowIdx: i + 1, trackAsLetters: true))
+                    }
                 }
             }
         case .symbols:
@@ -324,11 +344,134 @@ extension KeyboardViewController {
         return isShifted ? englishUpper : englishLower
     }
 
+    /// Wider key count shared by Arabic and English. Nil when the row counts differ,
+    /// in which case language switching falls back to a middle rebuild.
+    func sharedLetterCapacity() -> [Int]? {
+        let sets = [arabicRows, englishLower, englishUpper]
+        guard let count = sets.first?.count, count > 0, sets.allSatisfy({ $0.count == count }) else { return nil }
+        return (0..<count).map { index in
+            sets.map { $0[index].count }.max() ?? 0
+        }
+    }
+
+    /// Show `titles` on the leading keys and hide the spare capacity. Hidden stack
+    /// items take no width, so the visible keys match a freshly built row.
+    @discardableResult
+    func applyKeyTitles(_ titles: [String], to buttons: [UIButton]) -> Bool {
+        guard buttons.count >= titles.count, !titles.isEmpty else { return false }
+        let hint = language == .arabic ? "اضغط مطولاً لبدائل وحركات" : "Long press for alternates"
+        for (col, title) in titles.enumerated() {
+            let button = buttons[col]
+            button.isHidden = false
+            button.accessibilityElementsHidden = false
+            button.isUserInteractionEnabled = true
+            if button.title(for: .normal) != title {
+                button.setTitle(title, for: .normal)
+                button.titleLabel?.font = keyDisplayFont(for: title)
+            }
+            button.accessibilityLabel = title
+            button.accessibilityHint = holdChoices(for: title).isEmpty ? nil : hint
+        }
+        if buttons.count > titles.count {
+            for button in buttons[titles.count...] {
+                button.isHidden = true
+                button.accessibilityElementsHidden = true
+                button.isUserInteractionEnabled = false
+                button.setTitle("", for: .normal)
+            }
+        }
+        return true
+    }
+
+    /// Language change on the letter page: rewrite the keys already on screen.
+    /// Returns false when the grid is not the stable wide one, so the caller rebuilds.
+    @discardableResult
+    func applyLanguageSurface() -> Bool {
+        if page == .emoji {
+            refreshKeptChromeTitles()
+            return true
+        }
+        guard page == .letters, letterGridStable else { return false }
+        if showNumberRow {
+            guard applyKeyTitles(numberRow, to: numberRowButtons) else { return false }
+        } else if !numberRowButtons.isEmpty {
+            return false
+        }
+        let rows = activeLetterLayout()
+        guard letterKeyButtons.count == rows.count else { return false }
+        for (index, titles) in rows.enumerated() {
+            guard applyKeyTitles(titles, to: letterKeyButtons[index]) else { return false }
+        }
+        guard let shift = shiftKeyButton else { return false }
+        let showShift = language != .arabic
+        shift.isHidden = !showShift
+        shift.accessibilityElementsHidden = !showShift
+        if showShift {
+            shift.accessibilityLabel = "Shift"
+            let name = isShifted ? "shift.fill" : "shift"
+            let symbol = UIImage(systemName: name, withConfiguration: iconConfig)
+                ?? UIImage(systemName: "shift", withConfiguration: iconConfig)
+            shift.setImage(symbol, for: .normal)
+            paint(shift, chrome: .shift, emphasized: isShifted)
+        }
+        hideKeyPreview()
+        hideHoldPopup()
+        refreshKeptChromeTitles()
+        refreshSuggestions()
+        view.setNeedsLayout()
+        return true
+    }
+
+    /// Show or hide the bottom period/delete pair without allocating a new bar.
+    func morphBottom(emojiOn: Bool) {
+        bottomPeriodButton?.isHidden = emojiOn
+        bottomPeriodButton?.accessibilityElementsHidden = emojiOn
+        bottomDeleteButton?.isHidden = !emojiOn
+        bottomDeleteButton?.accessibilityElementsHidden = !emojiOn
+        guard emojiOn, let mode = symbolsModeButton else { return }
+        mode.setAttributedTitle(nil, for: .normal)
+        mode.setTitle("ABC", for: .normal)
+        mode.titleLabel?.font = KeyboardTypography.font(for: "ABC", size: 13, weight: .semibold)
+        mode.accessibilityLabel = "العودة إلى لوحة الحروف"
+    }
+
+    /// Drop the letter or emoji middle before the other one is created, and keep the bottom bar.
+    @discardableResult
+    func swapEmojiSurface() -> Bool {
+        guard bottomChrome?.superview === rootStack,
+              middleStack.superview === rootStack,
+              bottomPeriodButton != nil,
+              bottomDeleteButton != nil else { return false }
+        if page != .emoji, topChrome?.superview !== rootStack { return false }
+        hideKeyPreview()
+        hideClipboardPanel()
+        cancelEmojiTransientInteractions()
+        let opening = page == .emoji
+        autoreleasepool {
+            releaseEmojiSurface()
+            clearMiddle()
+        }
+        if opening {
+            topChrome?.isHidden = true
+            fillMiddle()
+            morphBottom(emojiOn: true)
+        } else {
+            topChrome?.isHidden = false
+            fillMiddle()
+            morphBottom(emojiOn: false)
+            refreshKeptChromeTitles()
+            refreshSuggestions()
+        }
+        mountedChromeKey = surfaceChromeKey()
+        view.setNeedsLayout()
+        return true
+    }
+
     /// Toggle shift by rewriting titles on existing keys — no full stack rebuild.
     /// Falls back to `rebuild()` if the tracked key grid does not match the layout.
     @discardableResult
     func applyShiftSurface() -> Bool {
-        guard page == .letters else {
+        guard page == .letters, letterGridStable else {
             rebuild()
             return false
         }
@@ -338,13 +481,9 @@ extension KeyboardViewController {
             return false
         }
         for (rowIndex, titles) in rows.enumerated() {
-            let buttons = letterKeyButtons[rowIndex]
-            guard buttons.count == titles.count else {
+            guard applyKeyTitles(titles, to: letterKeyButtons[rowIndex]) else {
                 rebuild()
                 return false
-            }
-            for (col, title) in titles.enumerated() {
-                buttons[col].setTitle(title, for: .normal)
             }
         }
         if let shift = shiftKeyButton {
