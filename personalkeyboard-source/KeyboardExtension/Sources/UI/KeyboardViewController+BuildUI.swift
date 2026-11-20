@@ -319,12 +319,8 @@ extension KeyboardViewController {
             refreshKeptChromeTitles()
             if page == .letters {
                 refreshSuggestions()
-            } else if languageChanged, let old = topChrome, old.superview === rootStack {
-                rootStack.removeArrangedSubview(old)
-                old.removeFromSuperview()
-                let bar = makeToolbar()
-                rootStack.insertArrangedSubview(bar, at: 0)
-                topChrome = bar
+            } else if languageChanged {
+                refreshKeptChromeTitles()
             }
         } else {
             mountFullSurface()
@@ -393,9 +389,9 @@ extension KeyboardViewController {
         }
         guard page == .letters, letterGridStable else { return false }
         if showNumberRow {
-            guard applyKeyTitles(numberRow, to: numberRowButtons) else { return false }
-        } else if !numberRowButtons.isEmpty {
-            return false
+            // Soft: missing number tracking falls through to middle remount, not full chrome.
+            guard !numberRowButtons.isEmpty,
+                  applyKeyTitles(numberRow, to: numberRowButtons) else { return false }
         }
         let rows = activeLetterLayout()
         guard letterKeyButtons.count == rows.count else { return false }
@@ -417,6 +413,7 @@ extension KeyboardViewController {
         hideKeyPreview()
         hideHoldPopup()
         refreshKeptChromeTitles()
+        // In-place only; must not allocate a new toolbar on every language flip.
         refreshSuggestions()
         view.setNeedsLayout()
         return true

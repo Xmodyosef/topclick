@@ -18,14 +18,15 @@ extension KeyboardViewController {
         clip.widthAnchor.constraint(equalToConstant: 36).isActive = true
         s.addArrangedSubview(clip)
 
-        // Suggestions only when enabled AND non-empty — no blank white middle strip.
+        // Suggestions: three stable slots when enabled so language/text updates retitle
+        // in place. Empty slots stay hidden (no blank white strip, no toolbar rebuild).
         let showSuggestions = ThemeIO.bool("suggestions") ?? false
-        let words = showSuggestions ? suggestions().filter { !$0.isEmpty } : []
-        if !words.isEmpty {
-            let suggRow = makeSuggestionsRow(words: words)
+        if showSuggestions {
+            let suggRow = makeSuggestionsRow(words: suggestions())
             suggRow.setContentHuggingPriority(.defaultLow, for: .horizontal)
             s.addArrangedSubview(suggRow)
         } else {
+            suggestionButtons = []
             let spacer = UIView()
             spacer.backgroundColor = .clear
             spacer.isUserInteractionEnabled = false
