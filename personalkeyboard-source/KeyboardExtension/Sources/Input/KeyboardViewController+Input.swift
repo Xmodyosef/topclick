@@ -151,14 +151,14 @@ extension KeyboardViewController {
                 NSLog("[Naqra.Keyboard] language surface retitle: %@", String(describing: self.language))
                 return
             }
-            // Letters: remount middle only — never full chrome for a language flip.
-            if self.page == .letters {
+            // Letters and symbols: replace the middle rows only.
+            // Full chrome rebuild() is intentionally not invoked on this path.
+            if self.page == .letters || self.page == .symbols {
                 NSLog("[Naqra.Keyboard] language middle remount: %@", String(describing: self.language))
                 self.remountLetterMiddleForLanguage()
                 return
             }
-            NSLog("[Naqra.Keyboard] language rebuild fallback: %@", String(describing: self.language))
-            self.rebuild()
+            self.refreshKeptChromeTitles()
         }
     }
 

@@ -10,7 +10,9 @@ final class EmojiCell: UICollectionViewCell {
         contentView.semanticContentAttribute = .forceLeftToRight
         label.semanticContentAttribute = .forceLeftToRight
         label.textAlignment = .center
-        label.font = .systemFont(ofSize: 30)
+        label.font = .systemFont(ofSize: 26)
+        label.adjustsFontSizeToFitWidth = false
+        label.minimumScaleFactor = 1
         label.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(label)
         NSLayoutConstraint.activate([

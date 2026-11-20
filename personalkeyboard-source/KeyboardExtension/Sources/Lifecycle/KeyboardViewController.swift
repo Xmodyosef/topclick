@@ -140,7 +140,6 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     override func viewDidLoad() {
         super.viewDidLoad()
         displayedNeedsInputModeSwitchKey = needsInputModeSwitchKey
-        emojiPack = Self.catalog()
         view.backgroundColor = .clear
         configureRoot()
         attachBridge()
@@ -156,6 +155,12 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     deinit {
         CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(), Unmanaged.passUnretained(self).toOpaque(), CFNotificationName("app.personal.PersonalKeyboard.prefs" as CFString), nil)
+        KeyboardDataLoader.clearEmojiCache()
+        // UIInputViewController's view can outlive the controller. Drop the tree next turn.
+        let retained = viewIfLoaded
+        DispatchQueue.main.async {
+            retained?.subviews.forEach { $0.removeFromSuperview() }
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -216,6 +221,27 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         hideKeyPreview()
         hideClipboardPanel()
         pendingInserted = false
+        discardEmojiIfLeaving()
+    }
+
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+        if page != .emoji {
+            emojiPack = []
+            KeyboardDataLoader.clearEmojiCache()
+        }
+    }
+
+    /// Emoji is not part of the resting keyboard. Drop it when the extension hides.
+    func discardEmojiIfLeaving() {
+        if page == .emoji {
+            page = .letters
+            if !swapEmojiSurface() {
+                releaseEmojiSurface()
+            }
+        }
+        emojiPack = []
+        KeyboardDataLoader.clearEmojiCache()
     }
 
     override func viewDidLayoutSubviews() {

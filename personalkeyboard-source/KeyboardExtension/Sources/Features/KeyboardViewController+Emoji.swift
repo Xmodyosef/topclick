@@ -471,7 +471,7 @@ extension KeyboardViewController {
         for (i, tone) in tones.prefix(6).enumerated() {
             let b = UIButton(type: .system)
             b.setTitle(tone, for: .normal)
-            b.titleLabel?.font = .systemFont(ofSize: 28)
+            b.titleLabel?.font = .systemFont(ofSize: 22)
             b.tag = i
             b.backgroundColor = (i == min(preferred, tones.count - 1))
                 ? palette.accent.withAlphaComponent(0.28)

@@ -458,6 +458,8 @@ extension KeyboardViewController {
             morphBottom(emojiOn: false)
             refreshKeptChromeTitles()
             refreshSuggestions()
+            emojiPack = []
+            KeyboardDataLoader.clearEmojiCache()
         }
         mountedChromeKey = surfaceChromeKey()
         view.setNeedsLayout()
@@ -465,21 +467,21 @@ extension KeyboardViewController {
     }
 
     /// Toggle shift by rewriting titles on existing keys — no full stack rebuild.
-    /// Falls back to `rebuild()` if the tracked key grid does not match the layout.
+    /// Falls back to a middle remount if the tracked key grid does not match the layout.
     @discardableResult
     func applyShiftSurface() -> Bool {
         guard page == .letters, letterGridStable else {
-            rebuild()
+            remountLetterMiddleForLanguage()
             return false
         }
         let rows = activeLetterLayout()
         guard letterKeyButtons.count == rows.count else {
-            rebuild()
+            remountLetterMiddleForLanguage()
             return false
         }
         for (rowIndex, titles) in rows.enumerated() {
             guard applyKeyTitles(titles, to: letterKeyButtons[rowIndex]) else {
-                rebuild()
+                remountLetterMiddleForLanguage()
                 return false
             }
         }
