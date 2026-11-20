@@ -16,13 +16,21 @@ extension KeyboardViewController {
         s.semanticContentAttribute = .forceLeftToRight
         s.backgroundColor = .clear
         suggestionButtons = []
-        let list = (words ?? suggestions()).filter { !$0.isEmpty }
+        // Always three slots so refreshSuggestions can retitle in place (no toolbar rebuild).
+        var list = words ?? suggestions()
+        while list.count < 3 { list.append("") }
+        if list.count > 3 { list = Array(list.prefix(3)) }
         for (i, word) in list.enumerated() {
             let b = UIButton(type: .system)
             b.tag = i
-            b.setTitle(word, for: .normal)
-            b.isEnabled = true
-            b.titleLabel?.font = KeyboardTypography.font(for: word, size: 14, weight: .semibold)
+            let empty = word.isEmpty
+            b.setTitle(empty ? "" : word, for: .normal)
+            b.isEnabled = !empty
+            b.isHidden = empty
+            b.accessibilityElementsHidden = empty
+            if !empty {
+                b.titleLabel?.font = KeyboardTypography.font(for: word, size: 14, weight: .semibold)
+            }
             b.titleLabel?.adjustsFontSizeToFitWidth = true
             b.titleLabel?.minimumScaleFactor = 0.7
             b.setTitleColor(palette.text, for: .normal)
@@ -67,18 +75,60 @@ extension KeyboardViewController {
         return out
     }
 
+    /// Update suggestion titles on existing buttons. Never tears down the toolbar.
+    /// A one-time toolbar rebuild is allowed only when suggestions are enabled and
+    /// the three stable slots were never created (first enable after launch).
     func refreshSuggestions() {
         guard page == .letters else { return }
-        let words = suggestions().filter { !$0.isEmpty }
-        let current = suggestionButtons.compactMap { $0.title(for: .normal) }.filter { !$0.isEmpty }
-        if current == words { return }
-        if current.isEmpty && words.isEmpty { return }
-        guard let old = topChrome, old.superview === rootStack else { return }
+        let show = ThemeIO.bool("suggestions") ?? false
+        if !show {
+            if !suggestionButtons.isEmpty {
+                for button in suggestionButtons {
+                    button.setTitle("", for: .normal)
+                    button.isHidden = true
+                    button.isEnabled = false
+                    button.accessibilityElementsHidden = true
+                }
+            }
+            return
+        }
+        var words = suggestions()
+        while words.count < 3 { words.append("") }
+        if words.count > 3 { words = Array(words.prefix(3)) }
+
+        if suggestionButtons.count >= 3 {
+            applySuggestionTitles(words)
+            return
+        }
+
+        // Structure missing (toolbar used a spacer). Build once; later updates stay in place.
+        let anyWord = words.contains { !$0.isEmpty }
+        guard anyWord, let old = topChrome, old.superview === rootStack else { return }
         rootStack.removeArrangedSubview(old)
         old.removeFromSuperview()
         let bar = makeToolbar()
         rootStack.insertArrangedSubview(bar, at: 0)
         topChrome = bar
+    }
+
+    func applySuggestionTitles(_ words: [String]) {
+        let count = min(3, suggestionButtons.count)
+        for i in 0..<count {
+            let word = i < words.count ? words[i] : ""
+            let button = suggestionButtons[i]
+            let empty = word.isEmpty
+            let previous = button.title(for: .normal) ?? ""
+            if previous != word {
+                button.setTitle(empty ? "" : word, for: .normal)
+                if !empty {
+                    button.titleLabel?.font = KeyboardTypography.font(for: word, size: 14, weight: .semibold)
+                    button.setTitleColor(palette.text, for: .normal)
+                }
+            }
+            button.isHidden = empty
+            button.isEnabled = !empty
+            button.accessibilityElementsHidden = empty
+        }
     }
 
     @objc func suggestionTapped(_ sender: UIButton) {
@@ -97,10 +147,35 @@ extension KeyboardViewController {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             self.languageRebuildScheduled = false
-            NSLog("[Naqra.Keyboard] rebuilding after language switch: %@", String(describing: self.language))
-            if self.applyLanguageSurface() { return }
+            if self.applyLanguageSurface() {
+                NSLog("[Naqra.Keyboard] language surface retitle: %@", String(describing: self.language))
+                return
+            }
+            // Letters: remount middle only — never full chrome for a language flip.
+            if self.page == .letters {
+                NSLog("[Naqra.Keyboard] language middle remount: %@", String(describing: self.language))
+                self.remountLetterMiddleForLanguage()
+                return
+            }
+            NSLog("[Naqra.Keyboard] language rebuild fallback: %@", String(describing: self.language))
             self.rebuild()
         }
+    }
+
+    /// Re-fill the letter grid in place without discarding the top/bottom chrome.
+    func remountLetterMiddleForLanguage() {
+        hideKeyPreview()
+        hideHoldPopup()
+        hideClipboardPanel()
+        autoreleasepool {
+            clearMiddle()
+            fillMiddle()
+        }
+        refreshKeptChromeTitles()
+        refreshSuggestions()
+        mountedChromeKey = surfaceChromeKey()
+        updateHeightForCurrentSize()
+        view.setNeedsLayout()
     }
 
     func toggleLanguage(returnToLetters: Bool = false) {
