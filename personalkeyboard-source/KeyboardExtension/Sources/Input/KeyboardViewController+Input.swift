@@ -67,12 +67,38 @@ extension KeyboardViewController {
         return out
     }
 
+    /// Update suggestion titles without tearing down the toolbar.
+    /// Full toolbar rebuild is reserved for first appearance of the suggestions strip.
     func refreshSuggestions() {
         guard page == .letters else { return }
-        let words = suggestions().filter { !$0.isEmpty }
+        let enabled = ThemeIO.bool("suggestions") ?? false
+        let words = enabled ? suggestions().filter { !$0.isEmpty } : []
         let current = suggestionButtons.compactMap { $0.title(for: .normal) }.filter { !$0.isEmpty }
         if current == words { return }
-        if current.isEmpty && words.isEmpty { return }
+
+        // In-place: we already have slots — rewrite titles only (language switch / typing).
+        if !suggestionButtons.isEmpty {
+            let limit = suggestionButtons.count
+            for index in 0..<limit {
+                let title = index < words.count ? words[index] : ""
+                let button = suggestionButtons[index]
+                if button.title(for: .normal) != title {
+                    button.setTitle(title, for: .normal)
+                    if !title.isEmpty {
+                        button.titleLabel?.font = KeyboardTypography.font(for: title, size: 14, weight: .semibold)
+                    }
+                }
+                button.isEnabled = !title.isEmpty
+                button.isUserInteractionEnabled = !title.isEmpty
+                button.alpha = title.isEmpty ? 0.35 : 1
+            }
+            return
+        }
+
+        // No strip yet and still empty — keep the spacer toolbar as-is.
+        if words.isEmpty { return }
+
+        // First time suggestions appear: rebuild toolbar once so the strip is created.
         guard let old = topChrome, old.superview === rootStack else { return }
         rootStack.removeArrangedSubview(old)
         old.removeFromSuperview()
@@ -97,9 +123,27 @@ extension KeyboardViewController {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             self.languageRebuildScheduled = false
-            NSLog("[Naqra.Keyboard] rebuilding after language switch: %@", String(describing: self.language))
-            if self.applyLanguageSurface() { return }
-            self.rebuild()
+            self.commitLanguageSurface()
+        }
+    }
+
+    /// Language change must not allocate a new chrome stack. Prefer retitle; recover middle only.
+    func commitLanguageSurface() {
+        NSLog("[Naqra.Keyboard] language surface: %@ page=%@", String(describing: language), String(describing: page))
+        UIView.performWithoutAnimation {
+            if page == .emoji {
+                refreshKeptChromeTitles()
+                return
+            }
+            if page == .letters {
+                if applyLanguageSurface() { return }
+                // Stable grid was lost — rebuild middle only, then retitle.
+                rebuildMiddlePreservingChrome()
+                if applyLanguageSurface() { return }
+                return
+            }
+            // Symbols: row content differs by language; replace middle, keep bars.
+            rebuildMiddlePreservingChrome()
         }
     }
 

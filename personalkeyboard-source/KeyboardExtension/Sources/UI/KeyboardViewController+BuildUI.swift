@@ -314,18 +314,11 @@ extension KeyboardViewController {
         if chromeAlive {
             autoreleasepool { clearMiddle() }
             fillMiddle()
-            let langTitle = language == .arabic ? "EN" : "ع"
-            let languageChanged = languageKeyButton?.title(for: .normal) != langTitle
             refreshKeptChromeTitles()
             if page == .letters {
                 refreshSuggestions()
-            } else if languageChanged, let old = topChrome, old.superview === rootStack {
-                rootStack.removeArrangedSubview(old)
-                old.removeFromSuperview()
-                let bar = makeToolbar()
-                rootStack.insertArrangedSubview(bar, at: 0)
-                topChrome = bar
             }
+            // Never rebuild the toolbar solely because EN/ع title changed.
         } else {
             mountFullSurface()
             mountedChromeKey = key
@@ -370,7 +363,12 @@ extension KeyboardViewController {
                 button.titleLabel?.font = keyDisplayFont(for: title)
             }
             button.accessibilityLabel = title
-            button.accessibilityHint = holdChoices(for: title).isEmpty ? nil : hint
+            // Hint only when the key actually has long-press choices (hold map hit).
+            if holdMap[title] != nil || (!title.isEmpty && holdMap[title.lowercased()] != nil) {
+                button.accessibilityHint = hint
+            } else {
+                button.accessibilityHint = nil
+            }
         }
         if buttons.count > titles.count {
             for button in buttons[titles.count...] {
@@ -395,7 +393,8 @@ extension KeyboardViewController {
         if showNumberRow {
             guard applyKeyTitles(numberRow, to: numberRowButtons) else { return false }
         } else if !numberRowButtons.isEmpty {
-            return false
+            // Stale tracked row while the preference hid numbers — drop tracking, keep surface.
+            numberRowButtons = []
         }
         let rows = activeLetterLayout()
         guard letterKeyButtons.count == rows.count else { return false }
@@ -417,9 +416,42 @@ extension KeyboardViewController {
         hideKeyPreview()
         hideHoldPopup()
         refreshKeptChromeTitles()
+        // Do not tear down the toolbar on language change — titles only; textDidChange refreshes words.
         refreshSuggestions()
         view.setNeedsLayout()
         return true
+    }
+
+    /// Replace only the middle key rows. Keeps toolbar and bottom bar alive (language × N safe path).
+    func rebuildMiddlePreservingChrome() {
+        hideKeyPreview()
+        hideHoldPopup()
+        hideClipboardPanel()
+        cancelEmojiTransientInteractions()
+        if page != .emoji {
+            releaseEmojiSurface()
+        }
+        autoreleasepool { clearMiddle() }
+        // Ensure chrome shells exist without mountFullSurface.
+        if page != .emoji, topChrome?.superview !== rootStack {
+            let bar = makeToolbar()
+            rootStack.insertArrangedSubview(bar, at: 0)
+            topChrome = bar
+        }
+        if middleStack.superview !== rootStack {
+            rootStack.addArrangedSubview(middleStack)
+        }
+        fillMiddle()
+        if bottomChrome?.superview !== rootStack {
+            let bottom = makeBottom(emojiOn: page == .emoji)
+            rootStack.addArrangedSubview(bottom)
+            bottomChrome = bottom
+        } else if page == .letters || page == .symbols {
+            morphBottom(emojiOn: false)
+        }
+        refreshKeptChromeTitles()
+        mountedChromeKey = surfaceChromeKey()
+        view.setNeedsLayout()
     }
 
     /// Show or hide the bottom period/delete pair without allocating a new bar.
