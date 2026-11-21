@@ -35,7 +35,10 @@ extension KeyboardViewController {
         )
     }
     func playSystemSound() { playSystemClick(.rowMid) }
+    /// Create the Translation UIHostingController once, on demand.
+    /// Idempotent: second call is a no-op while the host is alive.
     func attachBridge() {
+        guard translationHost == nil else { return }
         let host = UIHostingController(rootView: TranslationBridgeView(model: translationModel))
         translationHost = host
         addChild(host)
@@ -49,6 +52,15 @@ extension KeyboardViewController {
             host.view.topAnchor.constraint(equalTo: view.topAnchor)
         ])
         host.didMove(toParent: self)
+    }
+
+    /// Drop the Translation host under memory pressure. Next translate recreates it.
+    func detachTranslationBridge() {
+        guard let host = translationHost else { return }
+        host.willMove(toParent: nil)
+        host.view.removeFromSuperview()
+        host.removeFromParent()
+        translationHost = nil
     }
     @objc func copyPasteTapped() {
         guard !clipboardLongPressInProgress else { return }
@@ -108,6 +120,8 @@ extension KeyboardViewController {
         let translateToEnglish = arabicCount >= max(1, text.count / 4)
         translationModel.sourceLang = translateToEnglish ? "ar" : "en"
         translationModel.targetLang = translateToEnglish ? "en" : "ar"
+        // Lazy: pay UIHostingController + Translation cost only when the user translates.
+        attachBridge()
         translationModel.sourceText = text
         translationModel.token += 1
     }

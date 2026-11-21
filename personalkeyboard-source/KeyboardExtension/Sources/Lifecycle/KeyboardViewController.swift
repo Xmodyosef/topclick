@@ -142,7 +142,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         displayedNeedsInputModeSwitchKey = needsInputModeSwitchKey
         view.backgroundColor = .clear
         configureRoot()
-        attachBridge()
+        // Translation UIHostingController is created on first translate tap (lazy).
+        // Eager attach paid for Translation framework cost on every keyboard open.
         loadPrefs()
         listenPrefs()
         translationModel.onResult = { [weak self] t in self?.applyTranslation(t) }
@@ -226,6 +227,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
+        KeyboardTypography.clearFontCache()
+        detachTranslationBridge()
         if page != .emoji {
             emojiPack = []
             KeyboardDataLoader.clearEmojiCache()
@@ -233,11 +236,15 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     }
 
     /// Emoji is not part of the resting keyboard. Drop it when the extension hides.
+    /// If the in-place swap cannot restore the letter surface (e.g. toolbar was
+    /// never mounted because emoji used a full surface), rebuild so middle is
+    /// not left holding the emoji collection under Jetsam pressure.
     func discardEmojiIfLeaving() {
         if page == .emoji {
             page = .letters
             if !swapEmojiSurface() {
                 releaseEmojiSurface()
+                rebuild()
             }
         }
         emojiPack = []
