@@ -1,4 +1,10 @@
 ## Unreleased
+
+### Sound under Full Access
+- Shortened `piano.caf` from ~420 ms to ~55 ms and lowered amplitude so key clicks stay light when Full Access applies the chosen pack.
+- Limited concurrent click playback to one in-flight sound (was four).
+- Dispose cached `SystemSoundID`s on memory warning.
+
 ### Language-path probe (no version bump)
 Not a fix. One on-keyboard control, default mode is the current path.
 
