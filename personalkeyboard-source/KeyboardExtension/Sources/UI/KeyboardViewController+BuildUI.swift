@@ -433,13 +433,15 @@ extension KeyboardViewController {
     }
 
     /// Drop the letter or emoji middle before the other one is created, and keep the bottom bar.
+    /// Leaving emoji after a full emoji mount may have no toolbar (topChrome == nil).
+    /// Restore the toolbar in place instead of failing the swap and forcing a full rebuild
+    /// only when bottom chrome is already gone.
     @discardableResult
     func swapEmojiSurface() -> Bool {
         guard bottomChrome?.superview === rootStack,
               middleStack.superview === rootStack,
               bottomPeriodButton != nil,
               bottomDeleteButton != nil else { return false }
-        if page != .emoji, topChrome?.superview !== rootStack { return false }
         hideKeyPreview()
         hideClipboardPanel()
         cancelEmojiTransientInteractions()
@@ -453,7 +455,14 @@ extension KeyboardViewController {
             fillMiddle()
             morphBottom(emojiOn: true)
         } else {
-            topChrome?.isHidden = false
+            // Emoji full mount never keeps a toolbar. Re-insert it when missing.
+            if topChrome?.superview !== rootStack {
+                let bar = makeToolbar()
+                rootStack.insertArrangedSubview(bar, at: 0)
+                topChrome = bar
+            } else {
+                topChrome?.isHidden = false
+            }
             fillMiddle()
             morphBottom(emojiOn: false)
             refreshKeptChromeTitles()

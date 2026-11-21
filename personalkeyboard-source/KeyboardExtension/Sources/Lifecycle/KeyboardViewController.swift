@@ -236,11 +236,15 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     }
 
     /// Emoji is not part of the resting keyboard. Drop it when the extension hides.
+    /// If the in-place swap cannot restore the letter surface (e.g. toolbar was
+    /// never mounted because emoji used a full surface), rebuild so middle is
+    /// not left holding the emoji collection under Jetsam pressure.
     func discardEmojiIfLeaving() {
         if page == .emoji {
             page = .letters
             if !swapEmojiSurface() {
                 releaseEmojiSurface()
+                rebuild()
             }
         }
         emojiPack = []
