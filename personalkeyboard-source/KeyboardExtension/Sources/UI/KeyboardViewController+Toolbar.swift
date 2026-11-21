@@ -42,6 +42,15 @@ extension KeyboardViewController {
             tr.accessibilityLabel = "ترجمة"
             s.addArrangedSubview(tr)
         }
+        let mem = iconKey("speedometer", #selector(memoryReportTapped))
+        mem.accessibilityLabel = "تقرير الذاكرة"
+        mem.widthAnchor.constraint(equalToConstant: 36).isActive = true
+        let memHold = UILongPressGestureRecognizer(target: self, action: #selector(memoryReportHold(_:)))
+        memHold.minimumPressDuration = 0.38
+        memHold.cancelsTouchesInView = true
+        mem.addGestureRecognizer(memHold)
+        s.addArrangedSubview(mem)
+
         let hide = iconKey("keyboard.chevron.compact.down", #selector(dismissKeyboardAction))
         hide.widthAnchor.constraint(equalToConstant: 36).isActive = true
         s.addArrangedSubview(hide)

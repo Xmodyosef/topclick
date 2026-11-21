@@ -1,3 +1,25 @@
+## Unreleased
+### Language-path probe (no version bump)
+Not a fix. One on-keyboard control, default mode is the current path.
+
+- Toolbar speedometer: tap shows footprint / peak / available and counts of `surface`, `remount`, and `rebuild`. Long-press or أدخل writes one line into the text field.
+- Mode button cycles one variable: الحالي (in-place + CTFont) → إعادة بناء (`rebuild()` on language switch) → خط النظام (same path, `UIFont.systemFont` instead of `CTFontCreateForStringWithLanguage`).
+- صفر resets the peak and the counters without reinstalling.
+- `theme` counts a real `rebuild()` from `applyThemeFromGroupIfNeeded` only. It does not count language-mode rebuild, emoji, or symbol-page rebuilds.
+
+### Jetsam memory experiments (branch `agent/jetsam-memory-experiments`, no version bump)
+Evidence: `KeyboardExtension` killed by `per-process-limit` at `rpages=4928` / `lifetimeMax=4928` while `active`. These are **isolatable experiments**, not a declared final fix. Re-measure `rpages` after each IPA trial.
+
+1. **Bounded Arabic font cache** — `KeyboardTypography` caches `CTFontCreateForStringWithLanguage` results in an `NSCache` with `countLimit=96`, and clears on memory warning. Goal: cut repeated CTFont cost on language retitle / suggestions.
+2. **Lazy TranslationBridge** — `UIHostingController` + Translation host is created on first translate tap only; detached on memory warning. Goal: remove framework host cost from every keyboard open.
+3. **Emoji leave fallback** — `discardEmojiIfLeaving` rebuilds the letter surface when in-place swap fails; `swapEmojiSurface` re-inserts the toolbar if emoji full-mount dropped it. Goal: never leave the emoji collection mounted after hide.
+
+Acceptance (device, clean IPA): slow language switch survives 2–3 flips; fast switch lasts longer than baseline; capture fresh Jetsam `rpages`/`lifetimeMax` after each trial. Do not call any experiment a final fix until it repeats on device.
+
+- Added three focused skills with runnable release, skill-routing, and accessibility-audit scripts.
+- Fixed stale `references/source/` instructions and updated the skill index and CI pack-count checks.
+- Reorganized iOS sources into App, KeyboardExtension, Shared, Config, Resources, and functional Swift groups without changing app behavior.
+
 ## 0.2.11 — 2026-11-19
 - **Build 33** — إصدار موحّد App + KeyboardExtension + VERSION + IPA.
 - يتضمّن ما دُمج من **PR #140** على main: 7 مهارات تنفيذية + إصلاح CodeFactor + فلتر IPA للمهارات.
@@ -37,16 +59,3 @@
 - كاش إيموجي بدون إعادة تحميل كل فتحة
 - توحيد الإصدار 0.2.6
 
-## Unreleased
-### Jetsam memory experiments (branch `agent/jetsam-memory-experiments`, no version bump)
-Evidence: `KeyboardExtension` killed by `per-process-limit` at `rpages=4928` / `lifetimeMax=4928` while `active`. These are **isolatable experiments**, not a declared final fix. Re-measure `rpages` after each IPA trial.
-
-1. **Bounded Arabic font cache** — `KeyboardTypography` caches `CTFontCreateForStringWithLanguage` results in an `NSCache` with `countLimit=96`, and clears on memory warning. Goal: cut repeated CTFont cost on language retitle / suggestions.
-2. **Lazy TranslationBridge** — `UIHostingController` + Translation host is created on first translate tap only; detached on memory warning. Goal: remove framework host cost from every keyboard open.
-3. **Emoji leave fallback** — `discardEmojiIfLeaving` rebuilds the letter surface when in-place swap fails; `swapEmojiSurface` re-inserts the toolbar if emoji full-mount dropped it. Goal: never leave the emoji collection mounted after hide.
-
-Acceptance (device, clean IPA): slow language switch survives 2–3 flips; fast switch lasts longer than baseline; capture fresh Jetsam `rpages`/`lifetimeMax` after each trial. Do not call any experiment a final fix until it repeats on device.
-
-- Added three focused skills with runnable release, skill-routing, and accessibility-audit scripts.
-- Fixed stale `references/source/` instructions and updated the skill index and CI pack-count checks.
-- Reorganized iOS sources into App, KeyboardExtension, Shared, Config, Resources, and functional Swift groups without changing app behavior.

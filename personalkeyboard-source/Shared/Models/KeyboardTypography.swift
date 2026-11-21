@@ -28,6 +28,10 @@ enum KeyboardTypography {
         }
     }
 
+    /// Trial switch. Off by default so the shipped path stays CTFont.
+    /// The keyboard report button turns this on for one session variable: plain UIFont.
+    static var plainSystemFontForArabic = false
+
     static func font(
         for text: String,
         size: CGFloat,
@@ -35,6 +39,9 @@ enum KeyboardTypography {
     ) -> UIFont {
         let systemFont = UIFont.systemFont(ofSize: size, weight: weight)
         guard containsArabicScript(text), !text.isEmpty else {
+            return systemFont
+        }
+        if plainSystemFontForArabic {
             return systemFont
         }
 

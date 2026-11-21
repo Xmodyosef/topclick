@@ -118,4 +118,16 @@ final class KeyboardTypographyTests: XCTestCase {
         let font = KeyboardTypography.font(for: "A", size: 26, weight: .medium)
         XCTAssertEqual(font.fontName, UIFont.systemFont(ofSize: 26, weight: .medium).fontName)
     }
+
+    func testPlainSystemFontFlagSkipsArabicCoreTextResolution() {
+        KeyboardTypography.plainSystemFontForArabic = true
+        defer {
+            KeyboardTypography.plainSystemFontForArabic = false
+            KeyboardTypography.clearFontCache()
+        }
+        let sample = "ا"
+        let font = KeyboardTypography.font(for: sample, size: 26, weight: .medium)
+        XCTAssertEqual(font.fontName, UIFont.systemFont(ofSize: 26, weight: .medium).fontName)
+        XCTAssertEqual(font.pointSize, 26)
+    }
 }
