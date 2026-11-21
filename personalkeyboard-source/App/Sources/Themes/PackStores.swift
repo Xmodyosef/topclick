@@ -84,12 +84,12 @@ enum SoundPackStore {
     /// Must stay aligned with TapSoundEngine.customFrequencies keys.
     static let catalog: [Pack] = [
         .init(id: "system", title: "النظام", blurb: "نقرة iOS الافتراضية"),
-        .init(id: "creamy", title: "كريمي", blurb: "نغمات دافئة"),
-        .init(id: "thocky", title: "ثوكي", blurb: "عمق منخفض"),
-        .init(id: "soft", title: "ناعم", blurb: "خفيف وهادئ"),
-        .init(id: "typewriter", title: "آلة كاتبة", blurb: "طقطقة حادة"),
-        .init(id: "piano", title: "بيانو", blurb: "لمسة وتر قصيرة وخفيفة"),
-        .init(id: "none", title: "صامت", blurb: "بدون صوت")
+        .init(id: "creamy", title: "دافئ", blurb: "أساس منخفض بلا حدّة · ~30 ms"),
+        .init(id: "thocky", title: "خشب خافت", blurb: "دفء قصير بدون دوي · ~28 ms"),
+        .init(id: "soft", title: "ناعم", blurb: "أقصر نقرة · ~16 ms"),
+        .init(id: "typewriter", title: "لباد", blurb: "نقرة صامتة بلا طقطقة · ~22 ms"),
+        .init(id: "piano", title: "همس", blurb: "وتر واحد قصير · ~24 ms"),
+        .init(id: "none", title: "بدون صوت", blurb: "لا نقرة")
     ]
 
     static var knownIDs: Set<String> { Set(catalog.map(\.id)) }
