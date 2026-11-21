@@ -38,6 +38,9 @@ def audit(source_root: Path) -> dict:
     space_tap = function_body(input_source, "spaceTouchUp()")
     scheduler = function_body(input_source, "scheduleLanguageRebuild()")
     suggestions = function_body(input_source, "suggestions()")
+    has_suggestions_fn = bool(suggestions) or "func suggestions()" in input_source
+    has_lazy_text_checker = re.search(r"(?m)^\s*lazy var textChecker\s*=\s*UITextChecker\(\)", controller) is not None
+    has_any_text_checker = "UITextChecker" in input_source or "UITextChecker" in controller
 
     check(
         "LANG001",
@@ -70,16 +73,30 @@ def audit(source_root: Path) -> dict:
         and "rebuild()" in scheduler,
         "The rebuild scheduler should guard duplicate requests and rebuild on the main queue.",
     )
-    check(
-        "LANG006", "high",
-        bool(suggestions) and "textChecker" in suggestions and "UITextChecker()" not in suggestions,
-        "Suggestion generation must reuse the controller's UITextChecker instead of allocating it per call.",
-    )
-    check(
-        "LANG007", "medium",
-        re.search(r"(?m)^\s*lazy var textChecker\s*=\s*UITextChecker\(\)", controller) is not None,
-        "The keyboard controller should lazily retain one UITextChecker instance.",
-    )
+    if has_suggestions_fn:
+        # Legacy path: suggestions present must reuse one controller-owned checker.
+        check(
+            "LANG006", "high",
+            bool(suggestions) and "textChecker" in suggestions and "UITextChecker()" not in suggestions,
+            "Suggestion generation must reuse the controller's UITextChecker instead of allocating it per call.",
+        )
+        check(
+            "LANG007", "medium",
+            has_lazy_text_checker,
+            "The keyboard controller should lazily retain one UITextChecker instance.",
+        )
+    else:
+        # Removed-by-design path (no suggestions strip): no checker at all.
+        check(
+            "LANG006", "high",
+            not has_any_text_checker,
+            "When suggestions are absent, UITextChecker must also be absent.",
+        )
+        check(
+            "LANG007", "medium",
+            not has_lazy_text_checker and "textChecker" not in controller and "textChecker" not in input_source,
+            "When suggestions are absent, the controller must not retain textChecker.",
+        )
 
     # Catch independent language mutations outside the shared transition helper.
     direct_mutations = [
