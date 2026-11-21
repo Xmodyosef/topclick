@@ -26,7 +26,9 @@ enum LanguagePathMode: String {
 
 /// In-keyboard footprint report. Samples this process only. Not a Jetsam log.
 enum LanguageDiagnostics {
-    private static let modeKey = "naqra.diag.languageMode"
+    // Process memory only. The extension contract forbids UserDefaults.standard.set.
+    // A Jetsam kill drops the mode back to baseline.
+    private static var modeState: LanguagePathMode = .baseline
     private static var peak: UInt64 = 0
     private static var surfaceCount = 0
     private static var remountCount = 0
@@ -35,12 +37,9 @@ enum LanguageDiagnostics {
     private static var lastLines: [String] = []
 
     static var mode: LanguagePathMode {
-        get {
-            let raw = UserDefaults.standard.string(forKey: modeKey) ?? LanguagePathMode.baseline.rawValue
-            return LanguagePathMode(rawValue: raw) ?? .baseline
-        }
+        get { modeState }
         set {
-            UserDefaults.standard.set(newValue.rawValue, forKey: modeKey)
+            modeState = newValue
             KeyboardTypography.plainSystemFontForArabic = (newValue == .systemFont)
             KeyboardTypography.clearFontCache()
         }
