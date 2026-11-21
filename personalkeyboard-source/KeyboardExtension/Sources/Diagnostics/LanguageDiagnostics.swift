@@ -26,8 +26,7 @@ enum LanguagePathMode: String {
 
 /// In-keyboard footprint report. Samples this process only. Not a Jetsam log.
 enum LanguageDiagnostics {
-    // Process memory only. The extension contract forbids UserDefaults.standard.set.
-    // A Jetsam kill drops the mode back to baseline.
+    // Process memory only. A kill drops the mode back to the current path.
     private static var modeState: LanguagePathMode = .baseline
     private static var peak: UInt64 = 0
     private static var surfaceCount = 0
