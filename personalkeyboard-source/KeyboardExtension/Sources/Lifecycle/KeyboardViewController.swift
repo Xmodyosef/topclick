@@ -142,7 +142,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         displayedNeedsInputModeSwitchKey = needsInputModeSwitchKey
         view.backgroundColor = .clear
         configureRoot()
-        attachBridge()
+        // Translation UIHostingController is created on first translate tap (lazy).
+        // Eager attach paid for Translation framework cost on every keyboard open.
         loadPrefs()
         listenPrefs()
         translationModel.onResult = { [weak self] t in self?.applyTranslation(t) }
@@ -227,6 +228,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         KeyboardTypography.clearFontCache()
+        detachTranslationBridge()
         if page != .emoji {
             emojiPack = []
             KeyboardDataLoader.clearEmojiCache()
