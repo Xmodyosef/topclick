@@ -189,6 +189,21 @@ def test_language_switch_audit_passes_complete_transition_contract(tmp_path: Pat
     assert report["finding_count"] == 0
 
 
+def test_language_switch_audit_passes_without_suggestions(tmp_path: Path) -> None:
+    """Suggestions removed by design: no UITextChecker is the correct contract."""
+    source = make_language_fixture(tmp_path)
+    input_path = source / "KeyboardExtension/Sources/Input/KeyboardViewController+Input.swift"
+    lifecycle = source / "KeyboardExtension/Sources/Lifecycle/KeyboardViewController.swift"
+    text = input_path.read_text(encoding="utf-8")
+    # Drop suggestions function only; keep language transitions.
+    text = text.split("    func suggestions()")[0]
+    input_path.write_text(text, encoding="utf-8")
+    lifecycle.write_text("    // lifecycle shell without checker\n", encoding="utf-8")
+    report = language.audit(source)
+    assert report["status"] == "pass", report["findings"]
+    assert report["finding_count"] == 0
+
+
 def test_language_switch_audit_flags_missing_primary_language_sync(tmp_path: Path) -> None:
     source = make_language_fixture(tmp_path, primary_language=False)
     report = language.audit(source)

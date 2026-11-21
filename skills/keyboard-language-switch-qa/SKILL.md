@@ -1,6 +1,6 @@
 ---
 name: keyboard-language-switch-qa
-description: Audit Arabic/English transition contracts: primaryLanguage, shared toggle, coalesced rebuild, UITextChecker reuse. Use when language switch feels broken.
+description: Audit Arabic/English transition contracts: primaryLanguage, shared toggle, coalesced rebuild, UITextChecker reuse when suggestions exist, else none. Use when language switch feels broken.
 ---
 
 # Keyboard language switch QA
