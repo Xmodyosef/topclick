@@ -88,7 +88,7 @@ enum SoundPackStore {
         .init(id: "thocky", title: "ثوكي", blurb: "عمق منخفض"),
         .init(id: "soft", title: "ناعم", blurb: "خفيف وهادئ"),
         .init(id: "typewriter", title: "آلة كاتبة", blurb: "طقطقة حادة"),
-        .init(id: "piano", title: "بيانو", blurb: "لمسة وتر قصيرة وخفيفة"),
+        .init(id: "piano", title: "بيانو", blurb: "نقرة وترية دافئة بنغمة بيانو"),
         .init(id: "none", title: "صامت", blurb: "بدون صوت")
     ]
 

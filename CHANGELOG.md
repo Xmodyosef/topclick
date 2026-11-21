@@ -1,10 +1,4 @@
 ## Unreleased
-
-### Piano pluck (option 2)
-- Replace heavy `piano.caf` (~420 ms) with a short string-pluck click (~68 ms, quieter amplitude).
-- Cap concurrent click playback to one; dispose cached sound IDs on memory warning.
-- Still AudioServices + single CAF (no AVAudioEngine). Not a full piano instrument.
-
 ### Language-path probe (no version bump)
 Not a fix. One on-keyboard control, default mode is the current path.
 

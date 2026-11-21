@@ -18,8 +18,7 @@ final class TapSoundEngine {
     private let audioQueue = DispatchQueue(label: "Naqra.TapSound.queue", qos: .userInitiated)
     private let configurationLock = NSLock()
     private let pendingLock = NSLock()
-    // One in-flight click: stacked custom CAF feels heavy under Full Access.
-    private let maximumPendingPlayRequests = 1
+    private let maximumPendingPlayRequests = 4
 
     // Updated only when settings change; the key-tap path performs no preferences I/O.
     private var soundsEnabled = false
@@ -116,16 +115,6 @@ final class TapSoundEngine {
         }
         cachedSoundIDs[assetName] = soundID
         return soundID
-    }
-
-    /// Drop cached SystemSoundIDs under memory pressure. Next play reloads one sample.
-    func clearCache() {
-        audioQueue.async { [weak self] in
-            guard let self else { return }
-            self.cachedSoundIDs.values.forEach { AudioServicesDisposeSystemSoundID($0) }
-            self.cachedSoundIDs.removeAll()
-            self.unavailableSamples.removeAll()
-        }
     }
 
     private func playSystemClick() {
