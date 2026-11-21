@@ -58,8 +58,6 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     var skinSession: SkinSession?
     weak var emojiSkinLongPress: UILongPressGestureRecognizer?
     var suggestionButtons: [UIButton] = []
-    /// Reused on the main thread; UITextChecker is not allocated for each keystroke.
-    lazy var textChecker = UITextChecker()
     var appliedThemeId = ""
     var noticeLabel: UILabel?
     /// On-keyboard memory report. Overlay only; not part of the key stack height.
@@ -306,7 +304,6 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         return String(s.lowercased().map { map[$0] ?? $0 })
     }
 
-    static var arabicLexicon: [String] { KeyboardDataLoader.arabicLexicon() }
 
 
 

@@ -1,5 +1,10 @@
 ## Unreleased
 
+### Drop suggestions; official system Arabic font
+- Remove suggestion row, UITextChecker, and arabicLexicon. Autocorrect was already gone; suggestions no longer load.
+- Arabic key labels use `UIFont.systemFont` only (official SF Arabic cascade). No CTFont per key.
+
+
 ### Quiet switch clicks
 - Replaced the five custom CAF clicks with short, low-amplitude taps modeled on silent-switch measurements: about 500–1800 Hz, 16–30 ms, no 2.5–7 kHz click spike, and no low rumble.
 - Pack ids are unchanged so a saved choice still plays. Titles now match the new sound: صامت، دافئ، خشب خافت، ناعم، همس.

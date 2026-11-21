@@ -18,22 +18,14 @@ extension KeyboardViewController {
         clip.widthAnchor.constraint(equalToConstant: 36).isActive = true
         s.addArrangedSubview(clip)
 
-        // Suggestions: three stable slots when enabled so language/text updates retitle
-        // in place. Empty slots stay hidden (no blank white strip, no toolbar rebuild).
-        let showSuggestions = ThemeIO.bool("suggestions") ?? false
-        if showSuggestions {
-            let suggRow = makeSuggestionsRow(words: suggestions())
-            suggRow.setContentHuggingPriority(.defaultLow, for: .horizontal)
-            s.addArrangedSubview(suggRow)
-        } else {
-            suggestionButtons = []
-            let spacer = UIView()
-            spacer.backgroundColor = .clear
-            spacer.isUserInteractionEnabled = false
-            spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-            spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-            s.addArrangedSubview(spacer)
-        }
+        // Suggestions / autocorrect removed: spacer keeps toolbar layout stable.
+        suggestionButtons = []
+        let spacer = UIView()
+        spacer.backgroundColor = .clear
+        spacer.isUserInteractionEnabled = false
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        s.addArrangedSubview(spacer)
 
         // Translate: keep only when iOS 18+ (otherwise the button only shows "needs iOS 18").
         if #available(iOS 18.0, *) {
