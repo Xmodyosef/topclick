@@ -4,13 +4,11 @@ import UIKit
 /// One language-path variable at a time. Default is the current in-place path.
 enum LanguagePathMode: String {
     case baseline
-    case systemFont
     case rebuild
 
     var title: String {
         switch self {
         case .baseline: return "الحالي"
-        case .systemFont: return "خط النظام"
         case .rebuild: return "إعادة بناء"
         }
     }
@@ -18,8 +16,7 @@ enum LanguagePathMode: String {
     var next: LanguagePathMode {
         switch self {
         case .baseline: return .rebuild
-        case .rebuild: return .systemFont
-        case .systemFont: return .baseline
+        case .rebuild: return .baseline
         }
     }
 }
@@ -37,15 +34,11 @@ enum LanguageDiagnostics {
 
     static var mode: LanguagePathMode {
         get { modeState }
-        set {
-            modeState = newValue
-            KeyboardTypography.plainSystemFontForArabic = (newValue == .systemFont)
-            KeyboardTypography.clearFontCache()
-        }
+        set { modeState = newValue }
     }
 
     static func syncFontFlag() {
-        KeyboardTypography.plainSystemFontForArabic = (mode == .systemFont)
+        // Official system font is always on; nothing to sync.
     }
 
     static func begin() -> UInt64 {

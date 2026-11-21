@@ -69,7 +69,7 @@ def main() -> None:
     require((extension_resources / 'keyboard_layouts.json').is_file(), 'layouts JSON exists')
     require((extension_resources / 'emoji_catalog.json').is_file(), 'emoji JSON exists')
     require((extension_resources / 'emoji_skin_map.json').is_file(), 'emoji skin map JSON exists')
-    # arabic_lexicon.json is optional: suggestions fall back inside KeyboardDataLoader.
+    # arabic_lexicon and suggestions removed from the keyboard.
     require('path: KeyboardExtension/Resources' in project, 'project.yml registers Resources')
     require('emoji_skin_map.json' in project, 'project.yml registers emoji_skin_map.json')
 
@@ -117,10 +117,14 @@ def main() -> None:
     require(lifecycle is not None and all(token in lifecycle.group(1) for token in ['holdTimer?.invalidate()', 'holdTimer = nil', 'hideHoldPopup()', 'pendingInserted = false']), 'viewWillDisappear cleans long-press state')
     require('showNumberRow' in extension and 'showNumberRow' in app, 'number-row setting shared')
     require('numberRow' in extension, 'number row keys defined')
-    # Autocorrect removed by design — keep suggestions only.
+    # Autocorrect and suggestions removed by design.
     require('autocorrectOnSpace' not in extension, 'autocorrectOnSpace must be absent')
     require('arabicLexiconFix' not in extension, 'arabicLexiconFix must be absent')
     require('arabicFixes' not in extension, 'arabicFixes must be absent')
+    require('func suggestions()' not in extension, 'suggestions() must be absent')
+    require('UITextChecker' not in extension, 'UITextChecker must be absent')
+    require('arabicLexicon' not in extension, 'arabicLexicon must be absent')
+    require('ThemeIO.bool("suggestions")' not in extension, 'suggestions preference must not gate the toolbar')
 
     # Emoji category swipe (pan) contract
     require('UIPanGestureRecognizer' in extension, 'emoji pan uses UIPanGestureRecognizer')
@@ -184,13 +188,12 @@ def main() -> None:
     key_font = re.search(r'func keyDisplayFont\(for key: String\) -> UIFont\s*\{(.*?)\n    \}', extension, re.S)
     char_key = re.search(r'func charKey\(_ t: String, rowIdx: Int\) -> UIButton\s*\{(.*?)\n    \}', extension, re.S)
     require(
-        'CTFontCreateForStringWithLanguage' in typography_code
-        and 'systemFont as CTFont' in typography_code
-        and 'text as CFString' in typography_code
-        and '"ar" as CFString' in typography_code
+        'UIFont.systemFont(ofSize: size, weight: weight)' in typography_code
+        and 'CTFontCreateForStringWithLanguage' not in typography_code
         and 'CTFontCreateWithName' not in typography_code
-        and '.SFUI-' not in typography_code,
-        'Arabic keys resolve through the Apple system font cascade without private font names'
+        and '.SFUI-' not in typography_code
+        and 'plainSystemFontForArabic' not in typography_code,
+        'Arabic keys use official UIFont.systemFont without private names or CTFont resolution'
     )
     require(
         key_font is not None
@@ -218,7 +221,7 @@ def main() -> None:
         require(struct.unpack('>Q', caf[56:64])[0] == len(caf) - 64, f'{sample_name} data chunk length matches file bytes')
 
     require('primaryLanguage = language == .arabic ? "ar" : "en"' in extension, 'internal language switch updates UIKit primaryLanguage')
-    require('lazy var textChecker = UITextChecker()' in extension and 'let checker = textChecker' in extension, 'suggestions reuse UITextChecker instead of allocating per keystroke')
+    require('lazy var textChecker' not in extension, 'textChecker must be absent after suggestions removal')
     require('UIVisualEffectView(effect: nil)' in extension and 'shadowOpacity = 0' in extension, 'keyboard avoids live blur and key shadows')
     build_ui = (ext_dir / 'UI/KeyboardViewController+BuildUI.swift').read_text(encoding='utf-8')
     require(('b.isOpaque = true' in build_ui or 'b.isOpaque = true' in extension) and 'b.opaque = true' not in extension, 'UIButton opacity uses current UIKit property')

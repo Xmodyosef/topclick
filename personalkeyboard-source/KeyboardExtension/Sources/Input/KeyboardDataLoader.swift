@@ -4,7 +4,6 @@ import Foundation
 enum KeyboardDataLoader {
     private static let lock = NSLock()
     private static var layoutsCache: Layouts?
-    private static var lexiconCache: [String]?
     private static var emojiCache: [(icon: String, items: [String])]?
     private static var skinMapCache: [String: [String]]?
     private static let arabicFallbackRows = [
@@ -122,17 +121,6 @@ enum KeyboardDataLoader {
     static let builtinArabicSymbols = KeyboardSymbolCatalog.builtinArabicSymbols
     static let builtinEnglishSymbols = KeyboardSymbolCatalog.builtinEnglishSymbols
 
-    static func arabicLexicon() -> [String] {
-        lock.lock(); defer { lock.unlock() }
-        if let lexiconCache { return lexiconCache }
-        if let data = data(named: "arabic_lexicon"),
-           let words = try? JSONSerialization.jsonObject(with: data) as? [String] {
-            lexiconCache = words
-            return words
-        }
-        lexiconCache = ["السلام", "عليكم", "الله", "صباح", "الخير"]
-        return lexiconCache!
-    }
 
     static func clearEmojiCache() {
         lock.lock(); defer { lock.unlock() }

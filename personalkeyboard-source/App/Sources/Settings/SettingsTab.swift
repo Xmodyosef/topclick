@@ -339,9 +339,6 @@ struct SettingsTab: View {
         iconMode = ThemeStore.string("iconMode") ?? "auto"
         clipboardHistoryEnabled = ThemeStore.bool("clipboardHistoryEnabled") ?? false
         // Defaults that used to bloat the keyboard for no benefit:
-        if ThemeStore.bool("suggestions") == nil {
-            ThemeStore.write("suggestions", value: false)
-        }
         if ThemeStore.bool("clipboardHistoryEnabled") == nil {
             ThemeStore.write("clipboardHistoryEnabled", value: false)
         }
