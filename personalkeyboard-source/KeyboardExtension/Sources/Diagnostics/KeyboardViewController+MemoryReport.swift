@@ -91,6 +91,13 @@ extension KeyboardViewController {
         }
     }
 
+
+    func stabilityNote(themeBefore: String, chromeBefore: String) -> String {
+        let theme = themeBefore == themeSignature ? "theme same" : "theme CHANGED"
+        let chrome = chromeBefore == surfaceChromeKey() ? "chrome same" : "chrome CHANGED"
+        return "\(theme) \(chrome)"
+    }
+
     func reapplyVisibleFonts() {
         for row in letterKeyButtons {
             for button in row {

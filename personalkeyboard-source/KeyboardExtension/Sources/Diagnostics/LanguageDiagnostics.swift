@@ -52,7 +52,7 @@ enum LanguageDiagnostics {
         footprint()
     }
 
-    static func mark(_ kind: String, before: UInt64) {
+    static func mark(_ kind: String, before: UInt64, note: String = "") {
         switch kind {
         case "surface": surfaceCount += 1
         case "remount": remountCount += 1
@@ -62,7 +62,8 @@ enum LanguageDiagnostics {
         }
         let after = footprint()
         if after > peak { peak = after }
-        let line = "\(kind) \(mib(before))→\(mib(after))"
+        let extra = note.isEmpty ? "" : " \(note)"
+        let line = "\(kind) \(mib(before))→\(mib(after))\(extra)"
         lastLines.append(line)
         if lastLines.count > 6 { lastLines.removeFirst(lastLines.count - 6) }
         NSLog("[Naqra.Mem] %@ mode=%@", line, mode.rawValue)
@@ -86,7 +87,7 @@ enum LanguageDiagnostics {
         mode \(mode.title)
         footprint \(mib(now)) MiB
         peak \(mib(peak)) MiB
-        available \(mib(os_proc_available_memory())) MiB
+        available \(mib(UInt64(max(os_proc_available_memory(), 0)))) MiB
         surface \(surfaceCount) · remount \(remountCount) · rebuild \(rebuildCount) · theme \(themeCount)
         \(recent)
         """

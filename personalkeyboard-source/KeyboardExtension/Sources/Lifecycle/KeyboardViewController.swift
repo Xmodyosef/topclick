@@ -185,8 +185,11 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
             appliedThemeId = sig
             palette = next
             let before = LanguageDiagnostics.begin()
+            let themeBefore = sig
             rebuild()
-            LanguageDiagnostics.mark("theme", before: before)
+            view.layoutIfNeeded()
+            let themeNote = themeBefore == themeSignature ? "theme same" : "theme CHANGED"
+            LanguageDiagnostics.mark("theme", before: before, note: themeNote)
         }
     }
 
