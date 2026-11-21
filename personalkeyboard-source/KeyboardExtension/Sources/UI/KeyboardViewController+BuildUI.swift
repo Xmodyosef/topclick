@@ -74,6 +74,7 @@ extension KeyboardViewController {
     func armHaptics() {
         guard hapticsOn else { return }
         UIImpactFeedbackGenerator(style: impactStyle).prepare()
+        UIImpactFeedbackGenerator(style: .light).prepare()
         selectionFeedback.prepare()
     }
     func tapHaptic(_ pulse: Pulse = .key) {
@@ -87,6 +88,16 @@ extension KeyboardViewController {
             feedback.prepare()
         }
     }
+
+    /// Soft pulse for emoji surface only — light style, low intensity.
+    func emojiLightHaptic() {
+        guard hapticsOn else { return }
+        let feedback = UIImpactFeedbackGenerator(style: .light)
+        feedback.prepare()
+        feedback.impactOccurred(intensity: 0.55)
+        feedback.prepare()
+    }
+
     func showNotice(_ message: String) {
         noticeLabel?.removeFromSuperview()
         let label = UILabel()
@@ -196,6 +207,16 @@ extension KeyboardViewController {
     }
 
     func fillMiddle() {
+        // Emoji grid/catalog only while page == .emoji (language/letters remount stays clean).
+        if page != .emoji {
+            if emojiCollection != nil || emojiPager != nil || emojiTabs != nil {
+                releaseEmojiSurface()
+            }
+            if !emojiPack.isEmpty {
+                emojiPack = []
+                KeyboardDataLoader.clearEmojiCache()
+            }
+        }
         switch page {
         case .letters:
             letterKeyButtons = []

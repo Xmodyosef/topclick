@@ -1,5 +1,13 @@
 ## Unreleased
 
+### Emoji path isolate + circular wrap + light feel
+- Category pan wraps first↔last (carousel); no rubber-band stop at ends.
+- Soft light haptic on emoji surface (`emojiLightHaptic`).
+- Category tabs: selected = special emoji chrome; others = letter-key theme colors.
+- Letters/symbols remount never keeps emoji grid or pack.
+- Theme board control keys follow unified special-key color when set.
+
+
 ### Quiet switch clicks
 - Replaced the five custom CAF clicks with short, low-amplitude taps modeled on silent-switch measurements: about 500–1800 Hz, 16–30 ms, no 2.5–7 kHz click spike, and no low rumble.
 - Pack ids are unchanged so a saved choice still plays. Titles now match the new sound: صامت، دافئ، خشب خافت، ناعم، همس.

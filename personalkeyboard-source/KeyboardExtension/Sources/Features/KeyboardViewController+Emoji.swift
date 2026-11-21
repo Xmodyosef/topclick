@@ -90,9 +90,7 @@ extension KeyboardViewController {
         for (i, pack) in emojiPack.enumerated() {
             let b = control(pack.icon, #selector(emojiTab(_:)), font: 18, chrome: .emoji)
             b.tag = i
-            b.backgroundColor = i == emojiCategoryIndex
-                ? palette.accent.withAlphaComponent(0.55)
-                : palette.key.withAlphaComponent(0.55)
+            paintEmojiCategoryTab(b, selected: i == emojiCategoryIndex)
             b.widthAnchor.constraint(equalToConstant: 38).isActive = true
             s.addArrangedSubview(b)
         }
@@ -191,7 +189,7 @@ extension KeyboardViewController {
         textDocumentProxy.insertText(item)
         playSystemClick(.emoji)
         rememberEmoji(item)
-        tapHaptic()
+        emojiLightHaptic()
     }
 
     // Cell size is owned by LTREmojiGridLayout (always LTR, 8 columns).
@@ -224,17 +222,24 @@ extension KeyboardViewController {
         if !swapEmojiSurface() {
             rebuild()
         }
-        tapHaptic()
+        emojiLightHaptic()
+    }
+
+    /// Category tab colors: selected uses special emoji chrome; others match letter keys (full theme colors).
+    func paintEmojiCategoryTab(_ button: UIButton, selected: Bool) {
+        if selected {
+            paint(button, chrome: .emoji)
+        } else {
+            paint(button, chrome: .letter)
+        }
+        button.accessibilityTraits = selected ? [.button, .selected] : [.button]
     }
 
     func refreshTabs() {
         guard let emojiTabs else { return }
         for (index, view) in emojiTabs.arrangedSubviews.enumerated() {
             guard let button = view as? UIButton else { continue }
-            button.backgroundColor = index == emojiCategoryIndex
-                ? palette.accent.withAlphaComponent(0.55)
-                : palette.key.withAlphaComponent(0.55)
-            button.accessibilityTraits = index == emojiCategoryIndex ? [.button, .selected] : [.button]
+            paintEmojiCategoryTab(button, selected: index == emojiCategoryIndex)
         }
         // Keep the selected tab visible in the horizontal strip.
         guard emojiTabs.arrangedSubviews.indices.contains(emojiCategoryIndex),
@@ -284,22 +289,23 @@ extension KeyboardViewController {
                 host.addSubview(snap)
                 emojiSwipeSnapshot = snap
             }
-            var tx = translation.x
-            let atStart = emojiCategoryIndex <= 0
-            let atEnd = emojiCategoryIndex >= emojiPack.count - 1
-            if (atStart && tx > 0) || (atEnd && tx < 0) {
-                tx = tx * 0.28
-            }
+            // Circular carousel: free drag at both ends (first ↔ last wrap).
+            let tx = translation.x
             host.transform = CGAffineTransform(translationX: tx, y: 0)
 
         case .ended, .cancelled:
             let dx = abs(velocity.x) > 280 ? velocity.x : translation.x
             let threshold = min(56, width * 0.18)
+            let count = emojiPack.count
             var next = emojiCategoryIndex
-            if dx <= -threshold, emojiCategoryIndex < emojiPack.count - 1 {
-                next = emojiCategoryIndex + 1
-            } else if dx >= threshold, emojiCategoryIndex > 0 {
-                next = emojiCategoryIndex - 1
+            if count > 1 {
+                if dx <= -threshold {
+                    // Swipe left → next category; from last wraps to first.
+                    next = (emojiCategoryIndex + 1) % count
+                } else if dx >= threshold {
+                    // Swipe right → previous; from first wraps to last.
+                    next = (emojiCategoryIndex - 1 + count) % count
+                }
             }
 
             let transitionID = emojiTransitionGeneration
@@ -339,7 +345,7 @@ extension KeyboardViewController {
                               self.page == .emoji,
                               self.emojiPager === host else { return }
                         self.emojiCollection?.isScrollEnabled = true
-                        self.tapHaptic(.action)
+                        self.emojiLightHaptic()
                         if self.emojiPack.indices.contains(next) {
                             UIAccessibility.post(notification: .announcement, argument: self.emojiPack[next].icon)
                         }
@@ -414,7 +420,7 @@ extension KeyboardViewController {
                 return
             }
             cv.isScrollEnabled = false
-            tapHaptic(.action)
+            emojiLightHaptic()
         case .changed:
             guard let bar = emojiSkinBar, skinSession != nil else { return }
             let p = gesture.location(in: bar)
@@ -518,7 +524,7 @@ extension KeyboardViewController {
         textDocumentProxy.insertText(chosen)
         playSystemClick(.emoji)
         rememberEmoji(chosen)
-        tapHaptic()
+        emojiLightHaptic()
     }
 
     func highlightSkinTone(_ idx: Int?) {

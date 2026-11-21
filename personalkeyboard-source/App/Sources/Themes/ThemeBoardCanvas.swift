@@ -59,12 +59,16 @@ struct ThemeBoardCanvas: View {
         }
     }
 
+    private var controlFill: Color {
+        SpecialKeyColorStore.hasCustom ? SpecialKeyColorStore.loadColor() : theme.accent
+    }
+
     private func controlKey(_ title: String, width: CGFloat) -> some View {
         Text(title)
             .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(Color.white.opacity(0.95))
             .frame(width: width, height: 32)
-            .background(theme.accent, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+            .background(controlFill, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
                     .stroke(Color.white.opacity(0.28), lineWidth: 1)
