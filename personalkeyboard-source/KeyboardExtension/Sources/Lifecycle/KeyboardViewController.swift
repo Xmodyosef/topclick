@@ -236,6 +236,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         KeyboardTypography.clearFontCache()
+        TapSoundEngine.shared.clearCache()
         detachTranslationBridge()
         if page != .emoji {
             emojiPack = []
