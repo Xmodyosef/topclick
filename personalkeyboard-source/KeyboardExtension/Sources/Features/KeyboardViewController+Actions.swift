@@ -35,6 +35,24 @@ extension KeyboardViewController {
         )
     }
     func playSystemSound() { playSystemClick(.rowMid) }
+
+    /// EXP-2 (jetsam): do not host SwiftUI/Translation for every keyboard session.
+    /// Attach only when the user requests translation.
+    func ensureTranslationBridge() {
+        guard translationHost == nil else { return }
+        attachBridge()
+    }
+
+    func detachTranslationBridge() {
+        guard let host = translationHost else { return }
+        host.willMove(toParent: nil)
+        host.view.removeFromSuperview()
+        host.removeFromParent()
+        translationHost = nil
+        // Drop pending text so a stale host cannot fire after detach.
+        translationModel.sourceText = ""
+    }
+
     func attachBridge() {
         let host = UIHostingController(rootView: TranslationBridgeView(model: translationModel))
         translationHost = host
@@ -103,6 +121,8 @@ extension KeyboardViewController {
             showNotice("حدّد النص الذي تريد ترجمته أولًا")
             return
         }
+        // EXP-2: host is allocated only on the translate path.
+        ensureTranslationBridge()
         pendingTranslationText = text
         let arabicCount = text.unicodeScalars.filter { $0.value >= 0x0600 && $0.value <= 0x06FF }.count
         let translateToEnglish = arabicCount >= max(1, text.count / 4)
@@ -122,6 +142,8 @@ extension KeyboardViewController {
         }
         textDocumentProxy.insertText(text)
         pendingTranslationText = ""
+        // Free the Translation host after a successful result; next tap re-attaches.
+        detachTranslationBridge()
         tapHaptic(.action)
     }
 }
