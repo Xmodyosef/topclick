@@ -4,6 +4,11 @@ import UIKit
 /// Uses Apple's language-aware system UI font selection for Arabic glyphs.
 /// SF Arabic is supplied by iOS; it must not be bundled or loaded by private name.
 enum KeyboardTypography {
+    /// EXP-1 (jetsam): cap Core Text resolve cost across language flips.
+    /// Key titles are a small fixed set; unbounded CTFontCreate per key was a memory suspect.
+    private static var arabicFontCache: [String: UIFont] = [:]
+    private static let arabicFontCacheLimit = 64
+
     static func containsArabicScript(_ text: String) -> Bool {
         text.unicodeScalars.contains { scalar in
             let value = scalar.value
@@ -28,6 +33,11 @@ enum KeyboardTypography {
             return systemFont
         }
 
+        let cacheKey = "\(size)|\(weight.rawValue)|\(text)"
+        if let cached = arabicFontCache[cacheKey] {
+            return cached
+        }
+
         // Start with the normal system UI font so its system cascade is retained.
         // Core Text resolves the actual font that covers this Arabic key in that cascade.
         let resolvedFont = CTFontCreateForStringWithLanguage(
@@ -37,6 +47,16 @@ enum KeyboardTypography {
             "ar" as CFString
         )
 
-        return resolvedFont as UIFont
+        let uiFont = resolvedFont as UIFont
+        if arabicFontCache.count >= arabicFontCacheLimit {
+            arabicFontCache.removeAll(keepingCapacity: true)
+        }
+        arabicFontCache[cacheKey] = uiFont
+        return uiFont
+    }
+
+    /// Optional release path under memory pressure (not required for correctness).
+    static func clearArabicFontCache() {
+        arabicFontCache.removeAll(keepingCapacity: false)
     }
 }
