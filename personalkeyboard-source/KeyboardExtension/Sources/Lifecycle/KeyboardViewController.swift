@@ -184,7 +184,9 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         if sig != appliedThemeId || !paletteMatches(next) {
             appliedThemeId = sig
             palette = next
+            let before = LanguageDiagnostics.begin()
             rebuild()
+            LanguageDiagnostics.mark("theme", before: before)
         }
     }
 

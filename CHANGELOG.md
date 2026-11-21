@@ -5,6 +5,7 @@ Not a fix. One on-keyboard control, default mode is the current path.
 - Toolbar speedometer: tap shows footprint / peak / available and counts of `surface`, `remount`, and `rebuild`. Long-press or أدخل writes one line into the text field.
 - Mode button cycles one variable: الحالي (in-place + CTFont) → إعادة بناء (`rebuild()` on language switch) → خط النظام (same path, `UIFont.systemFont` instead of `CTFontCreateForStringWithLanguage`).
 - صفر resets the peak and the counters without reinstalling.
+- `theme` counts a real `rebuild()` from `applyThemeFromGroupIfNeeded` only. It does not count language-mode rebuild, emoji, or symbol-page rebuilds.
 
 ### Jetsam memory experiments (branch `agent/jetsam-memory-experiments`, no version bump)
 Evidence: `KeyboardExtension` killed by `per-process-limit` at `rpages=4928` / `lifetimeMax=4928` while `active`. These are **isolatable experiments**, not a declared final fix. Re-measure `rpages` after each IPA trial.

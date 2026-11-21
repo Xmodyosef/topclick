@@ -31,6 +31,7 @@ enum LanguageDiagnostics {
     private static var surfaceCount = 0
     private static var remountCount = 0
     private static var rebuildCount = 0
+    private static var themeCount = 0
     private static var lastLines: [String] = []
 
     static var mode: LanguagePathMode {
@@ -58,6 +59,7 @@ enum LanguageDiagnostics {
         case "surface": surfaceCount += 1
         case "remount": remountCount += 1
         case "rebuild": rebuildCount += 1
+        case "theme": themeCount += 1
         default: break
         }
         let after = footprint()
@@ -73,6 +75,7 @@ enum LanguageDiagnostics {
         surfaceCount = 0
         remountCount = 0
         rebuildCount = 0
+        themeCount = 0
         lastLines.removeAll()
     }
 
@@ -86,7 +89,7 @@ enum LanguageDiagnostics {
         footprint \(mib(now)) MiB
         peak \(mib(peak)) MiB
         available \(mib(os_proc_available_memory())) MiB
-        surface \(surfaceCount) · remount \(remountCount) · rebuild \(rebuildCount)
+        surface \(surfaceCount) · remount \(remountCount) · rebuild \(rebuildCount) · theme \(themeCount)
         \(recent)
         """
     }
