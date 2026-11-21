@@ -383,8 +383,10 @@ extension KeyboardViewController {
     /// Returns false when the grid is not the stable wide one, so the caller rebuilds.
     @discardableResult
     func applyLanguageSurface() -> Bool {
+        let before = LanguageDiagnostics.begin()
         if page == .emoji {
             refreshKeptChromeTitles()
+            LanguageDiagnostics.mark("surface", before: before)
             return true
         }
         guard page == .letters, letterGridStable else { return false }
@@ -416,6 +418,7 @@ extension KeyboardViewController {
         // In-place only; must not allocate a new toolbar on every language flip.
         refreshSuggestions()
         view.setNeedsLayout()
+        LanguageDiagnostics.mark("surface", before: before)
         return true
     }
 

@@ -147,6 +147,14 @@ extension KeyboardViewController {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             self.languageRebuildScheduled = false
+            // One variable: rebuild() instead of in-place retitle. Font path stays as-is.
+            if LanguageDiagnostics.mode == .rebuild {
+                let before = LanguageDiagnostics.begin()
+                self.rebuild()
+                LanguageDiagnostics.mark("rebuild", before: before)
+                NSLog("[Naqra.Keyboard] language full rebuild: %@", String(describing: self.language))
+                return
+            }
             if self.applyLanguageSurface() {
                 NSLog("[Naqra.Keyboard] language surface retitle: %@", String(describing: self.language))
                 return
@@ -164,6 +172,7 @@ extension KeyboardViewController {
 
     /// Re-fill the letter grid in place without discarding the top/bottom chrome.
     func remountLetterMiddleForLanguage() {
+        let before = LanguageDiagnostics.begin()
         hideKeyPreview()
         hideHoldPopup()
         hideClipboardPanel()
@@ -176,6 +185,7 @@ extension KeyboardViewController {
         mountedChromeKey = surfaceChromeKey()
         updateHeightForCurrentSize()
         view.setNeedsLayout()
+        LanguageDiagnostics.mark("remount", before: before)
     }
 
     func toggleLanguage(returnToLetters: Bool = false) {

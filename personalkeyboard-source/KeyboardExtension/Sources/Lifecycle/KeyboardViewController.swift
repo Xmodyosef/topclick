@@ -62,6 +62,8 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
     lazy var textChecker = UITextChecker()
     var appliedThemeId = ""
     var noticeLabel: UILabel?
+    /// On-keyboard memory report. Overlay only; not part of the key stack height.
+    var memoryPanel: UIView?
     var pendingTranslationText = ""
     var clipboardLongPressInProgress = false
     weak var clipboardPanel: UIView?
@@ -145,6 +147,7 @@ final class KeyboardViewController: UIInputViewController, UIScrollViewDelegate,
         // Translation UIHostingController is created on first translate tap (lazy).
         // Eager attach paid for Translation framework cost on every keyboard open.
         loadPrefs()
+        LanguageDiagnostics.syncFontFlag()
         listenPrefs()
         translationModel.onResult = { [weak self] t in self?.applyTranslation(t) }
         translationModel.onError = { [weak self] message in self?.showNotice(message) }
